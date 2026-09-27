@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Entrar na TemTrend</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main id="login-view" class="auth-view">
+      <a class="auth-logo" href="./index.html" aria-label="Voltar para a página inicial"><span>T</span>TEMTREND</a>
+      <section class="auth-shell" aria-live="polite">
+        <div class="auth-accent" aria-hidden="true"></div>
+        <div id="login-heading" class="auth-heading">
+          <p class="eyebrow">SEU PRÓXIMO PASSO</p>
+          <h1>COMECE A VENDER.</h1>
+          <p>Entre para continuar.</p>
+        </div>
+        <form id="login-form" class="stack auth-form">
+          <button id="google-login" class="google-button" type="button"><span class="google-icon" aria-hidden="true">G</span>Continuar com Google</button>
+          <div class="divider"><span>ou entre com email</span></div>
+          <label>Email<input id="email" type="email" required autocomplete="email" inputmode="email" placeholder="seu@email.com" autofocus /></label>
+          <label>Senha<div class="password-field"><input id="password" type="password" required minlength="6" autocomplete="current-password" placeholder="Sua senha" /><button class="password-toggle" type="button" data-target="password" aria-label="Mostrar senha">Mostrar</button></div></label>
+          <div class="form-row"><span></span><button id="forgot-password" class="text-button" type="button">Esqueci minha senha</button></div>
+          <button class="primary" type="submit">Entrar →</button>
+          <p class="auth-switch">Ainda não tem uma conta? <button id="open-signup" class="text-button" type="button">Criar conta grátis</button></p>
+        </form>
+        <form id="signup-form" class="stack auth-form hidden">
+          <button id="signup-google" class="google-button" type="button"><span class="google-icon" aria-hidden="true">G</span>Continuar com Google</button>
+          <div class="divider"><span>ou crie com email</span></div>
+          <label>Nome<input id="signup-name" required minlength="2" maxlength="120" autocomplete="name" placeholder="Como podemos chamar você?" /></label>
+          <label>Email<input id="signup-email" type="email" required autocomplete="email" inputmode="email" placeholder="seu@email.com" /></label>
+          <label>Senha<div class="password-field"><input id="signup-password" type="password" required minlength="6" autocomplete="new-password" placeholder="Mínimo de 6 caracteres" /><button class="password-toggle" type="button" data-target="signup-password" aria-label="Mostrar senha">Mostrar</button></div></label>
+          <button class="primary" type="submit">Continuar com email →</button>
+          <p class="legal-note">Ao continuar, você concorda com nossos Termos e Política de Privacidade.</p>
+          <p class="auth-switch">Já tem uma conta? <button id="signup-to-login" class="text-button" type="button">Entrar</button></p>
+        </form>
+        <form id="recovery-form" class="stack auth-form hidden">
+          <label>Email<input id="recovery-email" type="email" required autocomplete="email" inputmode="email" placeholder="seu@email.com" /></label>
+          <button class="primary" type="submit">Enviar link →</button>
+          <button id="back-to-login" class="back-button" type="button">← Voltar para entrar</button>
+        </form>
+        <form id="reset-form" class="stack auth-form hidden">
+          <label>Nova senha<div class="password-field"><input id="new-password" type="password" required minlength="6" autocomplete="new-password" /><button class="password-toggle" type="button" data-target="new-password" aria-label="Mostrar senha">Mostrar</button></div></label>
+          <label>Confirmar senha<div class="password-field"><input id="confirm-password" type="password" required minlength="6" autocomplete="new-password" /><button class="password-toggle" type="button" data-target="confirm-password" aria-label="Mostrar senha">Mostrar</button></div></label>
+          <button class="primary" type="submit">Salvar nova senha →</button>
+        </form>
+        <p id="login-error" class="form-message error" role="alert"></p>
+        <p id="recovery-message" class="form-message success" role="status"></p>
+      </section>
+      <a class="back-home" href="./index.html">← Voltar para o início</a>
+    </main>
+
+    <main id="app-view" class="hidden">
+      <header class="topbar">
+        <a class="app-logo" href="#products-section" aria-label="TemTrend, produtos"><span>T</span>TEMTREND</a>
+        <nav class="app-nav" aria-label="Navegação da plataforma"><a href="#products-section">Produtos</a><a href="#production-section">Minha produção</a></nav>
+        <details class="user-menu"><summary aria-label="Abrir menu da conta"><span class="user-copy"><strong id="user-name">Minha conta</strong><small id="user-email"></small></span><span id="user-avatar" class="user-avatar">T</span></summary><div class="user-menu-panel"><button id="account-settings" type="button">Configurações</button><button id="logout" type="button">Sair</button></div></details>
+      </header>
+      <section class="page-wrap">
+        <div id="toast" class="toast hidden"></div>
+        <section id="onboarding" class="onboarding hidden" aria-labelledby="onboarding-title">
+          <a class="auth-logo onboarding-logo" href="./index.html"><span>T</span>TEMTREND</a>
+          <div class="onboarding-shell">
+            <div class="onboarding-progress" aria-label="Progresso do onboarding"><div id="onboarding-progress-bar"></div></div>
+            <p id="onboarding-count" class="step-count">1 de 3</p>
+            <form id="onboarding-form">
+              <div class="onboarding-step is-active" data-step="1">
+                <div class="onboarding-heading"><p class="eyebrow">VAMOS COMEÇAR</p><h1 id="onboarding-title">O que você quer fazer no TikTok?</h1><p>Escolha a opção que mais combina com você agora.</p></div>
+                <div class="selection-list single-select" role="radiogroup" aria-label="Seu objetivo">
+                  <button class="selection-card" type="button" role="radio" aria-checked="false" data-value="comecar_vender"><span>Quero começar a vender</span><i></i></button>
+                  <button class="selection-card" type="button" role="radio" aria-checked="false" data-value="vender_mais"><span>Já vendo e quero vender mais</span><i></i></button>
+                  <button class="selection-card" type="button" role="radio" aria-checked="false" data-value="criar_videos"><span>Quero criar vídeos para produtos</span><i></i></button>
+                  <button class="selection-card" type="button" role="radio" aria-checked="false" data-value="explorando"><span>Estou só explorando</span><i></i></button>
+                </div>
+              </div>
+              <div class="onboarding-step" data-step="2">
+                <div class="onboarding-heading"><p class="eyebrow">SEU CONTEÚDO</p><h1>O que você gosta de criar?</h1><p>Escolha quantos quiser. Você pode mudar isso depois.</p></div>
+                <div class="chip-grid multi-select" aria-label="Tipos de conteúdo">
+                  <button type="button" data-value="Mostrando produtos">Mostrando produtos</button><button type="button" data-value="Reviews">Reviews</button><button type="button" data-value="Falando para a câmera">Falando para a câmera</button><button type="button" data-value="Unboxing">Unboxing</button><button type="button" data-value="Tutorial">Tutorial</button><button type="button" data-value="Antes e depois">Antes e depois</button><button type="button" data-value="Outro">Outro</button>
+                </div>
+              </div>
+              <div class="onboarding-step" data-step="3">
+                <div class="onboarding-heading"><p class="eyebrow">SEUS INTERESSES</p><h1>Quais temas você gosta?</h1><p>Isso ajuda a preparar seu perfil para as próximas oportunidades.</p></div>
+                <div class="chip-grid multi-select" aria-label="Temas de interesse">
+                  <button type="button" data-value="Beleza">Beleza</button><button type="button" data-value="Casa">Casa</button><button type="button" data-value="Tecnologia">Tecnologia</button><button type="button" data-value="Fitness">Fitness</button><button type="button" data-value="Moda">Moda</button><button type="button" data-value="Lifestyle">Lifestyle</button><button type="button" data-value="Gastronomia">Gastronomia</button><button type="button" data-value="Outros">Outros</button>
+                </div>
+              </div>
+              <div class="onboarding-step onboarding-done" data-step="4">
+                <span class="done-mark" aria-hidden="true">✓</span><div class="onboarding-heading"><p class="eyebrow">TUDO CERTO</p><h1>Pronto.</h1><p>Agora vamos encontrar algo para você vender.</p></div>
+              </div>
+              <div class="onboarding-actions"><button id="onboarding-back" class="back-button hidden" type="button">← Voltar</button><button id="onboarding-skip" class="text-button hidden" type="button">Pular por enquanto</button><button id="onboarding-next" class="primary" type="button" disabled>Continuar →</button></div>
+            </form>
+          </div>
+        </section>
+
+        <section id="account-view" class="hidden">
+          <div class="hero-row"><div><p class="eyebrow">MINHA CONTA</p><h1>Configurações da conta</h1><p class="muted">Gerencie seus dados de acesso e veja o plano da sua conta.</p></div><button id="back-to-app" class="ghost" type="button">Voltar</button></div>
+          <div class="settings-grid">
+            <div class="card"><h2>Perfil</h2><form id="account-profile-form" class="stack"><label>Nome de usuário<input id="account-name" required minlength="2" maxlength="120" /></label><label>Email<input id="account-email" type="email" disabled /></label><button class="primary" type="submit">Salvar nome</button></form></div>
+            <div class="card"><h2>Plano ativo</h2><div class="plan-card"><strong id="account-plan-name">Plano gratuito</strong><span id="account-plan-status" class="status">Ativo</span><p class="muted">Seu acesso atual não possui cobrança ou assinatura recorrente.</p></div></div>
+            <div class="card"><h2>Preferências</h2><p id="account-preferences" class="muted">Seus temas e formatos de conteúdo.</p><button id="edit-preferences" class="ghost" type="button">Atualizar preferências</button></div>
+            <div class="card"><h2>Alterar senha</h2><form id="account-password-form" class="stack"><label>Nova senha<input id="account-new-password" type="password" required minlength="6" /></label><label>Confirmar nova senha<input id="account-confirm-password" type="password" required minlength="6" /></label><button class="primary" type="submit">Atualizar senha</button></form></div>
+            <div class="card danger-card"><h2>Excluir conta</h2><p class="muted">Esta ação remove permanentemente sua conta, perfil e conteúdos salvos.</p><button id="delete-account" class="danger-button" type="button">Excluir minha conta</button></div>
+          </div>
+        </section>
+
+        <section id="creator-content-view">
+          <section class="dashboard-hero" aria-labelledby="dashboard-title"><p id="dashboard-greeting" class="greeting"></p><p class="eyebrow">COMECE A VENDER</p><h1 id="dashboard-title">Encontre seu próximo produto.</h1><p>Escolha um produto e descubra exatamente o que gravar.</p><label class="product-search"><span aria-hidden="true">⌕</span><input id="product-search" type="search" placeholder="Buscar produtos..." aria-label="Buscar produtos" /></label></section>
+          <section id="products-section" class="dashboard-section"><div class="section-title"><div><h2>Produtos para você começar</h2><p>Escolha um produto para ver como criar seu vídeo.</p></div><button id="refresh" class="refresh-button" type="button" aria-label="Atualizar produtos">↻ Atualizar</button></div><div id="products" class="product-grid"></div></section>
+          <section id="production-section" class="dashboard-section production-section"><div class="section-title"><div><h2>Minha produção</h2><p>Acompanhe os produtos que você decidiu criar.</p></div></div><div id="my-content" class="production-grid"></div></section>
+        </section>
+
+        <section id="product-detail-view" class="detail-view hidden" aria-live="polite">
+          <button id="back-to-products" class="detail-back" type="button">← Voltar para produtos</button>
+          <div id="product-detail"></div>
+        </section>
+
+        <section id="kit-detail-view" class="detail-view hidden" aria-live="polite">
+          <button id="back-to-product" class="detail-back" type="button">← Voltar para o produto</button>
+          <div id="kit-detail"></div>
+        </section>
+
+        <section id="admin-view" class="hidden">
+          <div class="hero-row"><div><p class="eyebrow">ADMIN</p><h1>Visão rápida do Beta</h1></div><button id="admin-refresh" class="ghost">Atualizar painel</button></div>
+          <div id="metrics" class="metrics"></div>
+          <div class="card admin-form"><h2 id="product-form-title">Novo produto + Brand Kit</h2><p class="muted">Cadastre ou atualize o produto e todo o conteúdo associado em um único card.</p><form id="product-form" class="stack two-col"><input id="editing-product-id" type="hidden" /><input id="editing-kit-id" type="hidden" /><label>Nome do produto<input id="product-name" required /></label><label>Categoria<input id="product-category" required /></label><label class="wide">Descrição do produto<textarea id="product-description" required></textarea></label><label class="wide">Imagem URL<input id="product-image" type="url" required placeholder="https://..." /></label><label>Título do Brand Kit<input id="kit-title" required /></label><label>Formato<input id="kit-format" placeholder="reels, carrossel..." /></label><label>Plataforma<input id="kit-platform" placeholder="TikTok, Instagram..." /></label><label class="wide">Descrição do Brand Kit<textarea id="kit-description"></textarea></label><label class="wide">Hook<input id="kit-hook" /></label><label class="wide">Roteiro<textarea id="kit-script"></textarea></label><label class="wide">CTA<input id="kit-cta" /></label><div class="wide"><button id="product-submit" class="primary" type="submit">Criar produto completo</button> <button id="product-cancel-edit" class="ghost hidden" type="button">Cancelar edição</button></div></form></div>
+          <div class="card admin-form"><div class="hero-row"><div><h2>Produtos ativos</h2><p class="muted">Gerencie o catálogo disponível para creators.</p></div><button id="admin-products-refresh" class="ghost" type="button">Atualizar</button></div><div id="admin-products" class="admin-list"></div></div>
+          <div class="card admin-form"><div class="hero-row"><div><h2>Creators cadastrados</h2><p class="muted">Acompanhe e modere os creators da plataforma.</p></div><button id="admin-creators-refresh" class="ghost" type="button">Atualizar</button></div><div id="admin-creators" class="admin-list"></div></div>
+        </section>
+      </section>
+    </main>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="./app.js"></script>
+  </body>
+</html>
