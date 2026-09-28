@@ -4,10 +4,10 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import { requireAdmin } from '../../plugins/auth.js';
 import { supabaseAdmin } from '../../lib/supabase.js';
-import { UPLOAD } from '../../config/constants.js';
+import { UPLOAD, RATE_LIMITS } from '../../config/constants.js';
 import { Errors } from '../../types/index.js';
 async function routes(app: FastifyInstance) {
-  app.post('/admin/products/image', { preHandler: [requireAdmin], config: { rateLimit: { max: 30, timeWindow: '1 minute' } } }, async (request, reply) => {
+  app.post('/admin/products/image', { preHandler: [requireAdmin], config: { rateLimit: RATE_LIMITS.AUTH_WRITE } }, async (request, reply) => {
     const file = await request.file();
     if (!file || !UPLOAD.ALLOWED_MIME_TYPES.includes(file.mimetype as never)) throw Errors.BAD_REQUEST('Envie uma imagem JPEG, PNG, WEBP ou GIF.');
     const ext = path.extname(file.filename).toLowerCase();

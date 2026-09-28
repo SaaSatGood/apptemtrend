@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { CONTENT_STATUS } from '../../config/constants.js';
 
 export const createCreatorContentSchema = z.object({
   product_id: z.string().uuid('product_id deve ser um UUID válido.').optional(),
@@ -8,7 +9,12 @@ export const createCreatorContentSchema = z.object({
 });
 
 export const updateCreatorContentSchema = z.object({
-  status: z.enum(['salvo', 'em_producao', 'gravado', 'publicado']),
+  status: z.enum([
+    CONTENT_STATUS.SALVO,
+    CONTENT_STATUS.EM_PRODUCAO,
+    CONTENT_STATUS.GRAVADO,
+    CONTENT_STATUS.PUBLICADO,
+  ]),
   notas: z.string().max(2000).optional(),
   published_url: z.string().url('URL de publicação inválida.').optional().nullable(),
 }).strict();

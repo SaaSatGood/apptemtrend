@@ -41,6 +41,30 @@ async function errorHandlerPlugin(fastify: FastifyInstance) {
       });
     }
 
+    // Supabase/PostgREST errors expose `status` + a SQL code instead of `statusCode`.
+    const pg = error as { status?: number; code?: string };
+    if (pg.code === '23505' || pg.code === '23503') {
+      logger.warn({ requestId, err: error }, 'Database constraint conflict');
+      return reply.status(409).send({
+        error: {
+          code: 'CONFLICT',
+          message: 'Este registro já existe ou está em uso.',
+        },
+      });
+    }
+
+    if (typeof pg.status === 'number' && pg.status >= 400 && pg.status < 500) {
+      logger.warn({ requestId, err: error }, 'Database client error');
+      return reply.status(pg.status).send({
+        error: {
+          code: pg.code || 'CLIENT_ERROR',
+          message: env.NODE_ENV === 'production'
+            ? 'Requisição inválida.'
+            : (error.message || 'Requisição inválida.'),
+        },
+      });
+    }
+
     // Unknown/server errors
     logger.error({ requestId, err: error }, 'Internal server error');
     return reply.status(500).send({

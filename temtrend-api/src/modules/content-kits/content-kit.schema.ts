@@ -8,7 +8,11 @@ export const createContentKitSchema = z.object({
   nivel_dificuldade: z.string().max(50).optional(),
   hook: z.string().max(500).optional(),
   roteiro: z.string().max(5000).optional(),
-  cenas: z.any().optional(),
+  cenas: z.union([
+    z.string().max(10000),
+    z.array(z.unknown()).max(100),
+    z.record(z.string(), z.unknown()),
+  ]).optional(),
   copy: z.string().max(2000).optional(),
   cta: z.string().max(500).optional(),
   hashtags: z.array(z.string()).optional(),

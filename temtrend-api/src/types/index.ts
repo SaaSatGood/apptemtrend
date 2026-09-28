@@ -16,12 +16,8 @@ export const Errors = {
     createAppError('RESOURCE_NOT_FOUND', `${resource} não encontrado(a).`, 404),
   CONFLICT: (message: string) =>
     createAppError('CONFLICT', message, 409),
-  VALIDATION: (message: string) =>
-    createAppError('VALIDATION_ERROR', message, 422),
   BAD_REQUEST: (message: string) =>
     createAppError('BAD_REQUEST', message, 400),
-  INTERNAL: createAppError('INTERNAL_ERROR', 'Erro interno do servidor.', 500),
-  RATE_LIMITED: createAppError('RATE_LIMITED', 'Muitas requisições. Tente novamente em breve.', 429),
 } as const;
 
 export interface AuthUser {

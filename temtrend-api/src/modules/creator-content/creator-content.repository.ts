@@ -1,6 +1,11 @@
 import { supabaseAdmin } from '../../lib/supabase.js';
 import { logger } from '../../lib/logger.js';
-import type { CreatorContent } from '../../types/index.js';
+import type { ContentKit, CreatorContent, Product } from '../../types/index.js';
+
+export interface CreatorContentWithRelations extends CreatorContent {
+  products: Product | null;
+  content_kits: ContentKit | null;
+}
 
 export async function findCreatorContentById(id: string): Promise<CreatorContent | null> {
   const { data, error } = await supabaseAdmin
@@ -17,7 +22,7 @@ export async function findCreatorContentById(id: string): Promise<CreatorContent
   return data;
 }
 
-export async function listCreatorContent(creatorId: string): Promise<any[]> {
+export async function listCreatorContent(creatorId: string): Promise<CreatorContentWithRelations[]> {
   const { data, error } = await supabaseAdmin
     .from('creator_content')
     .select('*, products(*), content_kits(*)')
@@ -98,18 +103,4 @@ export async function updateCreatorContent(id: string, input: Record<string, unk
   }
 
   return data;
-}
-
-export async function countByStatus(status: string): Promise<number> {
-  const { count, error } = await supabaseAdmin
-    .from('creator_content')
-    .select('*', { count: 'exact', head: true })
-    .eq('status', status);
-
-  if (error) {
-    logger.error({ err: error }, 'Error counting by status');
-    return 0;
-  }
-
-  return count || 0;
 }

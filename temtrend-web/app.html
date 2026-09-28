@@ -3,6 +3,8 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- URL da API TemTrend. Em produção (host que não seja localhost), preencha este valor. -->
+    <meta name="temtrend-api-url" content="" />
     <title>Entrar na TemTrend</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -103,6 +105,7 @@
             <div class="card"><h2>Perfil</h2><form id="account-profile-form" class="stack"><label>Nome de usuário<input id="account-name" required minlength="2" maxlength="120" /></label><label>Email<input id="account-email" type="email" disabled /></label><button class="primary" type="submit">Salvar nome</button></form></div>
             <div class="card"><h2>Plano ativo</h2><div class="plan-card"><strong id="account-plan-name">Plano gratuito</strong><span id="account-plan-status" class="status">Ativo</span><p class="muted">Seu acesso atual não possui cobrança ou assinatura recorrente.</p></div></div>
             <div class="card"><h2>Preferências</h2><p id="account-preferences" class="muted">Seus temas e formatos de conteúdo.</p><button id="edit-preferences" class="ghost" type="button">Atualizar preferências</button></div>
+            <div class="card tiktok-account-card"><div class="tiktok-card-heading"><span class="tiktok-mark">♪</span><div><h2>TikTok</h2><p class="muted">Conecte sua conta para publicar seus vídeos sem sair da TemTrend.</p></div></div><div id="tiktok-account-state" class="tiktok-account-state"><span class="status">Verificando...</span></div><button id="connect-tiktok" class="primary" type="button">Conectar TikTok</button><button id="disconnect-tiktok" class="ghost hidden" type="button">Desconectar TikTok</button></div>
             <div class="card"><h2>Alterar senha</h2><form id="account-password-form" class="stack"><label>Nova senha<input id="account-new-password" type="password" required minlength="6" /></label><label>Confirmar nova senha<input id="account-confirm-password" type="password" required minlength="6" /></label><button class="primary" type="submit">Atualizar senha</button></form></div>
             <div class="card danger-card"><h2>Excluir conta</h2><p class="muted">Esta ação remove permanentemente sua conta, perfil e conteúdos salvos.</p><button id="delete-account" class="danger-button" type="button">Excluir minha conta</button></div>
           </div>
@@ -120,7 +123,7 @@
         </section>
 
         <section id="kit-detail-view" class="detail-view hidden" aria-live="polite">
-          <button id="back-to-product" class="detail-back" type="button">← Voltar para o produto</button>
+          <button id="back-to-product" class="detail-back" type="button">← Voltar para produtos</button>
           <div id="kit-detail"></div>
         </section>
 
@@ -133,7 +136,26 @@
         </section>
       </section>
     </main>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <dialog id="tiktok-publish-dialog" class="tiktok-dialog">
+      <form method="dialog"><button class="dialog-close" value="cancel" aria-label="Fechar">×</button></form>
+      <div id="tiktok-upload-step">
+        <p class="eyebrow">PUBLICAR NO TIKTOK · EM BREVE</p><h2>Envio de vídeo em breve</h2><p class="muted">Estamos preparando a publicação direta no TikTok.</p>
+        <label class="video-drop" for="tiktok-video"><strong>Escolher vídeo</strong><span id="tiktok-file-name">Nenhum arquivo selecionado</span><input id="tiktok-video" type="file" accept="video/mp4,video/quicktime,video/webm,.mp4,.mov,.webm" /></label>
+        <button id="upload-tiktok-video" class="primary" type="button">Preparar vídeo →</button>
+      </div>
+      <div id="tiktok-preview-step" class="hidden">
+        <p class="eyebrow">REVISE ANTES DE PUBLICAR</p><h2>Seu vídeo está pronto</h2>
+        <div id="tiktok-preview-context" class="tiktok-preview-context"></div>
+        <video id="tiktok-video-preview" controls playsinline></video>
+        <label>Legenda<textarea id="tiktok-caption" maxlength="2200" rows="6"></textarea><small id="tiktok-caption-count">0 / 2200</small></label>
+        <label>Privacidade<select id="tiktok-privacy"></select><small id="tiktok-privacy-note"></small></label>
+        <div class="tiktok-options"><label><input id="tiktok-comments" type="checkbox" /> Desativar comentários</label><label><input id="tiktok-duet" type="checkbox" /> Desativar Dueto</label><label><input id="tiktok-stitch" type="checkbox" /> Desativar Stitch</label></div>
+        <button id="publish-tiktok-video" class="primary" type="button" disabled>Publicar no TikTok · Em breve</button>
+        <button id="retry-tiktok-video" class="ghost hidden" type="button">Tentar novamente</button>
+      </div>
+      <div id="tiktok-progress" class="tiktok-progress hidden" role="status" aria-live="polite"><span class="spinner"></span><strong id="tiktok-progress-title">Preparando vídeo...</strong><p id="tiktok-progress-copy">Isso pode levar alguns instantes.</p></div>
+    </dialog>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js" integrity="sha384-Rj26LVGvoeRVR6+mwQmFfcR3QOBEwT+ZmuCWpuiqeTzJpCs0ER4ITAWGb4Hiy3Ok" crossorigin="anonymous"></script>
     <script src="./app.js"></script>
   </body>
 </html>

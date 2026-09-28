@@ -62,16 +62,3 @@ export async function updateContentKit(id: string, input: Record<string, unknown
 
   return data;
 }
-
-export async function countContentKits(): Promise<number> {
-  const { count, error } = await supabaseAdmin
-    .from('content_kits')
-    .select('*', { count: 'exact', head: true });
-
-  if (error) {
-    logger.error({ err: error }, 'Error counting content kits');
-    return 0;
-  }
-
-  return count || 0;
-}

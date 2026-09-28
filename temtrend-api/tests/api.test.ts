@@ -42,4 +42,41 @@ describe('TemTrend Beta API', () => {
     expect(response.json().error.code).toBe('RESOURCE_NOT_FOUND');
     await app.close();
   });
+
+  it('never rate limits the health check', async () => {
+    const app = buildApp();
+    const statuses = new Set<number>();
+    for (let i = 0; i < 120; i++) {
+      statuses.add((await app.inject({ method: 'GET', url: '/health' })).statusCode);
+    }
+    expect(statuses).toEqual(new Set([200]));
+    await app.close();
+  });
+
+  it('applies the write rate limit before authentication', async () => {
+    const app = buildApp();
+    let last = 0;
+    for (let i = 0; i < 31; i++) {
+      last = (await app.inject({ method: 'POST', url: '/creators/onboarding', payload: {} })).statusCode;
+    }
+    expect(last).toBe(429);
+    await app.close();
+  });
+
+  it('maps database unique violations to 409 instead of 500', async () => {
+    const app = buildApp();
+    app.get('/__test/conflict', async () => {
+      const error = new Error('duplicate key value violates unique constraint') as Error & {
+        code: string;
+        status: number;
+      };
+      error.code = '23505';
+      error.status = 409;
+      throw error;
+    });
+    const response = await app.inject({ method: 'GET', url: '/__test/conflict' });
+    expect(response.statusCode).toBe(409);
+    expect(response.json().error.code).toBe('CONFLICT');
+    await app.close();
+  });
 });

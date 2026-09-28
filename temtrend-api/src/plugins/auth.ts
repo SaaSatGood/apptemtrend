@@ -8,42 +8,80 @@ declare module 'fastify' {
   interface FastifyRequest {
     authUser: AuthUser;
     isAdmin: boolean;
+    authFailed: boolean;
   }
 }
 
-async function authPlugin(fastify: FastifyInstance) {
-  fastify.decorateRequest('authUser');
-  fastify.decorateRequest('isAdmin', false);
-}
+const BEARER_PREFIX = 'Bearer ';
 
-export default fp(authPlugin, { name: 'auth' });
+async function authenticate(request: FastifyRequest): Promise<boolean> {
+  if (request.authUser) return true;
+  if (request.authFailed) return false;
 
-// Hook: require authenticated user
-export async function requireAuth(request: FastifyRequest, reply: FastifyReply) {
-  const authHeader = request.headers.authorization;
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    const err = Errors.UNAUTHORIZED;
-    return reply.status(err.statusCode).send({ error: { code: err.code, message: err.message } });
-  }
+  const header = request.headers.authorization;
+  if (!header || !header.startsWith(BEARER_PREFIX)) return false;
 
-  const token = authHeader.replace('Bearer ', '');
+  const token = header.slice(BEARER_PREFIX.length);
 
   try {
     const { data, error } = await supabaseAdmin.auth.getUser(token);
     if (error || !data.user) {
-      const err = Errors.UNAUTHORIZED;
-      return reply.status(err.statusCode).send({ error: { code: err.code, message: err.message } });
+      request.authFailed = true;
+      return false;
     }
 
     request.authUser = {
       id: data.user.id,
       email: data.user.email,
     };
+    return true;
   } catch (e) {
     logger.error({ err: e }, 'Auth verification failed');
-    const err = Errors.UNAUTHORIZED;
-    return reply.status(err.statusCode).send({ error: { code: err.code, message: err.message } });
+    request.authFailed = true;
+    return false;
   }
+}
+
+async function authPlugin(fastify: FastifyInstance) {
+  fastify.decorateRequest('authUser');
+  fastify.decorateRequest('isAdmin', false);
+  fastify.decorateRequest('authFailed', false);
+
+  // Runs before the rate-limit hook (instance hooks always precede route hooks),
+  // so the limiter can key on the authenticated user id.
+  fastify.addHook('preValidation', async (request) => {
+    if (request.headers.authorization) {
+      await authenticate(request);
+    }
+  });
+}
+
+export default fp(authPlugin, { name: 'auth' });
+
+// True when the auth user has a row in the `admins` table.
+export async function isAdminUser(userId: string): Promise<boolean> {
+  const { data, error } = await supabaseAdmin
+    .from('admins')
+    .select('id')
+    .eq('user_id', userId)
+    .single();
+
+  if (error || !data) {
+    if (error && error.code !== 'PGRST116') {
+      logger.error({ err: error }, 'Error checking admin status');
+    }
+    return false;
+  }
+
+  return true;
+}
+
+// Hook: require authenticated user
+export async function requireAuth(request: FastifyRequest, reply: FastifyReply) {
+  if (await authenticate(request)) return;
+
+  const err = Errors.UNAUTHORIZED;
+  return reply.status(err.statusCode).send({ error: { code: err.code, message: err.message } });
 }
 
 // Hook: require admin
@@ -52,13 +90,7 @@ export async function requireAdmin(request: FastifyRequest, reply: FastifyReply)
   await requireAuth(request, reply);
   if (reply.sent) return;
 
-  const { data, error } = await supabaseAdmin
-    .from('admins')
-    .select('id, user_id, nivel')
-    .eq('user_id', request.authUser.id)
-    .single();
-
-  if (error || !data) {
+  if (!(await isAdminUser(request.authUser.id))) {
     const err = Errors.FORBIDDEN;
     return reply.status(err.statusCode).send({ error: { code: err.code, message: err.message } });
   }

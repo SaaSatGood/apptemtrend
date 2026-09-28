@@ -1,6 +1,7 @@
 import { FastifyInstance } from 'fastify';
 import fp from 'fastify-plugin';
 import { requireAuth } from '../../plugins/auth.js';
+import { RATE_LIMITS } from '../../config/constants.js';
 import { onboardingSchema } from './creator.schema.js';
 import * as creatorService from './creator.service.js';
 
@@ -8,34 +9,20 @@ async function creatorRoutes(fastify: FastifyInstance) {
   // GET /me
   fastify.get('/me', {
     preHandler: [requireAuth],
-    config: { rateLimit: { max: 100, timeWindow: '1 minute' } },
+    config: { rateLimit: RATE_LIMITS.AUTH_GET },
   }, async (request, reply) => {
-    try {
-      const result = await creatorService.getMe(request.authUser.id);
-      return reply.send(result);
-    } catch (err: any) {
-      if (err.statusCode) {
-        return reply.status(err.statusCode).send({ error: { code: err.code, message: err.message } });
-      }
-      throw err;
-    }
+    const result = await creatorService.getMe(request.authUser.id);
+    return reply.send(result);
   });
 
   // POST /creators/onboarding
   fastify.post('/creators/onboarding', {
     preHandler: [requireAuth],
-    config: { rateLimit: { max: 30, timeWindow: '1 minute' } },
+    config: { rateLimit: RATE_LIMITS.AUTH_WRITE },
   }, async (request, reply) => {
-    try {
-      const body = onboardingSchema.parse(request.body);
-      const creator = await creatorService.onboarding(request.authUser.id, body);
-      return reply.status(201).send(creator);
-    } catch (err: any) {
-      if (err.statusCode) {
-        return reply.status(err.statusCode).send({ error: { code: err.code, message: err.message } });
-      }
-      throw err;
-    }
+    const body = onboardingSchema.parse(request.body);
+    const creator = await creatorService.onboarding(request.authUser.id, body);
+    return reply.status(201).send(creator);
   });
 }
 

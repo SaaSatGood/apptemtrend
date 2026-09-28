@@ -1,10 +1,16 @@
 import pino from 'pino';
 import { env } from '../config/env.js';
 
+const level = env.NODE_ENV === 'test'
+  ? 'silent'
+  : env.NODE_ENV === 'production'
+    ? 'info'
+    : 'debug';
+
 export const logger = pino({
-  level: env.NODE_ENV === 'production' ? 'info' : 'debug',
+  level,
   transport:
-    env.NODE_ENV !== 'production'
+    env.NODE_ENV === 'development'
       ? { target: 'pino/file', options: { destination: 1 } }
       : undefined,
   redact: {
@@ -14,6 +20,12 @@ export const logger = pino({
       'body.password',
       'body.token',
       'body.service_role',
+      'body.access_token',
+      'body.refresh_token',
+      'body.client_secret',
+      '*.access_token',
+      '*.refresh_token',
+      '*.client_secret',
     ],
     censor: '[REDACTED]',
   },

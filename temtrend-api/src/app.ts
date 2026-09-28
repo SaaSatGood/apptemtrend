@@ -1,5 +1,6 @@
-import Fastify from 'fastify';
+import Fastify, { LogController } from 'fastify';
 import multipart from '@fastify/multipart';
+import { logger } from './lib/logger.js';
 import cors from './plugins/cors.js';
 import auth from './plugins/auth.js';
 import rateLimit from './plugins/rate-limit.js';
@@ -10,9 +11,14 @@ import creatorContentRoutes from './modules/creator-content/creator-content.rout
 import adminRoutes from './modules/admin/admin.routes.js';
 import storageRoutes from './modules/storage/storage.routes.js';
 import accountRoutes from './modules/account/account.routes.js';
+import tiktokRoutes from './modules/tiktok/tiktok.routes.js';
+import { env } from './config/env.js';
 
 export function buildApp() {
-  const app = Fastify({ logger: false, requestIdHeader: 'x-request-id' });
+  const app = Fastify({
+    loggerInstance: logger,
+    logController: new LogController({ disableRequestLogging: true }),
+  });
   app.register(errorHandler);
   app.setNotFoundHandler((_request, reply) => {
     return reply.status(404).send({
@@ -22,20 +28,30 @@ export function buildApp() {
   app.register(cors);
   app.register(rateLimit);
   app.register(auth);
-  app.register(multipart, { limits: { fileSize: 5 * 1024 * 1024, files: 1 } });
+  app.register(multipart, { limits: { fileSize: env.TIKTOK_MAX_VIDEO_SIZE, files: 1, fields: 10 } });
 
   app.addHook('onRequest', async (request) => {
     request.log.info({ requestId: request.id, method: request.method, route: request.url }, 'request.started');
   });
   app.addHook('onResponse', async (request, reply) => {
-    request.log.info({ requestId: request.id, status: reply.statusCode, durationMs: (reply as any).getResponseTime?.() }, 'request.completed');
+    request.log.info(
+      { requestId: request.id, status: reply.statusCode, durationMs: reply.elapsedTime },
+      'request.completed',
+    );
   });
-  app.get('/health', async () => ({ status: 'ok' }));
+  app.addHook('onSend', async (_request, reply, payload) => {
+    reply.header('x-content-type-options', 'nosniff');
+    reply.header('x-frame-options', 'DENY');
+    reply.header('referrer-policy', 'no-referrer');
+    return payload;
+  });
+  app.get('/health', { config: { rateLimit: false } }, async () => ({ status: 'ok' }));
   app.register(creatorRoutes);
   app.register(productRoutes);
   app.register(creatorContentRoutes);
   app.register(adminRoutes);
   app.register(storageRoutes);
   app.register(accountRoutes);
+  app.register(tiktokRoutes);
   return app;
 }

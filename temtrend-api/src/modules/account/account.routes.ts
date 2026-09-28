@@ -2,6 +2,7 @@ import { FastifyInstance } from 'fastify';
 import fp from 'fastify-plugin';
 import { z } from 'zod';
 import { requireAuth } from '../../plugins/auth.js';
+import { RATE_LIMITS } from '../../config/constants.js';
 import { supabaseAdmin } from '../../lib/supabase.js';
 import { Errors } from '../../types/index.js';
 
@@ -10,9 +11,10 @@ const profileSchema = z.object({
 }).strict();
 
 async function routes(app: FastifyInstance) {
-  const auth = { preHandler: [requireAuth], config: { rateLimit: { max: 30, timeWindow: '1 minute' } } };
+  const read = { preHandler: [requireAuth], config: { rateLimit: RATE_LIMITS.AUTH_GET } };
+  const write = { preHandler: [requireAuth], config: { rateLimit: RATE_LIMITS.AUTH_WRITE } };
 
-  app.get('/account', auth, async (request, reply) => {
+  app.get('/account', read, async (request, reply) => {
     const [{ data: userData, error: userError }, { data: creator, error: creatorError }] = await Promise.all([
       supabaseAdmin.auth.admin.getUserById(request.authUser.id),
       supabaseAdmin.from('creators').select('id, status, nicho, plataformas, tem_conta_afiliada').eq('user_id', request.authUser.id).maybeSingle(),
@@ -30,7 +32,7 @@ async function routes(app: FastifyInstance) {
     };
   });
 
-  app.patch('/account/profile', auth, async (request) => {
+  app.patch('/account/profile', write, async (request) => {
     const { nome } = profileSchema.parse(request.body);
     const { data: current, error: currentError } = await supabaseAdmin.auth.admin.getUserById(request.authUser.id);
     if (currentError || !current.user) throw currentError ?? Errors.NOT_FOUND('Conta');
@@ -40,7 +42,7 @@ async function routes(app: FastifyInstance) {
     return { nome: data.user?.user_metadata?.full_name ?? nome };
   });
 
-  app.delete('/account', auth, async (request, reply) => {
+  app.delete('/account', write, async (request, reply) => {
     const { error } = await supabaseAdmin.auth.admin.deleteUser(request.authUser.id);
     if (error) throw error;
     return reply.status(204).send();

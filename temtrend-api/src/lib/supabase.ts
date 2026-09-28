@@ -1,16 +1,9 @@
 import { createClient } from '@supabase/supabase-js';
 import { env } from '../config/env.js';
 
-// Client for authenticated user operations (uses anon key + JWT)
-export function createSupabaseClient(accessToken?: string) {
-  return createClient(env.SUPABASE_URL, env.SUPABASE_ANON_KEY, {
-    global: {
-      headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
-    },
-  });
-}
-
-// Admin client for backend-only operations (service role)
+// Admin client for backend-only operations (service role).
+// RLS is bypassed by this client: every authorization check must live in the
+// route/service layer (requireAuth, requireAdmin, ownership checks).
 export const supabaseAdmin = createClient(
   env.SUPABASE_URL,
   env.SUPABASE_SERVICE_ROLE_KEY,

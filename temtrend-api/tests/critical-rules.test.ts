@@ -15,6 +15,7 @@ vi.mock('../src/modules/creator-content/creator-content.repository.js', () => ({
 }));
 vi.mock('../src/modules/content-kits/content-kit.repository.js', () => ({
   findContentKitById: vi.fn(),
+  listContentKitsByProductId: vi.fn(),
 }));
 vi.mock('../src/modules/products/product.repository.js', () => ({
   findProductById: vi.fn(),
@@ -97,6 +98,16 @@ describe('critical Beta rules', () => {
     expect(productRepo.listActiveProducts).toHaveBeenCalledWith(undefined);
     expect(result).toHaveLength(1);
     expect(result.some((product: any) => product.status === 'pausado')).toBe(false);
+  });
+
+  it('keeps paused products hidden from creators but readable by admins', async () => {
+    vi.mocked(productRepo.findProductById).mockResolvedValue({ id: kit.product_id, status: 'pausado' } as any);
+    vi.mocked(kitRepo.listContentKitsByProductId).mockResolvedValue([] as any);
+
+    await expect(productService.getProductById(kit.product_id))
+      .rejects.toMatchObject({ statusCode: 404 });
+    await expect(productService.getProductById(kit.product_id, { includePaused: true }))
+      .resolves.toMatchObject({ product: { status: 'pausado' } });
   });
 
   it('creates creator_content with creator identity from the JWT and blocks another owner', async () => {

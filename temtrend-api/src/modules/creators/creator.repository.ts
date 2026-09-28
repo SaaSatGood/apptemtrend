@@ -19,8 +19,8 @@ export async function findCreatorByUserId(userId: string): Promise<Creator | nul
 
 export async function createCreator(input: {
   user_id: string;
-  nicho: string[];
-  plataformas: string[];
+  nicho?: string[];
+  plataformas?: string[];
   objetivo: string;
   estilos_conteudo: string[];
   temas_interesse: string[];
@@ -30,8 +30,8 @@ export async function createCreator(input: {
     .from('creators')
     .insert({
       user_id: input.user_id,
-      nicho: input.nicho,
-      plataformas: input.plataformas,
+      nicho: input.nicho ?? [],
+      plataformas: input.plataformas ?? [],
       objetivo: input.objetivo,
       estilos_conteudo: input.estilos_conteudo,
       temas_interesse: input.temas_interesse,
@@ -65,7 +65,9 @@ export async function updateCreator(id: string, data: Partial<Creator>): Promise
   return updated;
 }
 
-export async function listCreators(filters?: { status?: string; nicho?: string }): Promise<Creator[]> {
+export async function listCreators(
+  filters?: { status?: string; nicho?: string; limit?: number; offset?: number },
+): Promise<Creator[]> {
   let query = supabaseAdmin.from('creators').select('*');
 
   if (filters?.status) {
@@ -76,6 +78,11 @@ export async function listCreators(filters?: { status?: string; nicho?: string }
     query = query.contains('nicho', [filters.nicho]);
   }
 
+  if (filters?.limit !== undefined) {
+    const from = filters.offset ?? 0;
+    query = query.range(from, from + filters.limit - 1);
+  }
+
   const { data, error } = await query.order('criado_em', { ascending: false });
 
   if (error) {
@@ -84,31 +91,4 @@ export async function listCreators(filters?: { status?: string; nicho?: string }
   }
 
   return data || [];
-}
-
-export async function countCreators(): Promise<number> {
-  const { count, error } = await supabaseAdmin
-    .from('creators')
-    .select('*', { count: 'exact', head: true });
-
-  if (error) {
-    logger.error({ err: error }, 'Error counting creators');
-    return 0;
-  }
-
-  return count || 0;
-}
-
-export async function countActiveCreators(): Promise<number> {
-  const { count, error } = await supabaseAdmin
-    .from('creators')
-    .select('*', { count: 'exact', head: true })
-    .eq('status', 'ativo');
-
-  if (error) {
-    logger.error({ err: error }, 'Error counting active creators');
-    return 0;
-  }
-
-  return count || 0;
 }

@@ -1,5 +1,6 @@
 import { supabaseAdmin } from '../../lib/supabase.js';
 import { logger } from '../../lib/logger.js';
+import { PRODUCT_STATUS } from '../../config/constants.js';
 import type { Product } from '../../types/index.js';
 
 export async function findProductById(id: string): Promise<Product | null> {
@@ -24,7 +25,7 @@ export async function listActiveProducts(filters?: {
   let query = supabaseAdmin
     .from('products')
     .select('*')
-    .eq('status', 'ativo');
+    .eq('status', PRODUCT_STATUS.ATIVO);
 
   if (filters?.categoria) {
     query = query.eq('categoria', filters.categoria);
@@ -46,11 +47,18 @@ export async function listActiveProducts(filters?: {
   return data || [];
 }
 
-export async function listAllProducts(): Promise<Product[]> {
-  const { data, error } = await supabaseAdmin
+export async function listAllProducts(options?: { limit?: number; offset?: number }): Promise<Product[]> {
+  let query = supabaseAdmin
     .from('products')
     .select('*')
     .order('criado_em', { ascending: false });
+
+  if (options?.limit !== undefined) {
+    const from = options.offset ?? 0;
+    query = query.range(from, from + options.limit - 1);
+  }
+
+  const { data, error } = await query;
 
   if (error) {
     logger.error({ err: error }, 'Error listing all products');
@@ -108,18 +116,4 @@ export async function updateProduct(id: string, input: Record<string, unknown>):
   }
 
   return data;
-}
-
-export async function countActiveProducts(): Promise<number> {
-  const { count, error } = await supabaseAdmin
-    .from('products')
-    .select('*', { count: 'exact', head: true })
-    .eq('status', 'ativo');
-
-  if (error) {
-    logger.error({ err: error }, 'Error counting products');
-    return 0;
-  }
-
-  return count || 0;
 }

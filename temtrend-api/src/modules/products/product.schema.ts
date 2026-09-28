@@ -14,7 +14,7 @@ export const updateProductSchema = createProductSchema.partial().strict();
 
 export const productQuerySchema = z.object({
   categoria: z.string().optional(),
-  destaque: z.string().optional(), // 'true' / 'false'
+  destaque: z.enum(['true', 'false']).optional(),
 });
 
 export type CreateProductInput = z.infer<typeof createProductSchema>;
