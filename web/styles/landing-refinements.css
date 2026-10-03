@@ -1,0 +1,56 @@
+:where(a,button,summary):focus-visible{outline:3px solid #25f4ee;outline-offset:4px;border-radius:8px}
+.problem .question-grid{position:relative;overflow:hidden;border-top:0}
+.problem .question-grid::before,.problem .question-grid::after{content:'';position:absolute;z-index:3;top:0;left:0;width:100%;height:4px;transform-origin:left center}
+.problem .question-grid::before{background:#dedede}
+.problem .question-grid::after{background:linear-gradient(90deg,#25f4ee,#080808 50%,#fe2c55);transform:scaleX(0)}
+.problem .shell.visible .question-grid::after{animation:problemProgress 1.35s cubic-bezier(.22,.8,.25,1) .15s forwards}
+.progress-card{position:relative;opacity:.22;transform:translateY(18px)}
+.problem .shell.visible .progress-card{animation:problemStep .48s ease forwards;animation-delay:calc(.28s + (var(--step) * .19s))}
+.progress-card>span{display:grid;width:34px;height:34px;place-items:center;border:1px solid #ddd;border-radius:50%;background:#fff;transition:background .25s,color .25s,transform .25s}
+.problem .shell.visible .progress-card>span{animation:numberStep .42s ease forwards;animation-delay:calc(.3s + (var(--step) * .19s))}
+.progress-card:not(:last-child)::after{content:'›';position:absolute;z-index:4;top:22px;right:-7px;color:#999;font-size:21px;font-weight:700}
+@keyframes problemProgress{to{transform:scaleX(1)}}
+@keyframes problemStep{to{opacity:1;transform:translateY(0)}}
+@keyframes numberStep{50%{transform:scale(1.14)}100%{color:#fff;background:#000;border-color:#000;transform:scale(1)}}
+.button:active{transform:translateY(0) scale(.98)}
+.hero-showcase{align-items:center}
+.flow{gap:10px}
+.flow-step{min-width:130px;flex:1}
+.flow-step:last-child{color:#fff;background:#000;border-color:#000;box-shadow:5px 5px 0 #fe2c55,-3px -3px 0 #25f4ee}
+.flow-step:last-child span{color:#25f4ee}
+.kit-grid{grid-template-columns:1.35fr 1fr 1fr}
+.comparison h3{margin:72px 0 10px}
+.before-question{font-size:20px;color:#555!important}
+.question-mark{display:block;margin-top:38px;color:#bbb;font-size:72px;line-height:1}
+.comparison .after{display:flex;flex-direction:column}
+.comparison .after h3{margin-bottom:0}
+.comparison .after>p{margin-top:8px;color:#25f4ee}
+.comparison .after .mini-flow{height:auto;flex:1;padding-top:34px}
+.product-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+.landing-product{padding:12px 12px 24px}
+.landing-product .product-visual{display:block;width:100%;height:285px;margin-bottom:20px;border-radius:13px;object-fit:cover;background:#f2f2f2}
+.landing-product .product-status{display:inline-flex;padding:8px 11px;background:#f2f2f2;color:#111;transition:background .2s,color .2s}
+.landing-product .product-status:hover{background:#000;color:#fff}
+.timeline article:last-child span{background:#fe2c55;box-shadow:-3px -3px 0 #25f4ee}
+.timeline article:last-child h3{font-size:22px}
+.social-proof{background:#f7f7f7}
+.audience-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;text-align:left}
+.audience-card{overflow:hidden;border:1px solid #e5e5e5;border-radius:22px;background:#fff;box-shadow:0 16px 40px #0000000a}
+.audience-card img{display:block;width:100%;height:310px;object-fit:cover}
+.audience-card>div{padding:22px}
+.audience-card small{font-size:9px;font-weight:900;letter-spacing:.14em;color:#777}
+.audience-card h3{margin:9px 0 8px;font-size:20px}
+.audience-card p{margin:0;color:#6b6b6b;font-size:13px;line-height:1.55}
+.benefits .section-heading p{font-size:17px}
+.dark-cta .button{min-width:270px}
+.faq details[open] summary{color:#000}
+.faq details[open] summary span{color:#fe2c55}
+.footer-disabled{color:#767676;font-size:12px;cursor:default}
+@media(max-width:1024px){.flow-step{min-width:145px}.product-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.kit-grid{grid-template-columns:1fr 1fr}.audience-card img{height:260px}}
+@media(max-width:768px){.flow-step{width:100%}.kit-grid{grid-template-columns:1fr}.product-grid,.audience-grid{grid-template-columns:1fr}.landing-product .product-visual{height:340px}.audience-card{display:grid;grid-template-columns:130px 1fr}.audience-card img{height:100%;min-height:180px}.comparison h3{margin-top:46px}}
+@media(max-width:430px){.landing-product .product-visual{height:285px}.audience-card{grid-template-columns:105px 1fr}.audience-card>div{padding:18px}.audience-card img{min-height:190px}}
+@media(max-width:430px){html,body{max-width:100%;overflow-x:hidden}.shell,.narrow{width:calc(100% - 32px);max-width:none}.nav{gap:8px}.nav-actions{gap:7px}.nav-actions .button-small{max-width:138px;padding-inline:10px;white-space:nowrap}.hero{display:block;width:calc(100% - 32px);padding-top:58px;text-align:center}.hero-copy{min-width:0;width:100%}.hero h1{max-width:100%;letter-spacing:-.065em}.hero h1 span{white-space:normal}.hero-copy>p{max-width:100%;font-size:16px;line-height:1.55}.hero-actions{width:100%}.hero-actions .button{width:100%;max-width:100%;padding-inline:10px;white-space:normal}.hero-showcase{width:100%;margin-top:44px}.kicker{font-size:9px;letter-spacing:.12em}}
+@media(max-width:768px){html,body{max-width:100%;overflow-x:hidden}.shell,.narrow{width:calc(100% - 32px);max-width:none}.hero{width:calc(100% - 32px)}.hero h1{font-size:clamp(32px,8vw,42px);line-height:.97}.hero h1 span{white-space:normal}.hero-copy>p{font-size:16px}.hero-actions,.hero-actions .button{max-width:100%}.nav-actions .button-small{font-size:0;min-width:82px}.nav-actions .button-small::after{content:'Começar';font-size:10px}.menu-button{flex:0 0 auto}}
+@media(max-width:768px){.problem .question-grid{border-left:0}.problem .question-grid::before,.problem .question-grid::after{top:0;left:0;width:4px;height:100%;transform-origin:center top}.problem .question-grid::after{transform:scaleY(0)}.problem .shell.visible .question-grid::after{animation-name:problemProgressMobile}.progress-card{padding-left:28px}.progress-card:not(:last-child)::after{content:'↓';top:auto;right:auto;left:6px;bottom:-13px;font-size:14px}@keyframes problemProgressMobile{to{transform:scaleY(1)}}}
+@media(prefers-reduced-motion:reduce){.problem .question-grid::after{transform:scaleX(1);animation:none!important}.progress-card{opacity:1;transform:none;animation:none!important}.progress-card>span{color:#fff;background:#000;border-color:#000;animation:none!important}}
+

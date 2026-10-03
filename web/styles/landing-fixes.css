@@ -1,0 +1,12 @@
+/* Keep landing content visible when the browser does not paint the observer transition. */
+html.js .reveal.visible {
+  opacity: 1 !important;
+  transform: none !important;
+}
+
+/* Hardening: manter Entrar acessível no mobile (landing.css escondia .text-link). */
+@media(max-width:768px){
+  .nav-actions .text-link{display:inline-flex !important;font-size:12px}
+  .nav-actions .button-small{font-size:11px !important;min-width:0}
+  .nav-actions .button-small::after{content:none !important}
+}
