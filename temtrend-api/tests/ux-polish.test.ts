@@ -49,10 +49,13 @@ describe('ux polish', () => {
     expect(appJs).toContain('SERVICE_UNAVAILABLE');
   });
 
-  it('produção permite copiar hook direto do card', () => {
+  it('produção mostra status, progresso e próxima ação', () => {
     const appJs = read('app.js');
+    for (const s of ['status-salvo', 'status-em_producao', 'status-gravado', 'status-publicado']) {
+      expect(read('styles.css')).toContain(`.${s}`);
+    }
     expect(appJs).toContain('copy-hook-production');
-    expect(appJs).toContain('Hook copiado');
+    expect(appJs).toContain('filterCount');
   });
 
   it('toast não estoura no mobile', () => {
