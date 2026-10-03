@@ -10,7 +10,7 @@ const geminiDecisionSchema = z.object({
   in_scope: z.boolean(),
   intent_summary: z.string().max(160),
   search_terms: z.array(z.string().max(50)).max(12),
-  selected_product_ids: z.array(z.string()).max(6),
+  selected_product_ids: z.array(z.string()).max(3),
 }).strict();
 
 const geminiResponseSchema = z.object({
@@ -45,7 +45,7 @@ export function parseAndConstrainDecision(text: string, allowedIds: Set<string>)
   return {
     ...decision,
     selected_product_ids: decision.in_scope
-      ? decision.selected_product_ids.filter((id) => allowedIds.has(id)).slice(0, 6)
+      ? decision.selected_product_ids.filter((id) => allowedIds.has(id)).slice(0, 3)
       : [],
   };
 }

@@ -249,6 +249,22 @@ describe('assistant experience', () => {
     }
   });
 
+  it('retorna no máximo 3 produtos por busca', async () => {
+    const many = Array.from({ length: 5 }, (_, i) => ({
+      id: `0000000${i}-1111-4111-8111-111111111111`,
+      nome: 'Produto academia fitness treino',
+      descricao: 'Treino em casa academia',
+      categoria: 'Fitness',
+      imagem_url: 'https://example.com/a.jpg',
+      status: 'ativo',
+      destaque: false,
+    }));
+    vi.mocked(productRepo.listActiveProducts).mockResolvedValue(many as never);
+    const result = await findProductsForMessage({ message: 'Quero vender produtos para academia fitness treino' });
+    expect(result.products.length).toBeLessThanOrEqual(3);
+    expect(result.products.length).toBeGreaterThan(0);
+  });
+
   it('answers with a retry state when the catalog is empty, without spending AI calls', async () => {
     vi.mocked(productRepo.listActiveProducts).mockResolvedValue([]);
 

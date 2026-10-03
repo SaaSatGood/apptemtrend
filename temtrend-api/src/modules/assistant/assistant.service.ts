@@ -38,7 +38,7 @@ const INTENT_TERMS: Record<string, string[]> = {
   moda: ['moda', 'roupa', 'acessorio', 'look'],
 };
 
-const MAX_RESULTS = 6;
+const MAX_RESULTS = 3;
 
 const MESSAGES = {
   outOfScope: 'Posso te ajudar a encontrar produtos e a preparar seu conteúdo. Conte o que você quer vender.',
