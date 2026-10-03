@@ -1,9 +1,10 @@
 import { supabaseAdmin } from '../../lib/supabase.js';
 import { TtlCache } from '../../lib/cache.js';
+import { getAiMetrics } from '../../lib/ai-metrics.js';
 import { CACHE_TTL_MS } from '../../config/constants.js';
 import { logger } from '../../lib/logger.js';
 
-const dashboardCache = new TtlCache<Record<string, number>>(1);
+const dashboardCache = new TtlCache<Record<string, number | string>>(1);
 const directoryCache = new TtlCache<Map<string, AuthUserSummary>>(1);
 const DASHBOARD_KEY = 'dashboard';
 const DIRECTORY_KEY = 'directory';
@@ -16,7 +17,7 @@ export async function dashboard() {
     ['produtos_ativos', 'products', 'ativo'], ['total_content_kits', 'content_kits', undefined],
     ['oportunidades_salvas', 'creator_content', 'salvo'], ['conteudos_publicados', 'creator_content', 'publicado'],
   ] as const;
-  const values: Record<string, number> = {};
+  const values: Record<string, number | string> = {};
   await Promise.all(tables.map(async ([key, table, status]) => {
     let query = supabaseAdmin.from(table).select('*', { count: 'exact', head: true });
     if (status) query = query.eq('status', status);
@@ -27,6 +28,14 @@ export async function dashboard() {
     }
     values[key] = count ?? 0;
   }));
+  const ai = getAiMetrics();
+  Object.assign(values, {
+    ai_classify_calls: ai.classifyCalls,
+    ai_classify_tokens: ai.classifyTokens,
+    ai_classify_cache_hits: ai.classifyCacheHits,
+    ai_generate_calls: ai.generateCalls,
+    ai_generate_tokens: ai.generateTokens,
+  });
   dashboardCache.set(DASHBOARD_KEY, values, CACHE_TTL_MS.DASHBOARD);
   return values;
 }

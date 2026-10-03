@@ -2,7 +2,9 @@ import type { FastifyInstance } from 'fastify';
 import fp from 'fastify-plugin';
 import { requireAuth } from '../../plugins/auth.js';
 import { requireActiveCreator } from '../creators/creator.service.js';
+import { checkAssistantQuota, incrementAssistantQuota } from '../../lib/ai-metrics.js';
 import { RATE_LIMITS } from '../../config/constants.js';
+import { Errors } from '../../types/index.js';
 import { logger } from '../../lib/logger.js';
 import { assistantProductSearchSchema } from './assistant.schema.js';
 import { findProductsForMessage } from './assistant.service.js';
@@ -16,7 +18,12 @@ async function assistantRoutes(app: FastifyInstance) {
 
     try {
       await requireActiveCreator(request.authUser.id);
-      return reply.send(await findProductsForMessage(input));
+      if (!checkAssistantQuota(request.authUser.id)) {
+        throw Errors.CONFLICT('Limite diário de buscas atingido. Tente novamente amanhã.');
+      }
+      const response = await findProductsForMessage(input);
+      incrementAssistantQuota(request.authUser.id);
+      return reply.send(response);
     } catch (error) {
       const status = (error as { statusCode?: number }).statusCode;
       if (status && status < 500) throw error;

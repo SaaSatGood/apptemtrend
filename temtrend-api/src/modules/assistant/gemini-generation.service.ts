@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { env } from '../../config/env.js';
 import { AI_LIMITS } from '../../config/constants.js';
+import { recordGenerateCall } from '../../lib/ai-metrics.js';
 import { logger } from '../../lib/logger.js';
 import type { AssistantUsage } from './gemini.service.js';
 import type { ContentKit, Product } from '../../types/index.js';
@@ -315,6 +316,7 @@ export async function generateContentKit(
     const latencyMs = Date.now() - startedAt;
 
     logger.info({ provider: 'gemini', model: env.GEMINI_MODEL, usage, latency_ms: latencyMs, prompt_chars: systemText.length + userText.length, prev_kits: previousKits.length }, 'Content kit generated');
+    recordGenerateCall(systemText.length + userText.length, usage.total_tokens, attempt - 1);
     return { content_kit: generated.content_kit, usage, latency_ms: latencyMs };
   } catch (error) {
     logger.warn({ err: error, attempt, provider: 'gemini', model: env.GEMINI_MODEL, latency_ms: Date.now() - startedAt }, 'Content kit generation attempt failed');

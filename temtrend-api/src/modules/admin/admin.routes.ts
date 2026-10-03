@@ -35,6 +35,11 @@ async function routes(app: FastifyInstance) {
 
   app.get('/admin/dashboard', admin, async () => adminRepo.dashboard());
 
+  app.get('/admin/ai-usage', admin, async () => {
+    const { getAiMetrics } = await import('../../lib/ai-metrics.js');
+    return getAiMetrics();
+  });
+
   app.get('/admin/creators', admin, async (request) => {
     const q = creatorsQuerySchema.parse(request.query);
     const creators = await creatorRepo.listCreators({

@@ -3,9 +3,11 @@ import fp from 'fastify-plugin';
 import { z } from 'zod';
 import { requireAuth } from '../../plugins/auth.js';
 import { RATE_LIMITS } from '../../config/constants.js';
+import { checkForceNewCooldown, checkKitQuota, incrementKitQuota, markForceNew } from '../../lib/ai-metrics.js';
 import { productQuerySchema } from './product.schema.js';
 import * as productService from './product.service.js';
 import { requireActiveCreator } from '../creators/creator.service.js';
+import { Errors } from '../../types/index.js';
 import type { Product } from '../../types/index.js';
 
 function publicProduct(product: Product) {
@@ -76,9 +78,19 @@ async function productRoutes(fastify: FastifyInstance) {
       instructions: z.string().trim().max(1500, 'Descreva o vídeo em até 1500 caracteres.').optional(),
     }).strict().parse(request.body ?? {});
     const creator = await requireActiveCreator(request.authUser.id);
+    if (!checkKitQuota(request.authUser.id)) {
+      throw Errors.CONFLICT('Limite diário de roteiros atingido. Tente novamente amanhã.');
+    }
+    if (body.force_new && !checkForceNewCooldown(creator.id, id)) {
+      throw Errors.CONFLICT('Aguarde 1 minuto antes de gerar outra versão para este produto.');
+    }
     const result = body.force_new
       ? await productService.createFreshContentKit(id, creator.id, body.instructions)
       : await productService.ensureContentKit(id, creator.id, body.instructions);
+    if (result.created) {
+      incrementKitQuota(request.authUser.id);
+      if (body.force_new) markForceNew(creator.id, id);
+    }
     return reply.status(result.created ? 201 : 200).send(result);
   });
 }

@@ -23,6 +23,7 @@ const PRIVATE_ENDPOINTS: Array<{ method: 'GET' | 'POST' | 'PATCH' | 'DELETE'; ur
   { method: 'PATCH', url: '/account/profile', payload: { nome: 'Teste' } },
   { method: 'DELETE', url: '/account' },
   { method: 'GET', url: '/admin/dashboard' },
+  { method: 'GET', url: '/admin/ai-usage' },
   { method: 'GET', url: '/admin/creators' },
   { method: 'GET', url: '/admin/products' },
 ];

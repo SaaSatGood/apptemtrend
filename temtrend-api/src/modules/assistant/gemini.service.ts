@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { env } from '../../config/env.js';
 import { AI_LIMITS } from '../../config/constants.js';
 import { TtlCache } from '../../lib/cache.js';
+import { recordAssistantCall } from '../../lib/ai-metrics.js';
 import { logger } from '../../lib/logger.js';
 import type { Product } from '../../types/index.js';
 
@@ -110,6 +111,7 @@ export async function classifyCatalogRequest(
   const cached = decisionCache.get(cacheKey);
   if (cached) {
     logger.info({ cached: true, selected_products: cached.selected_product_ids.length }, 'Assistant classification cache hit');
+    recordAssistantCall(undefined, 0, 0, true);
     return cached;
   }
 
@@ -187,6 +189,7 @@ export async function classifyCatalogRequest(
       usage,
       latency_ms: latencyMs,
     };
+    recordAssistantCall(undefined, systemText.length + userText.length, usage.total_tokens, false);
     decisionCache.set(cacheKey, result, AI_LIMITS.CLASSIFY_CACHE_TTL_MS);
     return result;
   } catch (error) {
