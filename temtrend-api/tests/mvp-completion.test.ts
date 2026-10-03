@@ -81,4 +81,14 @@ describe('mvp completion', () => {
     expect(src).toContain('catalogFingerprint');
     expect(src).not.toMatch(/NUNCA compartilhar/i);
   });
+
+  it('fallback kit usa só dados reais e passa na validação', async () => {
+    const { buildFallbackKit } = await import('../src/modules/assistant/gemini-generation.service.js');
+    const { createContentKitSchema } = await import('../src/modules/content-kits/content-kit.schema.js');
+    const kit = buildFallbackKit({ nome: 'Kit 2 Conjuntos Fitness Feminino com Cós Alto e Brilho', descricao: 'Roupas de ginástica', categoria: 'Fitness' });
+    expect(() => createContentKitSchema.parse(kit)).not.toThrow();
+    expect(JSON.stringify(kit)).not.toMatch(/R\$|vendid|receita/i);
+    expect(kit.hashtags.length).toBeGreaterThanOrEqual(3);
+    expect(kit.cenas.length).toBeGreaterThanOrEqual(3);
+  });
 });

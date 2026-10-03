@@ -2,6 +2,7 @@ import { findProductByExternalId, findProductById, listActiveProducts, createPro
 import { listContentKitsByProductId, createContentKit } from '../content-kits/content-kit.repository.js';
 import { createContentKitSchema } from '../content-kits/content-kit.schema.js';
 import { AIService } from '../assistant/ai.service.js';
+import { buildFallbackKit } from '../assistant/gemini-generation.service.js';
 import { env } from '../../config/env.js';
 import { TtlCache } from '../../lib/cache.js';
 import { Errors, createAppError } from '../../types/index.js';
@@ -123,20 +124,29 @@ function inflightKey(productId: string, creatorId: string, briefing?: string) {
 
 async function createContentKitResult(productId: string, creatorId: string, briefing?: string) {
   const { product, content_kits } = await getProductById(productId, { creatorId });
+  // Roteiro base garantido: se a IA estiver fora, salva um kit honesto com os
+  // dados reais do produto em vez de falhar. `fallback: true` avisa o frontend.
   if (!AIService.isAvailable() && env.NODE_ENV !== 'test') {
-    throw createAppError(
-      'AI_UNAVAILABLE',
-      'A IA está indisponível agora. Tente novamente em alguns minutos.',
-      503,
-    );
+    const fallback = buildFallbackKit(product);
+    const input = createContentKitSchema.parse(fallback);
+    const contentKit = await createContentKit(product.id, input, { creatorId, briefing });
+    return { content_kit: contentKit, created: true, fallback: true };
   }
   const generated = await AIService.generateContentKit(product, content_kits, briefing);
   if (!generated) {
-    throw createAppError(
-      'SERVICE_UNAVAILABLE',
-      'Não conseguimos gerar seu Content Kit agora. Tente novamente em alguns segundos.',
-      503,
-    );
+    // Última tentativa esgotada: entrega o roteiro base em vez de 503.
+    try {
+      const fallback = buildFallbackKit(product);
+      const input = createContentKitSchema.parse(fallback);
+      const contentKit = await createContentKit(product.id, input, { creatorId, briefing });
+      return { content_kit: contentKit, created: true, fallback: true };
+    } catch {
+      throw createAppError(
+        'SERVICE_UNAVAILABLE',
+        'Não conseguimos gerar seu Content Kit agora. Tente novamente em alguns segundos.',
+        503,
+      );
+    }
   }
 
   const input = createContentKitSchema.parse(generated.content_kit);

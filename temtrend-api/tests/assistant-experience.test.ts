@@ -312,12 +312,12 @@ describe('content kit preparation', () => {
     expect(AIService.generateContentKit).toHaveBeenCalledWith(product, [], 'Vídeo curto e agressivo, com 15 segundos');
   });
 
-  it('answers with a friendly error when the Content Kit cannot be prepared', async () => {
-    await expect(ensureContentKit(product.id, creatorId)).rejects.toMatchObject({
-      code: 'SERVICE_UNAVAILABLE',
-      statusCode: 503,
-      message: 'Não conseguimos gerar seu Content Kit agora. Tente novamente em alguns segundos.',
-    });
+  it('delivers a base kit when AI generation fails instead of erroring', async () => {
+    vi.mocked(kitRepo.createContentKit).mockResolvedValue({ id: 'kit-base', product_id: product.id } as never);
+    const result = await ensureContentKit(product.id, creatorId);
+    expect(result.created).toBe(true);
+    expect(result).toMatchObject({ fallback: true });
+    expect(kitRepo.createContentKit).toHaveBeenCalled();
   });
 
   it('does not create a Content Kit for a paused product', async () => {

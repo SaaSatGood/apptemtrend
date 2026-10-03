@@ -11,7 +11,7 @@ describe('AI token cost', () => {
   });
 
   it('limita geração e reaproveitamento', () => {
-    expect(AI_LIMITS.MAX_GENERATION_ATTEMPTS).toBe(2);
+    expect(AI_LIMITS.MAX_GENERATION_ATTEMPTS).toBe(3);
     expect(AI_LIMITS.GENERATE_MAX_OUTPUT_TOKENS).toBeLessThanOrEqual(3000);
     expect(AI_LIMITS.MAX_PREVIOUS_KITS).toBeLessThanOrEqual(3);
     expect(AI_LIMITS.MAX_BRIEFING_CHARS).toBeLessThanOrEqual(400);
@@ -35,7 +35,7 @@ describe('AI token cost', () => {
 
   it('cota diária e cooldown existem', () => {
     expect(AI_QUOTA.ASSISTANT_PER_DAY).toBe(100);
-    expect(AI_QUOTA.KIT_PER_DAY).toBe(20);
+    expect(AI_QUOTA.KIT_PER_DAY).toBe(30);
     expect(checkAssistantQuota('test-user')).toBe(true);
     expect(checkKitQuota('test-user')).toBe(true);
     expect(checkForceNewCooldown('c1', 'p1')).toBe(true);

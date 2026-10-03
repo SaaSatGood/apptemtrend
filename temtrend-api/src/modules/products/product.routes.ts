@@ -82,7 +82,7 @@ async function productRoutes(fastify: FastifyInstance) {
       throw Errors.CONFLICT('Limite diário de roteiros atingido. Tente novamente amanhã.');
     }
     if (body.force_new && !checkForceNewCooldown(creator.id, id)) {
-      throw Errors.CONFLICT('Aguarde 1 minuto antes de gerar outra versão para este produto.');
+      throw Errors.CONFLICT('Aguarde 30 segundos antes de gerar outra versão para este produto.');
     }
     const result = body.force_new
       ? await productService.createFreshContentKit(id, creator.id, body.instructions)

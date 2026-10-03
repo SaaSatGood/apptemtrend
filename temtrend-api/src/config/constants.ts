@@ -57,8 +57,8 @@ export const AI_LIMITS = {
   CLASSIFY_MAX_OUTPUT_TOKENS: 150,
   CLASSIFY_CACHE_TTL_MS: 10 * 60 * 1000,
   ASSISTANT_RESPONSE_CACHE_TTL_MS: 2 * 60 * 1000,
-  // Geração de kit: 1 tentativa inicial + 1 retry.
-  MAX_GENERATION_ATTEMPTS: 2,
+  // Geração de kit: 1 tentativa inicial + 2 retries (confiabilidade primeiro).
+  MAX_GENERATION_ATTEMPTS: 3,
   GENERATE_TIMEOUT_MS: 30_000,
   GENERATE_MAX_OUTPUT_TOKENS: 3000,
   MAX_PREVIOUS_KITS: 3,

@@ -32,7 +32,7 @@ export const generatedPackageSchema = z.object({
     }).strict()).min(3).max(8),
     copy: z.string().trim().min(10).max(150),
     cta: z.string().trim().min(3).max(500),
-    hashtags: z.array(z.string().trim().min(2).max(60)).length(5),
+    hashtags: z.array(z.string().trim().min(2).max(60)).min(3).max(8),
     audio_sugerido: z.string().trim().min(3).max(200),
     duracao_seg: z.number().int().min(15).max(30),
   }).strict(),
@@ -201,7 +201,7 @@ export function isContentKitNovel(
   return previous.every((kit) => (
     comparableText(candidate.titulo) !== comparableText(kit.titulo)
     && comparableText(candidate.hook) !== comparableText(kit.hook)
-    && similarity(fingerprint, kitFingerprint(kit)) < 0.58
+    && similarity(fingerprint, kitFingerprint(kit)) < 0.62
   ));
 }
 
@@ -217,9 +217,10 @@ export function isProductNovel(
 }
 
 function productSeed(product: { nome: string; descricao?: string | null; categoria?: string | null }) {
+  const desc = (product.descricao?.trim() || '').slice(0, AI_LIMITS.MAX_PRODUCT_DESC_CHARS);
   return {
     nome: product.nome.trim().slice(0, 120),
-    descricao: (product.descricao?.trim() || 'Produto disponível no catálogo da TemTrend.').slice(0, AI_LIMITS.MAX_PRODUCT_DESC_CHARS),
+    descricao: desc.length >= 20 ? desc : 'Produto disponível no catálogo da TemTrend.',
     categoria: (product.categoria?.trim() || 'Geral').slice(0, 60),
   };
 }
@@ -236,6 +237,46 @@ function previousKitsCompact(previousKits: Partial<ContentKit>[]) {
     hook: (kit.hook ?? '').trim().slice(0, AI_LIMITS.MAX_PREVIOUS_KIT_CHARS),
     copy: typeof kit.copy === 'string' ? kit.copy.trim().slice(0, AI_LIMITS.MAX_PREVIOUS_KIT_CHARS) : undefined,
   }));
+}
+
+/**
+ * Roteiro base determinístico: usa SÓ nome/categoria reais do produto, sem
+ * inventar preço, vendas ou tendência. Garante que salvar/gerar nunca falhe
+ * mesmo com a IA fora do ar; o creator pode gerar a versão IA depois.
+ */
+export function buildFallbackKit(product: { nome: string; descricao?: string | null; categoria?: string | null }) {
+  const words = String(product.nome || '').trim().split(/\s+/).filter(Boolean).slice(0, 5);
+  const short = words.join(' ') || 'este produto';
+  const tagBase = (product.categoria?.trim() || 'Geral').slice(0, 60).normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-zA-Z0-9]/g, '') || 'produto';
+  const fallback = {
+    titulo: short,
+    descricao: 'Roteiro base montado com os dados do produto. Gere a versão com IA para um ângulo exclusivo.',
+    formato: 'Demonstração',
+    plataforma: 'TikTok',
+    nivel_dificuldade: 'Fácil',
+    hook: `Você precisa ver o que ${short} faz.`,
+    roteiro: [
+      'ROTEIRO PRINCIPAL: mostre o problema, demonstre o produto em uso e finalize com o resultado.',
+      '3 VARIAÇÕES DE HOOK: curiosidade ("Você precisa ver isso"), identificação ("Se você sofre com isso") e resultado ("Olha essa transformação").',
+      'VERSÃO SEM SEGUIDORES: grave sem aparecer, mostrando só o produto e as mãos, com teste real.',
+      'DICA DE PUBLICAÇÃO: publique em horário de pico do seu público, use áudio em alta e fixe um comentário com pergunta.',
+      '3–5 VARIAÇÕES DE ROTEIRO: antes e depois, teste, comparação, tutorial e review sincero.',
+    ].join('\n'),
+    cenas: [
+      { numero: 1, tempo: '0–3s', visual: `Detalhe de ${short} em close`, fala: 'Você precisa ver isso.', acao_edicao: 'Corte rápido com zoom' },
+      { numero: 2, tempo: '3–7s', visual: 'Problema do dia a dia que o produto resolve', fala: 'Quem passa por isso vai entender.', acao_edicao: 'Legenda na tela' },
+      { numero: 3, tempo: '7–18s', visual: `Demonstração de ${short} em uso real`, fala: 'É só usar assim, olha como funciona.', acao_edicao: 'Timelapse da demonstração' },
+      { numero: 4, tempo: '18–25s', visual: 'Resultado final após o uso', fala: 'Olha a diferença no resultado.', acao_edicao: 'Antes e depois lado a lado' },
+      { numero: 5, tempo: '25–30s', visual: `chamada final com ${short}`, fala: 'Você usaria isso? Comenta aqui.', acao_edicao: 'Texto com CTA na tela' },
+    ],
+    copy: `Você já conhecia ${short.slice(0, 60)}? Comenta aqui 👇`,
+    cta: 'Confira o produto no carrinho do vídeo, se ele estiver disponível para você.',
+    hashtags: ['#achadinhos', '#tiktokshop', '#publi', `#${tagBase}`, '#dica'],
+    audio_sugerido: 'Áudio em alta no TikTok, volume baixo.',
+    duracao_seg: 25,
+  };
+  const parsed = generatedPackageSchema.parse({ product: productSeed(product), content_kit: fallback });
+  return parsed.content_kit;
 }
 
 function productContext(product: Product) {

@@ -22,8 +22,8 @@ const perUser = new Map<string, DayCounters>();
 
 export const AI_QUOTA = {
   ASSISTANT_PER_DAY: 100,
-  KIT_PER_DAY: 20,
-  FORCE_NEW_COOLDOWN_MS: 60 * 1000,
+  KIT_PER_DAY: 30,
+  FORCE_NEW_COOLDOWN_MS: 30 * 1000,
 } as const;
 
 const forceNewCooldown = new Map<string, number>();
