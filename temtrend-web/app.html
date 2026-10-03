@@ -10,6 +10,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="./styles.css" />
+    <link rel="stylesheet" href="./dashboard-assistant.css" />
   </head>
   <body>
     <main id="login-view" class="auth-view">
@@ -58,12 +59,12 @@
 
     <main id="app-view" class="hidden">
       <header class="topbar">
-        <a class="app-logo" href="#products-section" aria-label="TemTrend, produtos"><span>T</span>TEMTREND</a>
-        <nav class="app-nav" aria-label="Navegação da plataforma"><a href="#products-section">Produtos</a><a href="#production-section">Minha produção</a></nav>
+        <a class="app-logo" href="#assistant-section" aria-label="TemTrend, início"><span>T</span>TEMTREND</a>
+        <nav class="app-nav" aria-label="Navegação da plataforma"><a href="#assistant-section">Descobrir</a><a href="#production-section">Minha produção</a></nav>
         <details class="user-menu"><summary aria-label="Abrir menu da conta"><span class="user-copy"><strong id="user-name">Minha conta</strong><small id="user-email"></small></span><span id="user-avatar" class="user-avatar">T</span></summary><div class="user-menu-panel"><button id="account-settings" type="button">Configurações</button><button id="logout" type="button">Sair</button></div></details>
       </header>
       <section class="page-wrap">
-        <div id="toast" class="toast hidden"></div>
+        <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
         <section id="onboarding" class="onboarding hidden" aria-labelledby="onboarding-title">
           <a class="auth-logo onboarding-logo" href="./index.html"><span>T</span>TEMTREND</a>
           <div class="onboarding-shell">
@@ -105,16 +106,14 @@
             <div class="card"><h2>Perfil</h2><form id="account-profile-form" class="stack"><label>Nome de usuário<input id="account-name" required minlength="2" maxlength="120" /></label><label>Email<input id="account-email" type="email" disabled /></label><button class="primary" type="submit">Salvar nome</button></form></div>
             <div class="card"><h2>Plano ativo</h2><div class="plan-card"><strong id="account-plan-name">Plano gratuito</strong><span id="account-plan-status" class="status">Ativo</span><p class="muted">Seu acesso atual não possui cobrança ou assinatura recorrente.</p></div></div>
             <div class="card"><h2>Preferências</h2><p id="account-preferences" class="muted">Seus temas e formatos de conteúdo.</p><button id="edit-preferences" class="ghost" type="button">Atualizar preferências</button></div>
-            <div class="card tiktok-account-card"><div class="tiktok-card-heading"><span class="tiktok-mark">♪</span><div><h2>TikTok</h2><p class="muted">Conecte sua conta para publicar seus vídeos sem sair da TemTrend.</p></div></div><div id="tiktok-account-state" class="tiktok-account-state"><span class="status">Verificando...</span></div><button id="connect-tiktok" class="primary" type="button">Conectar TikTok</button><button id="disconnect-tiktok" class="ghost hidden" type="button">Desconectar TikTok</button></div>
             <div class="card"><h2>Alterar senha</h2><form id="account-password-form" class="stack"><label>Nova senha<input id="account-new-password" type="password" required minlength="6" /></label><label>Confirmar nova senha<input id="account-confirm-password" type="password" required minlength="6" /></label><button class="primary" type="submit">Atualizar senha</button></form></div>
             <div class="card danger-card"><h2>Excluir conta</h2><p class="muted">Esta ação remove permanentemente sua conta, perfil e conteúdos salvos.</p><button id="delete-account" class="danger-button" type="button">Excluir minha conta</button></div>
           </div>
         </section>
 
         <section id="creator-content-view">
-          <section class="dashboard-hero" aria-labelledby="dashboard-title"><p id="dashboard-greeting" class="greeting"></p><p class="eyebrow">COMECE A VENDER</p><h1 id="dashboard-title">Encontre seu próximo produto.</h1><p>Escolha um produto e descubra exatamente o que gravar.</p><label class="product-search"><span aria-hidden="true">⌕</span><input id="product-search" type="search" placeholder="Buscar produtos..." aria-label="Buscar produtos" /></label></section>
-          <section id="products-section" class="dashboard-section"><div class="section-title"><div><h2>Produtos para você começar</h2><p>Escolha um produto para ver como criar seu vídeo.</p></div><button id="refresh" class="refresh-button" type="button" aria-label="Atualizar produtos">↻ Atualizar</button></div><div id="products" class="product-grid"></div></section>
-          <section id="production-section" class="dashboard-section production-section"><div class="section-title"><div><h2>Minha produção</h2><p>Acompanhe os produtos que você decidiu criar.</p></div></div><div id="my-content" class="production-grid"></div></section>
+          <section id="assistant-section" class="dashboard-hero assistant-hero" aria-labelledby="dashboard-title"><p id="dashboard-greeting" class="greeting"></p><p class="eyebrow">COMECE A VENDER</p><h1 id="dashboard-title">O que você quer vender?</h1><p>Busque produtos reais cadastrados no catálogo. A IA encontra opções e prepara informações e roteiros para você gravar.</p><form id="assistant-form" class="assistant-form"><label for="assistant-input">Descreva o produto ou tipo de conteúdo que você procura</label><div class="assistant-input-row"><input id="assistant-input" type="text" minlength="3" maxlength="500" required autocomplete="off" placeholder="Ex.: Produto útil para gravar um vídeo de organização" /><button id="assistant-submit" class="primary" type="submit">Buscar no catálogo →</button></div></form><div class="assistant-examples" role="group" aria-label="Exemplos de busca"><button type="button" data-message="Quero vender produtos para academia">Produto para academia</button><button type="button" data-message="Quero vender achadinhos úteis para a casa">Achadinho para casa</button><button type="button" data-message="Quero vender produtos de beleza">Produto de beleza</button><button type="button" data-message="Quero um produto fácil de demonstrar em vídeo">Fácil de demonstrar</button></div><div id="assistant-response" class="assistant-response hidden" aria-live="polite"><div class="assistant-message"><span class="assistant-mark" aria-hidden="true">T</span><p id="assistant-message"></p><button id="assistant-reset" class="text-button" type="button">Nova conversa</button></div><div id="assistant-products" class="product-grid"></div></div></section>
+          <section id="production-section" class="dashboard-section production-section"><div class="section-title"><div><h2>Minha produção</h2><p>Acompanhe seus conteúdos e veja o próximo passo.</p></div></div><div id="production-filters" class="production-filters" role="group" aria-label="Filtrar produção"><button class="active" data-filter="todos" type="button">Todos</button><button data-filter="em_producao" type="button">Em produção</button><button data-filter="gravado" type="button">Gravados</button><button data-filter="publicado" type="button">Publicados</button></div><div id="my-content" class="production-grid"></div></section>
         </section>
 
         <section id="product-detail-view" class="detail-view hidden" aria-live="polite">
@@ -130,30 +129,77 @@
         <section id="admin-view" class="hidden">
           <div class="hero-row"><div><p class="eyebrow">ADMIN</p><h1>Visão rápida do Beta</h1></div><button id="admin-refresh" class="ghost">Atualizar painel</button></div>
           <div id="metrics" class="metrics"></div>
-          <div class="card admin-form"><h2 id="product-form-title">Novo produto + Brand Kit</h2><p class="muted">Cadastre ou atualize o produto e todo o conteúdo associado em um único card.</p><form id="product-form" class="stack two-col"><input id="editing-product-id" type="hidden" /><input id="editing-kit-id" type="hidden" /><label>Nome do produto<input id="product-name" required /></label><label>Categoria<input id="product-category" required /></label><label class="wide">Descrição do produto<textarea id="product-description" required></textarea></label><label class="wide">Imagem URL<input id="product-image" type="url" required placeholder="https://..." /></label><label>Título do Brand Kit<input id="kit-title" required /></label><label>Formato<input id="kit-format" placeholder="reels, carrossel..." /></label><label>Plataforma<input id="kit-platform" placeholder="TikTok, Instagram..." /></label><label class="wide">Descrição do Brand Kit<textarea id="kit-description"></textarea></label><label class="wide">Hook<input id="kit-hook" /></label><label class="wide">Roteiro<textarea id="kit-script"></textarea></label><label class="wide">CTA<input id="kit-cta" /></label><div class="wide"><button id="product-submit" class="primary" type="submit">Criar produto completo</button> <button id="product-cancel-edit" class="ghost hidden" type="button">Cancelar edição</button></div></form></div>
+          <div class="card admin-form">
+            <h2 id="product-form-title">Novo produto</h2>
+            <p class="muted">Somente administradores cadastram produtos. A IA usa estas informações apenas para criar roteiros e orientações de gravação.</p>
+            <form id="product-form" class="stack two-col">
+              <input id="editing-product-id" type="hidden" />
+              <label>ID do produto<input id="product-external-id" required maxlength="80" /></label>
+              <label>Nome do produto<input id="product-name" required maxlength="500" /></label>
+              <label>Categoria<input id="product-category" required maxlength="200" /></label>
+              <label>Nome da loja<input id="product-store" maxlength="200" /></label>
+              <label>Preço exibido<input id="product-price-text" placeholder="R$ 39,90 ou R$ 39,90 - 49,90" /></label>
+              <label>Comissão (%)<input id="product-commission" type="number" min="0" max="100" step="0.01" /></label>
+              <label>Preço mínimo (R$)<input id="product-price-min" type="number" min="0" step="0.01" /></label>
+              <label>Preço máximo (R$)<input id="product-price-max" type="number" min="0" step="0.01" /></label>
+              <label>País/Região<input id="product-region" maxlength="20" value="BR" /></label>
+              <label>Status de origem<input id="product-source-status" maxlength="50" value="Disponível" /></label>
+              <label>Unidades vendidas no período<input id="product-sales-period" type="number" min="0" step="1" /></label>
+              <label>Crescimento das vendas (%)<input id="product-sales-growth" type="number" step="0.01" /></label>
+              <label>Total de unidades vendidas<input id="product-sales-total" type="number" min="0" step="1" /></label>
+              <label>Receita no período (R$)<input id="product-revenue-period" type="number" min="0" step="0.01" /></label>
+              <label>Receita total (R$)<input id="product-revenue-total" type="number" min="0" step="0.01" /></label>
+              <label>Total vendido pela loja<input id="product-store-sales-total" type="number" min="0" step="1" /></label>
+              <label>Data estimada de upload<input id="product-upload-date" type="datetime-local" /></label>
+              <label>Ranking<input id="product-ranking" type="number" min="1" step="1" /></label>
+              <label class="wide">Descrição confirmada do produto<textarea id="product-description" maxlength="4000" placeholder="Use apenas informações verificadas."></textarea></label>
+              <label class="wide">Imagem URL<input id="product-image" type="url" required placeholder="https://..." /></label>
+              <label class="wide">Link do produto no TikTok Shop<input id="product-tiktok-url" type="url" required placeholder="https://shop.tiktok.com/..." /></label>
+              <label class="wide">Link do produto no FastMoss<input id="product-fastmoss-url" type="url" placeholder="https://www.fastmoss.com/..." /></label>
+              <label class="wide">Link da loja no FastMoss<input id="product-store-fastmoss-url" type="url" placeholder="https://www.fastmoss.com/..." /></label>
+              <label>Fonte dos dados<input id="product-source" maxlength="255" value="Cadastro administrativo" /></label>
+              <label>Status no catálogo<select id="product-status"><option value="ativo">Ativo</option><option value="pausado">Pausado</option></select></label>
+              <div class="wide"><button id="product-submit" class="primary" type="submit">Adicionar produto</button> <button id="product-cancel-edit" class="ghost hidden" type="button">Cancelar edição</button></div>
+            </form>
+          </div>
           <div class="card admin-form"><div class="hero-row"><div><h2>Produtos ativos</h2><p class="muted">Gerencie o catálogo disponível para creators.</p></div><button id="admin-products-refresh" class="ghost" type="button">Atualizar</button></div><div id="admin-products" class="admin-list"></div></div>
           <div class="card admin-form"><div class="hero-row"><div><h2>Creators cadastrados</h2><p class="muted">Acompanhe e modere os creators da plataforma.</p></div><button id="admin-creators-refresh" class="ghost" type="button">Atualizar</button></div><div id="admin-creators" class="admin-list"></div></div>
         </section>
       </section>
     </main>
-    <dialog id="tiktok-publish-dialog" class="tiktok-dialog">
-      <form method="dialog"><button class="dialog-close" value="cancel" aria-label="Fechar">×</button></form>
-      <div id="tiktok-upload-step">
-        <p class="eyebrow">PUBLICAR NO TIKTOK · EM BREVE</p><h2>Envio de vídeo em breve</h2><p class="muted">Estamos preparando a publicação direta no TikTok.</p>
-        <label class="video-drop" for="tiktok-video"><strong>Escolher vídeo</strong><span id="tiktok-file-name">Nenhum arquivo selecionado</span><input id="tiktok-video" type="file" accept="video/mp4,video/quicktime,video/webm,.mp4,.mov,.webm" /></label>
-        <button id="upload-tiktok-video" class="primary" type="button">Preparar vídeo →</button>
-      </div>
-      <div id="tiktok-preview-step" class="hidden">
-        <p class="eyebrow">REVISE ANTES DE PUBLICAR</p><h2>Seu vídeo está pronto</h2>
-        <div id="tiktok-preview-context" class="tiktok-preview-context"></div>
-        <video id="tiktok-video-preview" controls playsinline></video>
-        <label>Legenda<textarea id="tiktok-caption" maxlength="2200" rows="6"></textarea><small id="tiktok-caption-count">0 / 2200</small></label>
-        <label>Privacidade<select id="tiktok-privacy"></select><small id="tiktok-privacy-note"></small></label>
-        <div class="tiktok-options"><label><input id="tiktok-comments" type="checkbox" /> Desativar comentários</label><label><input id="tiktok-duet" type="checkbox" /> Desativar Dueto</label><label><input id="tiktok-stitch" type="checkbox" /> Desativar Stitch</label></div>
-        <button id="publish-tiktok-video" class="primary" type="button" disabled>Publicar no TikTok · Em breve</button>
-        <button id="retry-tiktok-video" class="ghost hidden" type="button">Tentar novamente</button>
-      </div>
-      <div id="tiktok-progress" class="tiktok-progress hidden" role="status" aria-live="polite"><span class="spinner"></span><strong id="tiktok-progress-title">Preparando vídeo...</strong><p id="tiktok-progress-copy">Isso pode levar alguns instantes.</p></div>
+    <dialog id="content-kit-dialog" class="publication-dialog content-kit-dialog">
+      <form id="content-kit-form" class="stack">
+        <button id="close-content-kit-dialog" class="dialog-close" type="button" aria-label="Fechar">×</button>
+        <p class="eyebrow">SEU CONTENT KIT</p>
+        <h2>Como você quer gravar?</h2>
+        <p class="muted">Descreva o tom, a duração, se vai aparecer, o estilo e qualquer detalhe importante. Este roteiro será exclusivo para a sua conta.</p>
+        <input id="content-kit-product-id" type="hidden" />
+        <input id="content-kit-mode" type="hidden" />
+        <input id="content-kit-force-new" type="hidden" value="false" />
+        <div class="briefing-suggestions" aria-label="Sugestões para o briefing">
+          <button type="button" data-briefing="Tom mais agressivo e direto">Mais agressivo</button>
+          <button type="button" data-briefing="Vídeo curto, com no máximo 15 segundos">Vídeo de 15s</button>
+          <button type="button" data-briefing="Vídeo sem aparecer, mostrando somente o produto e as mãos">Sem aparecer</button>
+          <button type="button" data-briefing="Estilo UGC natural, como uma recomendação pessoal">UGC natural</button>
+          <button type="button" data-briefing="Começar mostrando o problema e depois a solução">Problema e solução</button>
+        </div>
+        <label>Orientações para a IA
+          <textarea id="content-kit-briefing" maxlength="1500" rows="6" placeholder="Ex.: Quero um vídeo curto de 15 segundos, mais agressivo, sem aparecer e com foco no antes e depois."></textarea>
+        </label>
+        <small id="content-kit-character-count" class="muted">0 de 1500 caracteres</small>
+        <p id="content-kit-error" class="form-message error" role="alert"></p>
+        <button class="primary" type="submit">Gerar meu Content Kit →</button>
+      </form>
+    </dialog>
+    <dialog id="publication-dialog" class="publication-dialog">
+      <form id="publication-form" class="stack">
+        <button id="close-publication-dialog" class="dialog-close" type="button" aria-label="Fechar">×</button>
+        <p class="eyebrow">PUBLICAÇÃO</p><h2>Seu vídeo já foi publicado?</h2><p class="muted">Publique fora da TemTrend e cole o link do TikTok aqui, se quiser. Também dá para marcar como publicado sem adicionar o link agora.</p>
+        <input id="publication-content-id" type="hidden" />
+        <label>Link do TikTok (opcional)<input id="publication-url" type="url" inputmode="url" placeholder="https://www.tiktok.com/@usuario/video/..." /></label>
+        <p id="publication-error" class="form-message error" role="alert"></p>
+        <button class="primary" type="submit">Salvar publicação →</button>
+      </form>
     </dialog>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js" integrity="sha384-Rj26LVGvoeRVR6+mwQmFfcR3QOBEwT+ZmuCWpuiqeTzJpCs0ER4ITAWGb4Hiy3Ok" crossorigin="anonymous"></script>
     <script src="./app.js"></script>

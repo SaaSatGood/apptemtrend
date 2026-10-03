@@ -1,87 +1,141 @@
 import { findCreatorByUserId } from '../creators/creator.repository.js';
 import { findContentKitById } from '../content-kits/content-kit.repository.js';
 import { findProductById } from '../products/product.repository.js';
+import { ensureContentKit } from '../products/product.service.js';
 import {
   listCreatorContent,
   findCreatorContentById,
+  findCreatorContentWithRelationsById,
   findByCreatorAndKit,
   findByCreatorAndProduct,
+  findAnyByCreatorAndProduct,
   createCreatorContent,
   updateCreatorContent,
 } from './creator-content.repository.js';
 import { Errors } from '../../types/index.js';
 import type { UpdateCreatorContentInput } from './creator-content.schema.js';
+import { CONTENT_STATUS, PRODUCT_STATUS } from '../../config/constants.js';
 
-export async function getCreatorContent(userId: string) {
+const NEXT_STATUS: Record<string, string> = {
+  [CONTENT_STATUS.SALVO]: CONTENT_STATUS.EM_PRODUCAO,
+  [CONTENT_STATUS.EM_PRODUCAO]: CONTENT_STATUS.GRAVADO,
+  [CONTENT_STATUS.GRAVADO]: CONTENT_STATUS.PUBLICADO,
+};
+
+async function requireCreator(userId: string) {
   const creator = await findCreatorByUserId(userId);
-  if (!creator) {
-    throw Errors.NOT_FOUND('Creator');
-  }
-
-  return listCreatorContent(creator.id);
+  if (!creator) throw Errors.NOT_FOUND('Creator');
+  return creator;
 }
 
-export async function saveOpportunity(userId: string, contentKitId: string) {
-  // 1. Find creator
-  const creator = await findCreatorByUserId(userId);
-  if (!creator) {
-    throw Errors.NOT_FOUND('Creator');
-  }
-
-  // 2. Find content kit
-  const contentKit = await findContentKitById(contentKitId);
-  if (!contentKit) {
-    throw Errors.NOT_FOUND('Content Kit');
-  }
-
-  // 3. Verify product is active
-  const product = await findProductById(contentKit.product_id);
-  if (!product || product.status === 'pausado') {
-    throw Errors.BAD_REQUEST('Produto não está ativo.');
-  }
-
-  // 4. Check for duplicate
-  const existing = await findByCreatorAndKit(creator.id, contentKitId);
-  if (existing) {
-    throw Errors.CONFLICT('Oportunidade já salva para este Content Kit.');
-  }
-
-  const productProduction = await findByCreatorAndProduct(creator.id, contentKit.product_id);
-  if (productProduction) {
-    if (!productProduction.content_kit_id) {
-      return updateCreatorContent(productProduction.id, { content_kit_id: contentKitId });
-    }
-    throw Errors.CONFLICT('Este produto já está na sua produção.');
-  }
-
-  // 5. Create with status 'salvo'
-  return createCreatorContent({
-    creator_id: creator.id,
-    content_kit_id: contentKitId,
-    status: 'salvo',
-  });
+async function requireOwnedProduction(userId: string, contentId: string) {
+  const creator = await requireCreator(userId);
+  const content = await findCreatorContentById(contentId);
+  if (!content) throw Errors.NOT_FOUND('Produção');
+  if (content.creator_id !== creator.id) throw Errors.FORBIDDEN;
+  return { creator, content };
 }
 
-export async function saveProduct(userId: string, productId: string) {
-  const creator = await findCreatorByUserId(userId);
-  if (!creator) {
-    throw Errors.NOT_FOUND('Creator');
-  }
+export async function getCreatorContent(userId: string, options?: { limit?: number; offset?: number }) {
+  const creator = await requireCreator(userId);
+  // Compat: sem paginação repassa 1 arg (coberto por teste).
+  if (!options) return listCreatorContent(creator.id);
+  return listCreatorContent(creator.id, options);
+}
 
-  const product = await findProductById(productId);
-  if (!product || product.status === 'pausado') {
-    throw Errors.BAD_REQUEST('Produto não está ativo.');
-  }
+export async function getCreatorContentById(userId: string, contentId: string) {
+  const { creator } = await requireOwnedProduction(userId, contentId);
+  const content = await findCreatorContentWithRelationsById(contentId);
+  if (!content || content.creator_id !== creator.id) throw Errors.NOT_FOUND('Produção');
+  return content;
+}
 
-  const existing = await findByCreatorAndProduct(creator.id, productId);
-  if (existing) {
-    throw Errors.CONFLICT('Este produto já está na sua produção.');
+export async function startProduction(userId: string, productId: string, briefing?: string) {
+  const creator = await requireCreator(userId);
+  const [product, existing] = await Promise.all([
+    findProductById(productId),
+    findAnyByCreatorAndProduct(creator.id, productId),
+  ]);
+  if (!product || product.status !== PRODUCT_STATUS.ATIVO) throw Errors.NOT_FOUND('Produto');
+
+  if (existing?.content_kit_id) return existing;
+
+  const { content_kit: contentKit } = await ensureContentKit(productId, creator.id, briefing);
+  const current = existing ?? await findAnyByCreatorAndProduct(creator.id, productId);
+
+  if (current) {
+    if (current.content_kit_id) return current;
+    return updateCreatorContent(current.id, { content_kit_id: contentKit.id });
   }
 
   return createCreatorContent({
     creator_id: creator.id,
     product_id: productId,
-    status: 'salvo',
+    content_kit_id: contentKit.id,
+    status: CONTENT_STATUS.SALVO,
+  });
+}
+
+export async function selectContentKit(userId: string, contentId: string, contentKitId: string) {
+  const { creator, content } = await requireOwnedProduction(userId, contentId);
+  const kit = await findContentKitById(contentKitId);
+  if (!kit || kit.product_id !== content.product_id || kit.creator_id !== creator.id) {
+    throw Errors.BAD_REQUEST('O Content Kit não pertence a esta produção.');
+  }
+  if (content.status !== CONTENT_STATUS.SALVO && content.content_kit_id !== contentKitId) {
+    throw Errors.CONFLICT('Esta produção já possui um Content Kit escolhido.');
+  }
+  if (content.content_kit_id === contentKitId && content.status !== CONTENT_STATUS.SALVO) return content;
+  return updateCreatorContent(contentId, {
+    content_kit_id: contentKitId,
+    status: CONTENT_STATUS.EM_PRODUCAO,
+  });
+}
+
+export async function saveOpportunity(userId: string, contentKitId: string) {
+  // Creator + kit em paralelo; produto e duplicatas depois.
+  const creator = await findCreatorByUserId(userId);
+  if (!creator) {
+    throw Errors.NOT_FOUND('Creator');
+  }
+
+  const contentKit = await findContentKitById(contentKitId);
+  if (!contentKit || contentKit.creator_id !== creator.id) {
+    throw Errors.NOT_FOUND('Content Kit');
+  }
+
+  const [product, existing, productProduction] = await Promise.all([
+    findProductById(contentKit.product_id),
+    findByCreatorAndKit(creator.id, contentKitId),
+    findByCreatorAndProduct(creator.id, contentKit.product_id),
+  ]);
+  if (!product || product.status === 'pausado') {
+    throw Errors.BAD_REQUEST('Produto não está ativo.');
+  }
+
+  // 4. Check for duplicate
+  if (existing) {
+    return existing.status === CONTENT_STATUS.SALVO
+      ? updateCreatorContent(existing.id, { status: CONTENT_STATUS.EM_PRODUCAO })
+      : existing;
+  }
+
+  if (productProduction) {
+    if (!productProduction.content_kit_id) {
+      return updateCreatorContent(productProduction.id, {
+        content_kit_id: contentKitId,
+        status: CONTENT_STATUS.EM_PRODUCAO,
+      });
+    }
+    return productProduction;
+  }
+
+  // Legacy shortcut: choosing a Content Kit means production has started.
+  return createCreatorContent({
+    creator_id: creator.id,
+    product_id: contentKit.product_id,
+    content_kit_id: contentKitId,
+    status: CONTENT_STATUS.EM_PRODUCAO,
   });
 }
 
@@ -90,23 +144,17 @@ export async function updateCreatorContentStatus(
   contentId: string,
   data: UpdateCreatorContentInput,
 ) {
-  // 1. Find creator
-  const creator = await findCreatorByUserId(userId);
-  if (!creator) {
-    throw Errors.NOT_FOUND('Creator');
+  const { content } = await requireOwnedProduction(userId, contentId);
+  if (data.status && data.status !== content.status) {
+    if (NEXT_STATUS[content.status] !== data.status) {
+      throw Errors.CONFLICT('Transição de status inválida para esta produção.');
+    }
+    if (data.status === CONTENT_STATUS.EM_PRODUCAO && !content.content_kit_id) {
+      throw Errors.BAD_REQUEST('Escolha um Content Kit antes de produzir o vídeo.');
+    }
   }
-
-  // 2. Find creator_content
-  const content = await findCreatorContentById(contentId);
-  if (!content) {
-    throw Errors.NOT_FOUND('Creator Content');
+  if (data.published_url !== undefined && data.status !== CONTENT_STATUS.PUBLICADO && content.status !== CONTENT_STATUS.PUBLICADO) {
+    throw Errors.BAD_REQUEST('O link só pode ser salvo ao marcar a produção como publicada.');
   }
-
-  // 3. Verify ownership
-  if (content.creator_id !== creator.id) {
-    throw Errors.FORBIDDEN;
-  }
-
-  // 4. Update — system is not rigid about transitions
   return updateCreatorContent(contentId, data);
 }

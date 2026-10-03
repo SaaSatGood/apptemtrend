@@ -20,6 +20,18 @@ describe('TemTrend Beta API', () => {
     await app.close();
   });
 
+  it('requires authentication for assistant product discovery', async () => {
+    const app = buildApp();
+    const response = await app.inject({
+      method: 'POST',
+      url: '/assistant/products',
+      payload: { message: 'Quero vender produtos para academia' },
+    });
+    expect(response.statusCode).toBe(401);
+    expect(response.json().error.code).toBe('UNAUTHORIZED');
+    await app.close();
+  });
+
   it('rejects financial product fields', () => {
     const result = createProductSchema.safeParse({
       nome: 'Produto',
@@ -33,6 +45,22 @@ describe('TemTrend Beta API', () => {
   it('accepts only official production statuses', () => {
     expect(updateCreatorContentSchema.safeParse({ status: 'publicado' }).success).toBe(true);
     expect(updateCreatorContentSchema.safeParse({ status: 'cancelado' }).success).toBe(false);
+  });
+
+  it('requires authentication for production endpoints', async () => {
+    const app = buildApp();
+    const getResponse = await app.inject({ method: 'GET', url: '/creator-content' });
+    const postResponse = await app.inject({ method: 'POST', url: '/creator-content', payload: { content_kit_id: '33333333-3333-4333-8333-333333333333' } });
+    expect(getResponse.statusCode).toBe(401);
+    expect(postResponse.statusCode).toBe(401);
+    await app.close();
+  });
+
+  it('does not expose removed TikTok integration routes', async () => {
+    const app = buildApp();
+    const response = await app.inject({ method: 'GET', url: '/tiktok/connect' });
+    expect(response.statusCode).toBe(404);
+    await app.close();
   });
 
   it('returns a standard error for unknown routes', async () => {

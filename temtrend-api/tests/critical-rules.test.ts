@@ -8,8 +8,10 @@ vi.mock('../src/modules/creators/creator.repository.js', () => ({
 vi.mock('../src/modules/creator-content/creator-content.repository.js', () => ({
   listCreatorContent: vi.fn(),
   findCreatorContentById: vi.fn(),
+  findCreatorContentWithRelationsById: vi.fn(),
   findByCreatorAndKit: vi.fn(),
   findByCreatorAndProduct: vi.fn(),
+  findAnyByCreatorAndProduct: vi.fn(),
   createCreatorContent: vi.fn(),
   updateCreatorContent: vi.fn(),
 }));
@@ -19,7 +21,9 @@ vi.mock('../src/modules/content-kits/content-kit.repository.js', () => ({
 }));
 vi.mock('../src/modules/products/product.repository.js', () => ({
   findProductById: vi.fn(),
+  findProductByExternalId: vi.fn(),
   listActiveProducts: vi.fn(),
+  createProductWithContentKit: vi.fn(),
 }));
 
 import * as creatorRepo from '../src/modules/creators/creator.repository.js';
@@ -28,6 +32,7 @@ import * as kitRepo from '../src/modules/content-kits/content-kit.repository.js'
 import * as productRepo from '../src/modules/products/product.repository.js';
 import * as creatorContentService from '../src/modules/creator-content/creator-content.service.js';
 import * as productService from '../src/modules/products/product.service.js';
+import * as assistantService from '../src/modules/assistant/assistant.service.js';
 import { createProductSchema } from '../src/modules/products/product.schema.js';
 import { createContentKitSchema } from '../src/modules/content-kits/content-kit.schema.js';
 import { createCreatorContentSchema, updateCreatorContentSchema } from '../src/modules/creator-content/creator-content.schema.js';
@@ -37,7 +42,11 @@ import { RATE_LIMITS } from '../src/config/constants.js';
 
 const creatorA = { id: '11111111-1111-4111-8111-111111111111', user_id: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa' };
 const creatorB = { id: '22222222-2222-4222-8222-222222222222', user_id: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb' };
-const kit = { id: '33333333-3333-4333-8333-333333333333', product_id: '44444444-4444-4444-8444-444444444444' };
+const kit = {
+  id: '33333333-3333-4333-8333-333333333333',
+  product_id: '44444444-4444-4444-8444-444444444444',
+  creator_id: creatorA.id,
+};
 
 function replyMock() {
   const reply: any = { sent: false };
@@ -81,8 +90,20 @@ describe('critical Beta rules', () => {
   });
 
   it('validates administrative product creation and editing fields', () => {
-    expect(createProductSchema.safeParse({ nome: 'Produto', descricao: 'Descrição', categoria: 'Beleza', imagem_url: 'https://example.com/a.png', status: 'ativo' }).success).toBe(true);
-    expect(createProductSchema.safeParse({ nome: 'Produto', imagem_url: 'https://example.com/a.png', preco: 99 }).success).toBe(false);
+    expect(createProductSchema.safeParse({
+      produto_externo_id: '1736030542580909455',
+      nome: 'Produto',
+      descricao: 'Descrição confirmada',
+      categoria: 'Beleza',
+      imagem_url: 'https://example.com/a.png',
+      preco_texto: 'R$ 39,90',
+      preco_min_brl: 39.90,
+      comissao_percentual: 12,
+      tiktok_shop_url: 'https://shop.tiktok.com/view/product/1736030542580909455',
+      status: 'ativo',
+    }).success).toBe(true);
+    expect(createProductSchema.safeParse({ nome: 'Produto', imagem_url: 'https://example.com/a.png', campo_inventado: 99 }).success).toBe(false);
+    expect(createProductSchema.safeParse({ nome: 'Produto', imagem_url: 'https://example.com/a.png', comissao_percentual: 120 }).success).toBe(false);
     expect(createProductSchema.partial().safeParse({ status: 'pausado', destaque: true, ordem_destaque: 2 }).success).toBe(true);
   });
 
@@ -110,30 +131,145 @@ describe('critical Beta rules', () => {
       .resolves.toMatchObject({ product: { status: 'pausado' } });
   });
 
+  it('returns only Content Kits owned by the authenticated creator', async () => {
+    vi.mocked(productRepo.findProductById).mockResolvedValue({ id: kit.product_id, status: 'ativo' } as any);
+    vi.mocked(kitRepo.listContentKitsByProductId).mockResolvedValue([kit] as any);
+
+    await productService.getProductById(kit.product_id, { creatorId: creatorA.id });
+
+    expect(kitRepo.listContentKitsByProductId).toHaveBeenCalledWith(kit.product_id, creatorA.id);
+  });
+
   it('creates creator_content with creator identity from the JWT and blocks another owner', async () => {
     vi.mocked(creatorRepo.findCreatorByUserId).mockResolvedValue(creatorA as any);
     vi.mocked(kitRepo.findContentKitById).mockResolvedValue(kit as any);
     vi.mocked(productRepo.findProductById).mockResolvedValue({ id: kit.product_id, status: 'ativo' } as any);
     vi.mocked(creatorContentRepo.findByCreatorAndKit).mockResolvedValue(null);
     vi.mocked(creatorContentRepo.findByCreatorAndProduct).mockResolvedValue(null);
-    vi.mocked(creatorContentRepo.createCreatorContent).mockResolvedValue({ creator_id: creatorA.id, content_kit_id: kit.id, status: 'salvo' } as any);
-    await creatorContentService.saveOpportunity(creatorA.user_id, kit.id);
-    expect(creatorContentRepo.createCreatorContent).toHaveBeenCalledWith({ creator_id: creatorA.id, content_kit_id: kit.id, status: 'salvo' });
-    expect(updateCreatorContentSchema.safeParse({ status: 'publicado', published_url: 'https://example.com/post' }).success).toBe(true);
+    vi.mocked(creatorContentRepo.createCreatorContent).mockResolvedValue({ creator_id: creatorA.id, product_id: kit.product_id, content_kit_id: kit.id, status: 'em_producao' } as any);
+    const created = await creatorContentService.saveOpportunity(creatorA.user_id, kit.id);
+    expect(creatorContentRepo.createCreatorContent).toHaveBeenCalledWith({ creator_id: creatorA.id, product_id: kit.product_id, content_kit_id: kit.id, status: 'em_producao' });
+    expect(created.creator_id).toBe(creatorA.id);
+    expect(createCreatorContentSchema.safeParse({ content_kit_id: kit.id, creator_id: creatorB.id }).success).toBe(false);
   });
 
-  it('lets the authenticated creator add an active product directly to production', async () => {
+  it('starts a production from an active real product', async () => {
     vi.mocked(creatorRepo.findCreatorByUserId).mockResolvedValue(creatorA as any);
     vi.mocked(productRepo.findProductById).mockResolvedValue({ id: kit.product_id, status: 'ativo' } as any);
-    vi.mocked(creatorContentRepo.findByCreatorAndProduct).mockResolvedValue(null);
-    vi.mocked(creatorContentRepo.createCreatorContent).mockResolvedValue({ creator_id: creatorA.id, product_id: kit.product_id, status: 'salvo' } as any);
+    vi.mocked(kitRepo.listContentKitsByProductId).mockResolvedValue([kit] as any);
+    vi.mocked(creatorContentRepo.findAnyByCreatorAndProduct).mockResolvedValue(null);
+    vi.mocked(creatorContentRepo.createCreatorContent).mockResolvedValue({ id: 'content', creator_id: creatorA.id, product_id: kit.product_id, content_kit_id: kit.id, status: 'salvo' } as any);
+    await creatorContentService.startProduction(creatorA.user_id, kit.product_id);
+    expect(creatorContentRepo.createCreatorContent).toHaveBeenCalledWith({ creator_id: creatorA.id, product_id: kit.product_id, content_kit_id: kit.id, status: 'salvo' });
+  });
 
-    await creatorContentService.saveProduct(creatorA.user_id, kit.product_id);
+  it('adds the Content Kit when an older saved product does not have one', async () => {
+    vi.mocked(creatorRepo.findCreatorByUserId).mockResolvedValue(creatorA as any);
+    vi.mocked(productRepo.findProductById).mockResolvedValue({ id: kit.product_id, status: 'ativo' } as any);
+    vi.mocked(kitRepo.listContentKitsByProductId).mockResolvedValue([kit] as any);
+    vi.mocked(creatorContentRepo.findAnyByCreatorAndProduct).mockResolvedValue({
+      id: 'content', creator_id: creatorA.id, product_id: kit.product_id, content_kit_id: null, status: 'salvo',
+    } as any);
+    vi.mocked(creatorContentRepo.updateCreatorContent).mockResolvedValue({
+      id: 'content', creator_id: creatorA.id, product_id: kit.product_id, content_kit_id: kit.id, status: 'salvo',
+    } as any);
 
-    expect(creatorContentRepo.createCreatorContent).toHaveBeenCalledWith({ creator_id: creatorA.id, product_id: kit.product_id, status: 'salvo' });
-    expect(createCreatorContentSchema.safeParse({ product_id: kit.product_id }).success).toBe(true);
-    expect(createCreatorContentSchema.safeParse({ content_kit_id: kit.id }).success).toBe(true);
-    expect(createCreatorContentSchema.safeParse({ product_id: kit.product_id, content_kit_id: kit.id }).success).toBe(false);
+    await creatorContentService.startProduction(creatorA.user_id, kit.product_id);
+
+    expect(creatorContentRepo.updateCreatorContent).toHaveBeenCalledWith('content', { content_kit_id: kit.id });
+    expect(creatorContentRepo.createCreatorContent).not.toHaveBeenCalled();
+  });
+
+  it('selects only a Content Kit that belongs to the owned production', async () => {
+    vi.mocked(creatorRepo.findCreatorByUserId).mockResolvedValue(creatorA as any);
+    vi.mocked(creatorContentRepo.findCreatorContentById).mockResolvedValue({ id: 'content', creator_id: creatorA.id, product_id: kit.product_id, status: 'salvo', content_kit_id: null } as any);
+    vi.mocked(kitRepo.findContentKitById).mockResolvedValue(kit as any);
+    vi.mocked(creatorContentRepo.updateCreatorContent).mockResolvedValue({ id: 'content', status: 'em_producao', content_kit_id: kit.id } as any);
+    await creatorContentService.selectContentKit(creatorA.user_id, 'content', kit.id);
+    expect(creatorContentRepo.updateCreatorContent).toHaveBeenCalledWith('content', { content_kit_id: kit.id, status: 'em_producao' });
+  });
+
+  it('rejects a Content Kit owned by another creator', async () => {
+    vi.mocked(creatorRepo.findCreatorByUserId).mockResolvedValue(creatorA as any);
+    vi.mocked(creatorContentRepo.findCreatorContentById).mockResolvedValue({
+      id: 'content', creator_id: creatorA.id, product_id: kit.product_id, status: 'salvo', content_kit_id: null,
+    } as any);
+    vi.mocked(kitRepo.findContentKitById).mockResolvedValue({ ...kit, creator_id: creatorB.id } as any);
+
+    await expect(creatorContentService.selectContentKit(creatorA.user_id, 'content', kit.id))
+      .rejects.toMatchObject({ code: 'BAD_REQUEST', statusCode: 400 });
+    expect(creatorContentRepo.updateCreatorContent).not.toHaveBeenCalled();
+  });
+
+  it('reuses the existing production and normalizes a legacy saved Content Kit', async () => {
+    vi.mocked(creatorRepo.findCreatorByUserId).mockResolvedValue(creatorA as any);
+    vi.mocked(kitRepo.findContentKitById).mockResolvedValue(kit as any);
+    vi.mocked(productRepo.findProductById).mockResolvedValue({ id: kit.product_id, status: 'ativo' } as any);
+    const existing = { id: '55555555-5555-4555-8555-555555555555', creator_id: creatorA.id, content_kit_id: kit.id, status: 'salvo' };
+    vi.mocked(creatorContentRepo.findByCreatorAndKit).mockResolvedValue(existing as any);
+    const normalized = { ...existing, status: 'em_producao' };
+    vi.mocked(creatorContentRepo.updateCreatorContent).mockResolvedValue(normalized as any);
+    await expect(creatorContentService.saveOpportunity(creatorA.user_id, kit.id)).resolves.toEqual(normalized);
+    expect(creatorContentRepo.updateCreatorContent).toHaveBeenCalledWith(existing.id, { status: 'em_producao' });
+    expect(creatorContentRepo.createCreatorContent).not.toHaveBeenCalled();
+  });
+
+  it('returns a not found error for an unknown Content Kit', async () => {
+    vi.mocked(creatorRepo.findCreatorByUserId).mockResolvedValue(creatorA as any);
+    vi.mocked(kitRepo.findContentKitById).mockResolvedValue(null);
+    await expect(creatorContentService.saveOpportunity(creatorA.user_id, kit.id))
+      .rejects.toMatchObject({ code: 'RESOURCE_NOT_FOUND', statusCode: 404 });
+  });
+
+  it('allows status, notes and a TikTok publication URL but blocks immutable fields', () => {
+    for (const status of ['salvo', 'em_producao', 'gravado', 'publicado']) {
+      expect(updateCreatorContentSchema.safeParse({ status }).success).toBe(true);
+    }
+    expect(updateCreatorContentSchema.safeParse({ published_url: 'https://www.tiktok.com/@creator/video/123' }).success).toBe(true);
+    expect(updateCreatorContentSchema.safeParse({ published_url: 'https://example.com/video' }).success).toBe(false);
+    expect(updateCreatorContentSchema.safeParse({ creator_id: creatorB.id }).success).toBe(false);
+    expect(updateCreatorContentSchema.safeParse({ content_kit_id: kit.id }).success).toBe(false);
+    expect(updateCreatorContentSchema.safeParse({}).success).toBe(false);
+  });
+
+  it('updates only a production owned by the authenticated creator', async () => {
+    vi.mocked(creatorRepo.findCreatorByUserId).mockResolvedValue(creatorA as any);
+    vi.mocked(creatorContentRepo.findCreatorContentById).mockResolvedValue({ id: 'content', creator_id: creatorA.id, status: 'em_producao', content_kit_id: kit.id } as any);
+    vi.mocked(creatorContentRepo.updateCreatorContent).mockResolvedValue({ id: 'content', creator_id: creatorA.id, status: 'gravado' } as any);
+    await creatorContentService.updateCreatorContentStatus(creatorA.user_id, 'content', { status: 'gravado' });
+    expect(creatorContentRepo.updateCreatorContent).toHaveBeenCalledWith('content', { status: 'gravado' });
+  });
+
+  it('rejects skipped or backwards production transitions', async () => {
+    vi.mocked(creatorRepo.findCreatorByUserId).mockResolvedValue(creatorA as any);
+    vi.mocked(creatorContentRepo.findCreatorContentById).mockResolvedValue({ id: 'content', creator_id: creatorA.id, status: 'salvo', content_kit_id: null } as any);
+    await expect(creatorContentService.updateCreatorContentStatus(creatorA.user_id, 'content', { status: 'gravado' }))
+      .rejects.toMatchObject({ code: 'CONFLICT', statusCode: 409 });
+  });
+
+  it('returns only real active catalog products from the assistant', async () => {
+    const catalog = [
+      { id: '1', nome: 'Faixa elástica', categoria: 'Fitness', descricao: 'Treino em casa', imagem_url: 'https://example.com/faixa.jpg', destaque: false },
+      { id: '2', nome: 'Organizador', categoria: 'Casa', descricao: 'Organização simples', imagem_url: 'https://example.com/organizador.jpg', destaque: true },
+    ];
+    vi.mocked(productRepo.listActiveProducts).mockResolvedValue(catalog as any);
+    const result = await assistantService.findProductsForMessage({ message: 'Quero vender produtos para academia' });
+    expect(result.products).toHaveLength(1);
+    expect(result.products[0]?.id).toBe('1');
+    expect(result.products.every((product) => catalog.some((item) => item.id === product.id))).toBe(true);
+  });
+
+  it('recognizes clear product requests for the generation fallback', () => {
+    expect(assistantService.isProductCatalogRequest('Quero produtos para carro')).toBe(true);
+    expect(assistantService.isProductCatalogRequest('Crie uma ideia para organizar o carro')).toBe(true);
+    expect(assistantService.isProductCatalogRequest('Qual é a capital da França?')).toBe(false);
+  });
+
+  it('lists only productions scoped to the creator resolved from the JWT', async () => {
+    vi.mocked(creatorRepo.findCreatorByUserId).mockResolvedValue(creatorA as any);
+    vi.mocked(creatorContentRepo.listCreatorContent).mockResolvedValue([]);
+    await creatorContentService.getCreatorContent(creatorA.user_id);
+    expect(creatorContentRepo.listCreatorContent).toHaveBeenCalledWith(creatorA.id);
   });
 
   it('defines the requested rate limits', () => {

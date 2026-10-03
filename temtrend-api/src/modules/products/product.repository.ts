@@ -18,9 +18,27 @@ export async function findProductById(id: string): Promise<Product | null> {
   return data;
 }
 
+export async function findProductByExternalId(externalId: string): Promise<Product | null> {
+  const { data, error } = await supabaseAdmin
+    .from('products')
+    .select('*')
+    .eq('produto_externo_id', externalId)
+    .maybeSingle();
+
+  if (error) {
+    logger.error({ err: error }, 'Error finding product by external ID');
+    throw error;
+  }
+
+  return data;
+}
+
 export async function listActiveProducts(filters?: {
   categoria?: string;
   destaque?: boolean;
+  limit?: number;
+  offset?: number;
+  onlySearchable?: boolean;
 }): Promise<Product[]> {
   let query = supabaseAdmin
     .from('products')
@@ -33,6 +51,16 @@ export async function listActiveProducts(filters?: {
 
   if (filters?.destaque !== undefined) {
     query = query.eq('destaque', filters.destaque);
+  }
+
+  // Itens legados sem imagem não entram em recomendação.
+  if (filters?.onlySearchable) {
+    query = query.not('imagem_url', 'is', null).neq('imagem_url', '');
+  }
+
+  if (filters?.limit !== undefined) {
+    const from = filters.offset ?? 0;
+    query = query.range(from, from + filters.limit - 1);
   }
 
   const { data, error } = await query

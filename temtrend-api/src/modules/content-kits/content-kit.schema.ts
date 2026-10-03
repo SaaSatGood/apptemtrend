@@ -7,7 +7,7 @@ export const createContentKitSchema = z.object({
   plataforma: z.string().max(100).optional(),
   nivel_dificuldade: z.string().max(50).optional(),
   hook: z.string().max(500).optional(),
-  roteiro: z.string().max(5000).optional(),
+  roteiro: z.string().max(10000).optional(),
   cenas: z.union([
     z.string().max(10000),
     z.array(z.unknown()).max(100),

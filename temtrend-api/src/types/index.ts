@@ -42,10 +42,30 @@ export interface Creator {
 
 export interface Product {
   id: string;
+  produto_externo_id: string | null;
   nome: string;
   descricao: string | null;
   categoria: string | null;
   imagem_url: string | null;
+  loja_nome: string | null;
+  preco_texto: string | null;
+  preco_min_brl: number | null;
+  preco_max_brl: number | null;
+  pais_regiao: string | null;
+  comissao_percentual: number | null;
+  unidades_vendidas_periodo: number | null;
+  crescimento_vendas_percentual: number | null;
+  unidades_vendidas_total: number | null;
+  receita_periodo_brl: number | null;
+  receita_total_brl: number | null;
+  data_estimada_upload: string | null;
+  unidades_vendidas_total_loja: number | null;
+  fastmoss_produto_url: string | null;
+  tiktok_shop_url: string | null;
+  fastmoss_loja_url: string | null;
+  status_origem: string | null;
+  fonte_dados: string | null;
+  ranking_origem: number | null;
   status: string;
   destaque: boolean;
   ordem_destaque: number;
@@ -57,6 +77,8 @@ export interface Product {
 export interface ContentKit {
   id: string;
   product_id: string;
+  creator_id: string | null;
+  briefing_usuario: string | null;
   titulo: string;
   descricao: string | null;
   formato: string | null;

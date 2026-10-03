@@ -22,12 +22,37 @@ export async function findCreatorContentById(id: string): Promise<CreatorContent
   return data;
 }
 
-export async function listCreatorContent(creatorId: string): Promise<CreatorContentWithRelations[]> {
+export async function findCreatorContentWithRelationsById(id: string): Promise<CreatorContentWithRelations | null> {
   const { data, error } = await supabaseAdmin
+    .from('creator_content')
+    .select('*, products(*), content_kits(*)')
+    .eq('id', id)
+    .maybeSingle();
+
+  if (error) {
+    logger.error({ err: error }, 'Error finding creator content with relations');
+    throw error;
+  }
+
+  return data;
+}
+
+export async function listCreatorContent(
+  creatorId: string,
+  options?: { limit?: number; offset?: number },
+): Promise<CreatorContentWithRelations[]> {
+  let query = supabaseAdmin
     .from('creator_content')
     .select('*, products(*), content_kits(*)')
     .eq('creator_id', creatorId)
     .order('criado_em', { ascending: false });
+
+  if (options?.limit !== undefined) {
+    const from = options.offset ?? 0;
+    query = query.range(from, from + options.limit - 1);
+  }
+
+  const { data, error } = await query;
 
   if (error) {
     logger.error({ err: error }, 'Error listing creator content');
@@ -43,9 +68,9 @@ export async function findByCreatorAndKit(creatorId: string, contentKitId: strin
     .select('*')
     .eq('creator_id', creatorId)
     .eq('content_kit_id', contentKitId)
-    .single();
+    .maybeSingle();
 
-  if (error && error.code !== 'PGRST116') {
+  if (error) {
     logger.error({ err: error }, 'Error checking duplicate creator content');
     throw error;
   }
@@ -59,10 +84,29 @@ export async function findByCreatorAndProduct(creatorId: string, productId: stri
     .select('*')
     .eq('creator_id', creatorId)
     .eq('product_id', productId)
+    .is('content_kit_id', null)
     .maybeSingle();
 
   if (error) {
     logger.error({ err: error }, 'Error checking saved product');
+    throw error;
+  }
+
+  return data;
+}
+
+export async function findAnyByCreatorAndProduct(creatorId: string, productId: string): Promise<CreatorContent | null> {
+  const { data, error } = await supabaseAdmin
+    .from('creator_content')
+    .select('*')
+    .eq('creator_id', creatorId)
+    .eq('product_id', productId)
+    .order('atualizado_em', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) {
+    logger.error({ err: error }, 'Error checking product production');
     throw error;
   }
 

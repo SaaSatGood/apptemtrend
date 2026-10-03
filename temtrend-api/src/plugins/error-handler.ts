@@ -2,20 +2,23 @@ import { FastifyInstance, FastifyError } from 'fastify';
 import fp from 'fastify-plugin';
 import { ZodError } from 'zod';
 import { logger } from '../lib/logger.js';
-import { env } from '../config/env.js';
 
 async function errorHandlerPlugin(fastify: FastifyInstance) {
   fastify.setErrorHandler((error: FastifyError, request, reply) => {
     const requestId = request.id;
 
-    // Zod validation errors
+    // Zod validation errors — user-facing copy only, details stay in the logs
     if (error instanceof ZodError) {
-      const messages = error.issues.map((e) => `${e.path.join('.')}: ${e.message}`).join('; ');
+      const messages = [...new Set(error.issues.map((issue) => (
+        issue.code === 'unrecognized_keys'
+          ? 'Alguns dados enviados não são válidos.'
+          : issue.message
+      )))].join(' ');
       logger.warn({ requestId, validationErrors: error.issues }, 'Validation error');
       return reply.status(400).send({
         error: {
           code: 'VALIDATION_ERROR',
-          message: messages,
+          message: messages || 'Confira os dados informados e tente novamente.',
         },
       });
     }
@@ -27,6 +30,19 @@ async function errorHandlerPlugin(fastify: FastifyInstance) {
           code: 'RATE_LIMITED',
           message: 'Muitas requisições. Tente novamente em breve.',
         },
+      });
+    }
+
+    // Application errors thrown as plain objects already carry a user-facing message.
+    const raw = error as { statusCode?: number; code?: string; message?: string };
+    const isAppError = !(error instanceof Error)
+      && typeof raw.statusCode === 'number'
+      && typeof raw.code === 'string'
+      && typeof raw.message === 'string';
+    if (isAppError && raw.statusCode! >= 500) {
+      logger.error({ requestId, err: error }, 'Handled application error');
+      return reply.status(raw.statusCode!).send({
+        error: { code: raw.code!, message: raw.message! },
       });
     }
 
@@ -58,9 +74,7 @@ async function errorHandlerPlugin(fastify: FastifyInstance) {
       return reply.status(pg.status).send({
         error: {
           code: pg.code || 'CLIENT_ERROR',
-          message: env.NODE_ENV === 'production'
-            ? 'Requisição inválida.'
-            : (error.message || 'Requisição inválida.'),
+          message: 'Não foi possível concluir essa ação. Tente novamente.',
         },
       });
     }
@@ -70,9 +84,7 @@ async function errorHandlerPlugin(fastify: FastifyInstance) {
     return reply.status(500).send({
       error: {
         code: 'INTERNAL_ERROR',
-        message: env.NODE_ENV === 'production'
-          ? 'Erro interno do servidor.'
-          : error.message,
+        message: 'Não conseguimos concluir agora. Tente novamente.',
       },
     });
   });

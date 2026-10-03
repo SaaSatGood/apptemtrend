@@ -11,8 +11,8 @@ import creatorContentRoutes from './modules/creator-content/creator-content.rout
 import adminRoutes from './modules/admin/admin.routes.js';
 import storageRoutes from './modules/storage/storage.routes.js';
 import accountRoutes from './modules/account/account.routes.js';
-import tiktokRoutes from './modules/tiktok/tiktok.routes.js';
-import { env } from './config/env.js';
+import assistantRoutes from './modules/assistant/assistant.routes.js';
+import { UPLOAD } from './config/constants.js';
 
 export function buildApp() {
   const app = Fastify({
@@ -28,7 +28,7 @@ export function buildApp() {
   app.register(cors);
   app.register(rateLimit);
   app.register(auth);
-  app.register(multipart, { limits: { fileSize: env.TIKTOK_MAX_VIDEO_SIZE, files: 1, fields: 10 } });
+  app.register(multipart, { limits: { fileSize: UPLOAD.MAX_FILE_SIZE, files: 1, fields: 10 } });
 
   app.addHook('onRequest', async (request) => {
     request.log.info({ requestId: request.id, method: request.method, route: request.url }, 'request.started');
@@ -46,12 +46,17 @@ export function buildApp() {
     return payload;
   });
   app.get('/health', { config: { rateLimit: false } }, async () => ({ status: 'ok' }));
+  // Readiness sem bater no banco/IA: garante que o processo subiu e configurou.
+  app.get('/ready', { config: { rateLimit: false } }, async () => ({
+    status: 'ok',
+    uptime_s: Math.round(process.uptime()),
+  }));
   app.register(creatorRoutes);
   app.register(productRoutes);
+  app.register(assistantRoutes);
   app.register(creatorContentRoutes);
   app.register(adminRoutes);
   app.register(storageRoutes);
   app.register(accountRoutes);
-  app.register(tiktokRoutes);
   return app;
 }

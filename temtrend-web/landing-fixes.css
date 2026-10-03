@@ -1,0 +1,5 @@
+/* Keep landing content visible when the browser does not paint the observer transition. */
+html.js .reveal.visible {
+  opacity: 1 !important;
+  transform: none !important;
+}

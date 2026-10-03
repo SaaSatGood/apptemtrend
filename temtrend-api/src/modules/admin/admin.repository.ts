@@ -1,7 +1,16 @@
 import { supabaseAdmin } from '../../lib/supabase.js';
+import { TtlCache } from '../../lib/cache.js';
+import { CACHE_TTL_MS } from '../../config/constants.js';
 import { logger } from '../../lib/logger.js';
 
+const dashboardCache = new TtlCache<Record<string, number>>(1);
+const directoryCache = new TtlCache<Map<string, AuthUserSummary>>(1);
+const DASHBOARD_KEY = 'dashboard';
+const DIRECTORY_KEY = 'directory';
+
 export async function dashboard() {
+  const cached = dashboardCache.get(DASHBOARD_KEY);
+  if (cached) return cached;
   const tables = [
     ['total_creators', 'creators', undefined], ['creators_ativos', 'creators', 'ativo'],
     ['produtos_ativos', 'products', 'ativo'], ['total_content_kits', 'content_kits', undefined],
@@ -18,7 +27,12 @@ export async function dashboard() {
     }
     values[key] = count ?? 0;
   }));
+  dashboardCache.set(DASHBOARD_KEY, values, CACHE_TTL_MS.DASHBOARD);
   return values;
+}
+
+export function invalidateDashboardCache() {
+  dashboardCache.delete(DASHBOARD_KEY);
 }
 
 export interface AuthUserSummary {
@@ -28,7 +42,10 @@ export interface AuthUserSummary {
 }
 
 // One batched pass over the auth users instead of one lookup per creator (N+1).
+// Resultado em cache 10min: evita varrer até 50 páginas a cada request admin.
 export async function listUserDirectory(): Promise<Map<string, AuthUserSummary>> {
+  const cached = directoryCache.get(DIRECTORY_KEY);
+  if (cached) return cached;
   const directory = new Map<string, AuthUserSummary>();
   const perPage = 1000;
   const maxPages = 50;
@@ -56,5 +73,6 @@ export async function listUserDirectory(): Promise<Map<string, AuthUserSummary>>
     page += 1;
   }
 
+  directoryCache.set(DIRECTORY_KEY, directory, CACHE_TTL_MS.USER_DIRECTORY);
   return directory;
 }

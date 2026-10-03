@@ -17,12 +17,15 @@ export async function findContentKitById(id: string): Promise<ContentKit | null>
   return data;
 }
 
-export async function listContentKitsByProductId(productId: string): Promise<ContentKit[]> {
-  const { data, error } = await supabaseAdmin
+export async function listContentKitsByProductId(productId: string, creatorId?: string): Promise<ContentKit[]> {
+  let query = supabaseAdmin
     .from('content_kits')
     .select('*')
-    .eq('product_id', productId)
-    .order('criado_em', { ascending: false });
+    .eq('product_id', productId);
+
+  if (creatorId) query = query.eq('creator_id', creatorId);
+
+  const { data, error } = await query.order('criado_em', { ascending: false });
 
   if (error) {
     logger.error({ err: error }, 'Error listing content kits');
@@ -32,10 +35,19 @@ export async function listContentKitsByProductId(productId: string): Promise<Con
   return data || [];
 }
 
-export async function createContentKit(productId: string, input: Record<string, unknown>): Promise<ContentKit> {
+export async function createContentKit(
+  productId: string,
+  input: Record<string, unknown>,
+  ownership?: { creatorId?: string; briefing?: string },
+): Promise<ContentKit> {
   const { data, error } = await supabaseAdmin
     .from('content_kits')
-    .insert({ ...input, product_id: productId })
+    .insert({
+      ...input,
+      product_id: productId,
+      creator_id: ownership?.creatorId ?? null,
+      briefing_usuario: ownership?.briefing || null,
+    })
     .select()
     .single();
 

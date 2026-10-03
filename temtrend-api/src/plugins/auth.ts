@@ -1,6 +1,9 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import fp from 'fastify-plugin';
+import crypto from 'node:crypto';
 import { supabaseAdmin } from '../lib/supabase.js';
+import { TtlCache } from '../lib/cache.js';
+import { CACHE_TTL_MS } from '../config/constants.js';
 import { Errors, type AuthUser } from '../types/index.js';
 import { logger } from '../lib/logger.js';
 
@@ -14,6 +17,15 @@ declare module 'fastify' {
 
 const BEARER_PREFIX = 'Bearer ';
 
+// Cache por hash do token: evita 1 roundtrip ao Supabase por request.
+// TTL curto para não segurar revogação por muito tempo.
+const authUserCache = new TtlCache<AuthUser>(2000);
+const adminFlagCache = new TtlCache<boolean>(1000);
+
+function tokenCacheKey(token: string): string {
+  return crypto.createHash('sha256').update(token).digest('hex');
+}
+
 async function authenticate(request: FastifyRequest): Promise<boolean> {
   if (request.authUser) return true;
   if (request.authFailed) return false;
@@ -22,6 +34,14 @@ async function authenticate(request: FastifyRequest): Promise<boolean> {
   if (!header || !header.startsWith(BEARER_PREFIX)) return false;
 
   const token = header.slice(BEARER_PREFIX.length);
+  if (!token) return false;
+
+  const cacheKey = tokenCacheKey(token);
+  const cached = authUserCache.get(cacheKey);
+  if (cached) {
+    request.authUser = cached;
+    return true;
+  }
 
   try {
     const { data, error } = await supabaseAdmin.auth.getUser(token);
@@ -34,6 +54,7 @@ async function authenticate(request: FastifyRequest): Promise<boolean> {
       id: data.user.id,
       email: data.user.email,
     };
+    authUserCache.set(cacheKey, request.authUser, CACHE_TTL_MS.AUTH_USER);
     return true;
   } catch (e) {
     logger.error({ err: e }, 'Auth verification failed');
@@ -60,6 +81,9 @@ export default fp(authPlugin, { name: 'auth' });
 
 // True when the auth user has a row in the `admins` table.
 export async function isAdminUser(userId: string): Promise<boolean> {
+  const cached = adminFlagCache.get(userId);
+  if (cached !== undefined) return cached;
+
   const { data, error } = await supabaseAdmin
     .from('admins')
     .select('id')
@@ -70,9 +94,12 @@ export async function isAdminUser(userId: string): Promise<boolean> {
     if (error && error.code !== 'PGRST116') {
       logger.error({ err: error }, 'Error checking admin status');
     }
+    // Cache negativo curto para não martelar o banco em loops de 403.
+    adminFlagCache.set(userId, false, 60 * 1000);
     return false;
   }
 
+  adminFlagCache.set(userId, true, CACHE_TTL_MS.ADMIN_FLAG);
   return true;
 }
 

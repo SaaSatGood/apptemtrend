@@ -10,13 +10,8 @@ const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   CORS_ORIGIN: z.string().default('http://localhost:3000'),
   FRONTEND_URL: z.string().url().default('http://localhost:5173'),
-  TIKTOK_CLIENT_KEY: z.string().min(1).optional(),
-  TIKTOK_CLIENT_SECRET: z.string().min(1).optional(),
-  TIKTOK_REDIRECT_URI: z.string().url().optional(),
-  TIKTOK_TOKEN_ENCRYPTION_KEY: z.string().min(1).optional(),
-  TIKTOK_UPLOAD_CHUNK_SIZE: z.coerce.number().int().min(5 * 1024 * 1024).max(64 * 1024 * 1024).default(10 * 1024 * 1024),
-  TIKTOK_MAX_VIDEO_SIZE: z.coerce.number().int().positive().max(4 * 1024 * 1024 * 1024).default(4 * 1024 * 1024 * 1024),
-  FFPROBE_PATH: z.string().default('ffprobe'),
+  GEMINI_API_KEY: z.string().min(1).optional(),
+  GEMINI_MODEL: z.string().default('gemini-3.1-flash-lite'),
 });
 
 const parsed = envSchema.safeParse(process.env);

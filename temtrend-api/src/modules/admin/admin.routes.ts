@@ -17,16 +17,17 @@ const creatorsQuerySchema = z.object({
   status: z.enum(['ativo', 'bloqueado']).optional(),
   nicho: z.string().optional(),
   page: z.coerce.number().int().min(1).default(1),
-  limit: z.coerce.number().int().min(1).max(500).optional(),
+  limit: z.coerce.number().int().min(1).max(100).default(50),
 });
 
 const listQuerySchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
-  limit: z.coerce.number().int().min(1).max(500).optional(),
+  limit: z.coerce.number().int().min(1).max(100).default(50),
 });
 
 function range(page: number, limit?: number) {
-  return limit === undefined ? {} : { limit, offset: (page - 1) * limit };
+  const safeLimit = limit ?? 50;
+  return { limit: safeLimit, offset: (page - 1) * safeLimit };
 }
 
 async function routes(app: FastifyInstance) {
