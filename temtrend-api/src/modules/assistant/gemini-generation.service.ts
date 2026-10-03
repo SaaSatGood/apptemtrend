@@ -179,6 +179,7 @@ export const CONTENT_STRATEGY_INSTRUCTIONS = [
   'titulo máx 8 palavras (capa). Cenas: 0-3s hook (dor/desejo/curiosidade, sem saudação/produto), 3-7s problema, 7-18s uso, 18-25s prova honesta, 25-30s CTA. Cada cena: tempo, visual, fala, ação/edição.',
   'roteiro inclui: "3 VARIAÇÕES DE HOOK", "VERSÃO SEM SEGUIDORES" (demonstração/teste/comparação/faceless, sem fama), "DICA DE PUBLICAÇÃO" (horário sugestão, frequência, áudio, comentário fixado, sem garantia), "3-5 VARIAÇÕES DE ROTEIRO".',
   'Prova só com demonstração visual do produto; nunca peça print de avaliação/vendas. copy máx 150 chars, 1 emoji, 1 pergunta. Exatas 5 hashtags (#publi/#tiktokshop se divulgação). CTA carrinho só condicional, nunca direct.',
+  'TikTok: nunca cite botão, sticker, carrinho, recurso, interface ou link específico salvo se estiver no contexto. Prefira "conforme os recursos disponíveis no TikTok Shop".',
   'PT-BR falado, direto, sem placeholders, só JSON.',
 ].join(' ');
 

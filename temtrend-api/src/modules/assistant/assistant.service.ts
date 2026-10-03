@@ -14,6 +14,15 @@ function responseCacheKey(message: string) {
   return message.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('pt-BR').trim().slice(0, 200);
 }
 
+function catalogFingerprint(catalog: Product[]) {
+  let hash = 0;
+  const ids = catalog.map((p) => p.id).sort().join(',');
+  for (let i = 0; i < ids.length; i += 1) {
+    hash = (hash * 31 + ids.charCodeAt(i)) | 0;
+  }
+  return `${hash}`;
+}
+
 const STOP_WORDS = new Set([
   'a', 'algo', 'as', 'com', 'coisa', 'coisas', 'de', 'do', 'dos', 'e', 'eu',
   'facil', 'fazer', 'me', 'nao', 'o', 'os', 'para', 'produto', 'produtos',
@@ -176,13 +185,16 @@ export function isSearchableCatalogProduct(product: Product) {
 }
 
 export async function findProductsForMessage(input: AssistantProductSearchInput) {
+  const catalog = (await listSearchableCatalog()).filter(isSearchableCatalogProduct);
+  // Cache isolado por mensagem + snapshot do catálogo: nunca serve produtos de outro catálogo.
   const useResponseCache = env.NODE_ENV !== 'test' && !input.product_ids?.length;
-  const cacheKey = useResponseCache ? responseCacheKey(input.message) : null;
+  const cacheKey = useResponseCache
+    ? `${responseCacheKey(input.message)}|${catalog.length}|${catalogFingerprint(catalog)}`
+    : null;
   if (cacheKey) {
     const cached = responseCache.get(cacheKey);
     if (cached) return cached as ReturnType<typeof buildResponse>;
   }
-  const catalog = (await listSearchableCatalog()).filter(isSearchableCatalogProduct);
   const localTerms = expandedTerms(input.message);
   const requestedIds = input.product_ids?.length ? new Set(input.product_ids) : null;
   const discovery = isDiscoveryRequest(input.message);
