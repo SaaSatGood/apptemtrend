@@ -7,6 +7,12 @@ const server = await app.listen({ port: env.PORT, host: '0.0.0.0' }).catch((erro
   process.exit(1);
 });
 
+if (!env.GEMINI_API_KEY) {
+  app.log.warn('GEMINI_API_KEY ausente: busca assistida usa fallback local e geração de Content Kit retorna 503 AI_UNAVAILABLE');
+} else {
+  app.log.info({ model: env.GEMINI_MODEL }, 'Gemini AI configurada');
+}
+
 // Graceful shutdown: fecha HTTP antes de matar conexões ativas.
 async function shutdown(signal: string) {
   try {

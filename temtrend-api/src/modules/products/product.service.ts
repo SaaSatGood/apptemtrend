@@ -2,6 +2,7 @@ import { findProductByExternalId, findProductById, listActiveProducts, createPro
 import { listContentKitsByProductId, createContentKit } from '../content-kits/content-kit.repository.js';
 import { createContentKitSchema } from '../content-kits/content-kit.schema.js';
 import { AIService } from '../assistant/ai.service.js';
+import { env } from '../../config/env.js';
 import { TtlCache } from '../../lib/cache.js';
 import { Errors, createAppError } from '../../types/index.js';
 import { CACHE_TTL_MS, PRODUCT_STATUS } from '../../config/constants.js';
@@ -122,11 +123,18 @@ function inflightKey(productId: string, creatorId: string, briefing?: string) {
 
 async function createContentKitResult(productId: string, creatorId: string, briefing?: string) {
   const { product, content_kits } = await getProductById(productId, { creatorId });
+  if (!AIService.isAvailable() && env.NODE_ENV !== 'test') {
+    throw createAppError(
+      'AI_UNAVAILABLE',
+      'A IA está indisponível agora. Tente novamente em alguns minutos.',
+      503,
+    );
+  }
   const generated = await AIService.generateContentKit(product, content_kits, briefing);
   if (!generated) {
     throw createAppError(
       'SERVICE_UNAVAILABLE',
-      'Não conseguimos preparar seu Content Kit agora. Tente novamente.',
+      'Não conseguimos gerar seu Content Kit agora. Tente novamente em alguns segundos.',
       503,
     );
   }

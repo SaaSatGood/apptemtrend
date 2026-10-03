@@ -316,7 +316,7 @@ describe('content kit preparation', () => {
     await expect(ensureContentKit(product.id, creatorId)).rejects.toMatchObject({
       code: 'SERVICE_UNAVAILABLE',
       statusCode: 503,
-      message: 'Não conseguimos preparar seu Content Kit agora. Tente novamente.',
+      message: 'Não conseguimos gerar seu Content Kit agora. Tente novamente em alguns segundos.',
     });
   });
 

@@ -258,7 +258,11 @@ export async function generateContentKit(
   previousKits: Partial<ContentKit>[] = [],
   creatorBriefing?: string,
 ): Promise<GeneratedContentKit | null> {
-  if (!env.GEMINI_API_KEY || env.NODE_ENV === 'test') return null;
+  if (env.NODE_ENV === 'test') return null;
+  if (!env.GEMINI_API_KEY) {
+    logger.error('Gemini API key missing: content-kit generation unavailable');
+    return null;
+  }
   const startedAt = Date.now();
 
   for (let attempt = 1; attempt <= MAX_GENERATION_ATTEMPTS; attempt += 1) try {

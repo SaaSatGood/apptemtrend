@@ -12,6 +12,15 @@ describe('TemTrend Beta API', () => {
     await app.close();
   });
 
+  it('exposes readiness with AI configuration flag', async () => {
+    const app = buildApp();
+    const response = await app.inject({ method: 'GET', url: '/ready' });
+    expect(response.statusCode).toBe(200);
+    expect(response.json().status).toBe('ok');
+    expect(typeof response.json().ai_configured).toBe('boolean');
+    await app.close();
+  });
+
   it('requires authentication for creator product discovery', async () => {
     const app = buildApp();
     const response = await app.inject({ method: 'GET', url: '/products' });

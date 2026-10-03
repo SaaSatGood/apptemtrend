@@ -40,17 +40,24 @@ export function buildApp() {
       'request.completed',
     );
   });
-  app.addHook('onSend', async (_request, reply, payload) => {
+  app.addHook('onSend', async (request, reply, payload) => {
     reply.header('x-content-type-options', 'nosniff');
     reply.header('x-frame-options', 'DENY');
     reply.header('referrer-policy', 'no-referrer');
+    // HSTS somente quando a conexão já é TLS (evita travar localhost).
+    const proto = String(request.headers['x-forwarded-proto'] ?? request.protocol ?? '');
+    if (proto.includes('https')) {
+      reply.header('strict-transport-security', 'max-age=63072000; includeSubDomains');
+    }
     return payload;
   });
   app.get('/health', { config: { rateLimit: false } }, async () => ({ status: 'ok' }));
   // Readiness sem bater no banco/IA: garante que o processo subiu e configurou.
+  // ai_configured indica se a chave Gemini está presente (sem expor valor).
   app.get('/ready', { config: { rateLimit: false } }, async () => ({
     status: 'ok',
     uptime_s: Math.round(process.uptime()),
+    ai_configured: Boolean(process.env.GEMINI_API_KEY),
   }));
   app.register(creatorRoutes);
   app.register(productRoutes);

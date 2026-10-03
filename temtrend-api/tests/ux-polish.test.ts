@@ -43,6 +43,12 @@ describe('ux polish', () => {
     expect(read('app.js')).toContain('Nenhum produto encontrado.');
   });
 
+  it('dialog de kit trata códigos da IA', () => {
+    const appJs = read('app.js');
+    expect(appJs).toContain('AI_UNAVAILABLE');
+    expect(appJs).toContain('SERVICE_UNAVAILABLE');
+  });
+
   it('toast não estoura no mobile', () => {
     expect(read('styles.css')).toContain('.toast{left:18px');
   });

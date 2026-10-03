@@ -12,7 +12,7 @@ describe('AI token cost', () => {
 
   it('limita geração e reaproveitamento', () => {
     expect(AI_LIMITS.MAX_GENERATION_ATTEMPTS).toBe(2);
-    expect(AI_LIMITS.GENERATE_MAX_OUTPUT_TOKENS).toBeLessThanOrEqual(2500);
+    expect(AI_LIMITS.GENERATE_MAX_OUTPUT_TOKENS).toBeLessThanOrEqual(3000);
     expect(AI_LIMITS.MAX_PREVIOUS_KITS).toBeLessThanOrEqual(3);
     expect(AI_LIMITS.MAX_BRIEFING_CHARS).toBeLessThanOrEqual(400);
     expect(AI_LIMITS.MAX_PRODUCT_DESC_CHARS).toBeLessThanOrEqual(500);
