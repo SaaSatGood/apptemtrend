@@ -67,7 +67,9 @@ async function routes(app: FastifyInstance) {
   app.patch('/admin/creators/:id/status', admin, async (request) => {
     const { id } = idParam.parse(request.params);
     const { status } = z.object({ status: z.enum([CREATOR_STATUS.ATIVO, CREATOR_STATUS.BLOQUEADO]) }).parse(request.body);
-    return creatorRepo.updateCreator(id, { status });
+    const updated = await creatorRepo.updateCreator(id, { status });
+    adminRepo.invalidateDashboardCache();
+    return updated;
   });
 
   app.post('/admin/products', admin, async (request, reply) => {

@@ -5,9 +5,8 @@ import { requireAuth } from '../../plugins/auth.js';
 import { RATE_LIMITS } from '../../config/constants.js';
 import { productQuerySchema } from './product.schema.js';
 import * as productService from './product.service.js';
-import { findCreatorByUserId } from '../creators/creator.repository.js';
+import { requireActiveCreator } from '../creators/creator.service.js';
 import type { Product } from '../../types/index.js';
-import { Errors } from '../../types/index.js';
 
 function publicProduct(product: Product) {
   const {
@@ -16,7 +15,7 @@ function publicProduct(product: Product) {
     unidades_vendidas_periodo, crescimento_vendas_percentual, unidades_vendidas_total,
     receita_periodo_brl, receita_total_brl, data_estimada_upload,
     unidades_vendidas_total_loja, fastmoss_produto_url, tiktok_shop_url,
-    fastmoss_loja_url, status_origem, ranking_origem,
+    fastmoss_loja_url, status_origem, ranking_origem, atualizado_em,
   } = product;
   return {
     id, produto_externo_id, nome, descricao, categoria, imagem_url, loja_nome,
@@ -24,7 +23,7 @@ function publicProduct(product: Product) {
     unidades_vendidas_periodo, crescimento_vendas_percentual, unidades_vendidas_total,
     receita_periodo_brl, receita_total_brl, data_estimada_upload,
     unidades_vendidas_total_loja, fastmoss_produto_url, tiktok_shop_url,
-    fastmoss_loja_url, status_origem, ranking_origem,
+    fastmoss_loja_url, status_origem, ranking_origem, atualizado_em,
   };
 }
 
@@ -34,6 +33,7 @@ async function productRoutes(fastify: FastifyInstance) {
     preHandler: [requireAuth],
     config: { rateLimit: RATE_LIMITS.AUTH_GET },
   }, async (request, reply) => {
+    await requireActiveCreator(request.authUser.id);
     const query = productQuerySchema.parse(request.query);
     const filters: { categoria?: string; destaque?: boolean; limit: number; offset: number } = {
       limit: query.limit,
@@ -56,8 +56,7 @@ async function productRoutes(fastify: FastifyInstance) {
     config: { rateLimit: RATE_LIMITS.AUTH_GET },
   }, async (request, reply) => {
     const { id } = z.object({ id: z.string().uuid() }).parse(request.params);
-    const creator = await findCreatorByUserId(request.authUser.id);
-    if (!creator) throw Errors.NOT_FOUND('Creator');
+    const creator = await requireActiveCreator(request.authUser.id);
     const result = await productService.getProductById(id, { creatorId: creator.id });
     reply.header('cache-control', 'private, max-age=30');
     return reply.send({
@@ -76,8 +75,7 @@ async function productRoutes(fastify: FastifyInstance) {
       force_new: z.boolean().optional().default(false),
       instructions: z.string().trim().max(1500, 'Descreva o vídeo em até 1500 caracteres.').optional(),
     }).strict().parse(request.body ?? {});
-    const creator = await findCreatorByUserId(request.authUser.id);
-    if (!creator) throw Errors.NOT_FOUND('Creator');
+    const creator = await requireActiveCreator(request.authUser.id);
     const result = body.force_new
       ? await productService.createFreshContentKit(id, creator.id, body.instructions)
       : await productService.ensureContentKit(id, creator.id, body.instructions);

@@ -1,10 +1,11 @@
 import { FastifyInstance } from 'fastify';
 import fp from 'fastify-plugin';
 import { z } from 'zod';
-import { requireAuth } from '../../plugins/auth.js';
+import { requireAuth, clearAuthCachesForUser } from '../../plugins/auth.js';
 import { RATE_LIMITS } from '../../config/constants.js';
 import { supabaseAdmin } from '../../lib/supabase.js';
 import { Errors } from '../../types/index.js';
+import { logger } from '../../lib/logger.js';
 
 const profileSchema = z.object({
   nome: z.string().trim().min(2, 'O nome deve ter pelo menos 2 caracteres.').max(120),
@@ -45,6 +46,8 @@ async function routes(app: FastifyInstance) {
   app.delete('/account', write, async (request, reply) => {
     const { error } = await supabaseAdmin.auth.admin.deleteUser(request.authUser.id);
     if (error) throw error;
+    clearAuthCachesForUser(request.authUser.id);
+    logger.info({ user_id: request.authUser.id }, 'Account deleted');
     return reply.status(204).send();
   });
 }

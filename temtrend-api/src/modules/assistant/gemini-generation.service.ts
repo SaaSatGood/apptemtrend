@@ -171,25 +171,14 @@ function kitFingerprint(kit: Partial<ContentKit> | z.infer<typeof generatedPacka
 }
 
 export const CONTENT_STRATEGY_INSTRUCTIONS = [
-  'Você é a TEMTREND, um radar de oportunidades e estrategista de conteúdo para TikTok Shop Brasil.',
-  'Transforme dados reais do produto em conteúdo completo, específico e pronto para uma pessoa gravar sozinha em 15 a 30 segundos.',
-  'Antes de criar, avalie demanda, demonstração visual, problema resolvido, desejo, entendimento em cinco segundos, sazonalidade, competição, repetibilidade e acessibilidade para creators iniciantes.',
-  'EVIDÊNCIA: nunca invente marca, preço, vendas, avaliações, comissão, desconto, crescimento, disponibilidade ou tendência. Use somente fatos presentes no produto ou no contexto recebido.',
-  'Quando não houver evidência atual verificável, escreva literalmente "Sem evidência recente suficiente para classificar como tendência atual" e classifique como EXPERIMENTAL, com evidência INSUFICIENTE.',
-  'Nunca apresente hipótese ou sugestão criativa como fato. Nunca prometa venda, viralização, cura ou resultado garantido.',
-  'Na descricao, entregue um BRIEFING RÁPIDO com Produto, Classificação (TRENDING, RISING, SEASONAL, EVERGREEN ou EXPERIMENTAL), Evidência (FORTE, MODERADA, FRACA ou INSUFICIENTE), Público, Por que agora, Ângulo e Formato.',
-  'O titulo deve ter no máximo oito palavras e funcionar como capa do vídeo.',
-  'As cenas devem cobrir: 0–3s hook sem abrir pelo produto; 3–7s problema ou identificação; 7–18s produto em uso; 18–25s prova ou resultado honesto; 25–30s CTA.',
-  'Cada cena deve informar tempo, visual, fala e ação/edição. O hook precisa começar pela dor, desejo, curiosidade ou resultado, nunca por uma saudação ou apresentação do produto.',
-  'No roteiro, além do texto principal, inclua seções claramente rotuladas: "3 VARIAÇÕES DE HOOK" (curiosidade, identificação e resultado), "VERSÃO SEM SEGUIDORES", "DICA DE PUBLICAÇÃO" e "3–5 VARIAÇÕES DE ROTEIRO".',
-  'A versão sem seguidores não pode depender de fama, comunidade ou autoridade. Prefira demonstração, teste, comparação, review sincero, faceless, ASMR, tutorial ou antes/depois realista.',
-  'Nunca peça para mostrar print de avaliação, contador de vendas ou comentário se esse material real não foi fornecido. Nesse caso, use prova visual demonstrável do próprio produto.',
-  'A copy deve ter no máximo 150 caracteres, exatamente um emoji e uma pergunta natural que incentive comentário.',
-  'Entregue exatamente cinco hashtags relevantes. Use #publi e #tiktokshop quando o conteúdo for divulgação de produto.',
-  'O CTA pode mencionar o carrinho do vídeo apenas de forma condicional, sem inventar disponibilidade. Nunca afirme que enviará link por direct.',
-  'Inclua em DICA DE PUBLICAÇÃO: faixa de horário como sugestão, frequência, tipo de áudio e primeiro comentário fixado. Não trate horário ou métrica como garantia.',
-  'Crie de três a cinco variações realmente diferentes para o mesmo produto, alternando ângulos como antes/depois, teste, lista, POV, comparação, review, tutorial ou faceless.',
-  'Escreva em português falado do Brasil, direto e natural. Não use placeholders e não inclua explicações fora do JSON.',
+  'TEMTREND: radar e estrategista de conteúdo TikTok Shop Brasil. Crie roteiro 15-30s gravável sozinho.',
+  'EVIDÊNCIA: use só fatos do produto. Nunca invente marca, preço, vendas, comissão, desconto ou tendência.',
+  'Sem evidência verificável, escreva "Sem evidência recente suficiente para classificar como tendência atual", classifique EXPERIMENTAL/INSUFICIENTE. Nunca prometa venda/viralização/cura.',
+  'descricao = BRIEFING RÁPIDO: Produto, Classificação (TRENDING/RISING/SEASONAL/EVERGREEN/EXPERIMENTAL), Evidência (FORTE/MODERADA/FRACA/INSUFICIENTE), Público, Por que agora, Ângulo, Formato.',
+  'titulo máx 8 palavras (capa). Cenas: 0-3s hook (dor/desejo/curiosidade, sem saudação/produto), 3-7s problema, 7-18s uso, 18-25s prova honesta, 25-30s CTA. Cada cena: tempo, visual, fala, ação/edição.',
+  'roteiro inclui: "3 VARIAÇÕES DE HOOK", "VERSÃO SEM SEGUIDORES" (demonstração/teste/comparação/faceless, sem fama), "DICA DE PUBLICAÇÃO" (horário sugestão, frequência, áudio, comentário fixado, sem garantia), "3-5 VARIAÇÕES DE ROTEIRO".',
+  'Prova só com demonstração visual do produto; nunca peça print de avaliação/vendas. copy máx 150 chars, 1 emoji, 1 pergunta. Exatas 5 hashtags (#publi/#tiktokshop se divulgação). CTA carrinho só condicional, nunca direct.',
+  'PT-BR falado, direto, sem placeholders, só JSON.',
 ].join(' ');
 
 function hasCompleteStrategy(kit: z.infer<typeof generatedPackageSchema>['content_kit']) {
@@ -227,29 +216,37 @@ export function isProductNovel(
 
 function productSeed(product: { nome: string; descricao?: string | null; categoria?: string | null }) {
   return {
-    nome: product.nome,
-    descricao: (product.descricao || 'Produto disponível no catálogo da TemTrend.').slice(0, 1200),
-    categoria: product.categoria || 'Geral',
+    nome: product.nome.trim().slice(0, 120),
+    descricao: (product.descricao?.trim() || 'Produto disponível no catálogo da TemTrend.').slice(0, AI_LIMITS.MAX_PRODUCT_DESC_CHARS),
+    categoria: (product.categoria?.trim() || 'Geral').slice(0, 60),
   };
 }
 
+function truncateBriefing(value?: string) {
+  const text = (value ?? '').trim().replace(/\s+/g, ' ');
+  if (!text) return undefined;
+  return text.length > AI_LIMITS.MAX_BRIEFING_CHARS ? text.slice(0, AI_LIMITS.MAX_BRIEFING_CHARS) : text;
+}
+
+function previousKitsCompact(previousKits: Partial<ContentKit>[]) {
+  return previousKits.slice(0, AI_LIMITS.MAX_PREVIOUS_KITS).map((kit) => ({
+    titulo: (kit.titulo ?? '').trim().slice(0, AI_LIMITS.MAX_PREVIOUS_KIT_CHARS),
+    hook: (kit.hook ?? '').trim().slice(0, AI_LIMITS.MAX_PREVIOUS_KIT_CHARS),
+    copy: typeof kit.copy === 'string' ? kit.copy.trim().slice(0, AI_LIMITS.MAX_PREVIOUS_KIT_CHARS) : undefined,
+  }));
+}
+
 function productContext(product: Product) {
+  // Sem URLs longas: não ajudam a criar roteiro e custam tokens.
   return {
     ...productSeed(product),
-    id_produto: product.produto_externo_id,
-    loja: product.loja_nome,
+    loja: product.loja_nome?.trim().slice(0, 60) ?? null,
     preco: product.preco_texto,
     preco_min_brl: product.preco_min_brl,
     preco_max_brl: product.preco_max_brl,
-    pais_regiao: product.pais_regiao,
     comissao_percentual: product.comissao_percentual,
     unidades_vendidas_periodo: product.unidades_vendidas_periodo,
     crescimento_vendas_percentual: product.crescimento_vendas_percentual,
-    unidades_vendidas_total: product.unidades_vendidas_total,
-    receita_periodo_brl: product.receita_periodo_brl,
-    receita_total_brl: product.receita_total_brl,
-    link_tiktok_shop: product.tiktok_shop_url,
-    link_fastmoss: product.fastmoss_produto_url,
     status_origem: product.status_origem,
   };
 }
@@ -263,6 +260,19 @@ export async function generateContentKit(
   const startedAt = Date.now();
 
   for (let attempt = 1; attempt <= MAX_GENERATION_ATTEMPTS; attempt += 1) try {
+    const systemText = [
+      CONTENT_STRATEGY_INSTRUCTIONS,
+      'Use só dados reais do produto. Entregue todos os campos do schema, abordagem inédita vs kits anteriores, sem genéricos/placeholders.',
+      'Siga o briefing do creator sem contradizer dados reais. Vídeo gravado fora da TemTrend. Hashtags com # sem espaços.',
+    ].join(' ');
+    const userText = JSON.stringify({
+      produto: productContext(product),
+      orientacoes_do_creator: truncateBriefing(creatorBriefing) || 'Sem orientação adicional; crie uma abordagem clara e prática.',
+      contexto_temporal: { data_iso: new Date().toISOString(), pais: 'Brasil' },
+      kits_anteriores_a_evitar: previousKitsCompact(previousKits),
+      tentativa: attempt,
+      nonce_criativo: crypto.randomUUID(),
+    });
     const response = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(env.GEMINI_MODEL)}:generateContent`,
       {
@@ -271,30 +281,13 @@ export async function generateContentKit(
         body: JSON.stringify({
           systemInstruction: {
             parts: [{
-              text: [
-                CONTENT_STRATEGY_INSTRUCTIONS,
-                'Utilize somente as características reais fornecidas para o produto do catálogo.',
-                'Entregue titulo, descricao, formato, plataforma, nivel_dificuldade, hook, roteiro, cenas com tempo, visual, fala e acao_edicao, copy, CTA, cinco hashtags, audio_sugerido e duracao_seg.',
-                'Crie uma abordagem genuinamente inédita. Não copie, parafraseie nem recombine superficialmente nenhum Content Kit anterior fornecido.',
-                'Varie gancho, conceito, estrutura narrativa, cenas, copy e CTA. O resultado deve ser utilizável por completo, sem campos genéricos ou placeholders.',
-                'Siga as orientações criativas do creator sobre tom, duração, formato, ritmo e modo de gravação, desde que não contradigam os dados reais do produto.',
-                'O vídeo é gravado fora da TemTrend. Hashtags devem começar com # e não conter espaços.',
-              ].join(' ')
+              text: systemText
             }]
           },
-          contents: [{ role: 'user', parts: [{ text: JSON.stringify({
-            produto: productContext(product),
-            orientacoes_do_creator: creatorBriefing?.trim() || 'Sem orientação adicional; crie uma abordagem clara e prática.',
-            contexto_temporal: { data_iso: new Date().toISOString(), pais: 'Brasil' },
-            kits_anteriores_a_evitar: previousKits.slice(0, 20).map((kit) => ({
-              titulo: kit.titulo, hook: kit.hook, roteiro: kit.roteiro, copy: kit.copy,
-            })),
-            tentativa: attempt,
-            nonce_criativo: crypto.randomUUID(),
-          }) }] }],
+          contents: [{ role: 'user', parts: [{ text: userText }] }],
           generationConfig: {
-            temperature: 0.9,
-            maxOutputTokens: 3500,
+            temperature: 0.7,
+            maxOutputTokens: AI_LIMITS.GENERATE_MAX_OUTPUT_TOKENS,
             responseMimeType: 'application/json',
             responseSchema: CONTENT_KIT_RESPONSE_SCHEMA,
           },
@@ -321,7 +314,7 @@ export async function generateContentKit(
     const usage = usageFromResponse(payload);
     const latencyMs = Date.now() - startedAt;
 
-    logger.info({ provider: 'gemini', model: env.GEMINI_MODEL, usage, latency_ms: latencyMs }, 'Content kit generated');
+    logger.info({ provider: 'gemini', model: env.GEMINI_MODEL, usage, latency_ms: latencyMs, prompt_chars: systemText.length + userText.length, prev_kits: previousKits.length }, 'Content kit generated');
     return { content_kit: generated.content_kit, usage, latency_ms: latencyMs };
   } catch (error) {
     logger.warn({ err: error, attempt, provider: 'gemini', model: env.GEMINI_MODEL, latency_ms: Date.now() - startedAt }, 'Content kit generation attempt failed');

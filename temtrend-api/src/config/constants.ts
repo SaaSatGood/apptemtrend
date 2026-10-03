@@ -20,8 +20,8 @@ export const RATE_LIMITS = {
   AUTH_WRITE: { max: 30, timeWindow: '1 minute' },
   ADMIN: { max: 60, timeWindow: '1 minute' },
   // Rotas caras de IA: limites próprios para proteger custo/latência.
-  ASSISTANT_SEARCH: { max: 20, timeWindow: '1 minute' },
-  CONTENT_KIT_GENERATE: { max: 10, timeWindow: '1 minute' },
+  ASSISTANT_SEARCH: { max: 10, timeWindow: '1 minute' },
+  CONTENT_KIT_GENERATE: { max: 5, timeWindow: '1 minute' },
   GLOBAL: { max: 200, timeWindow: '1 minute' },
 } as const;
 
@@ -34,7 +34,7 @@ export const UPLOAD = {
 
 export const CACHE_TTL_MS = {
   AUTH_USER: 90 * 1000, // 90s por token
-  ADMIN_FLAG: 5 * 60 * 1000, // 5min por user_id
+  ADMIN_FLAG: 60 * 1000, // 60s por user_id (revogação rápida)
   CATALOG: 60 * 1000, // 60s catálogo ativo
   DASHBOARD: 30 * 1000, // 30s métricas admin
   USER_DIRECTORY: 10 * 60 * 1000, // 10min diretório auth
@@ -49,10 +49,20 @@ export const PAGINATION = {
 
 export const AI_LIMITS = {
   // Classificação: catálogo enxuto enviado ao Gemini (custo/latência).
-  MAX_CATALOG_ITEMS: 100,
-  MAX_DESCRIPTION_CHARS: 120,
+  // 25 itens x ~35 tokens = ~875 tokens de catálogo (antes 100 x ~80 = 8000).
+  MAX_CATALOG_ITEMS: 25,
+  MAX_DESCRIPTION_CHARS: 60,
+  MAX_NAME_CHARS: 50,
   CLASSIFY_TIMEOUT_MS: 8_000,
+  CLASSIFY_MAX_OUTPUT_TOKENS: 150,
+  CLASSIFY_CACHE_TTL_MS: 10 * 60 * 1000,
+  ASSISTANT_RESPONSE_CACHE_TTL_MS: 2 * 60 * 1000,
   // Geração de kit: 1 tentativa inicial + 1 retry.
   MAX_GENERATION_ATTEMPTS: 2,
   GENERATE_TIMEOUT_MS: 20_000,
+  GENERATE_MAX_OUTPUT_TOKENS: 2500,
+  MAX_PREVIOUS_KITS: 3,
+  MAX_PREVIOUS_KIT_CHARS: 120,
+  MAX_BRIEFING_CHARS: 400,
+  MAX_PRODUCT_DESC_CHARS: 500,
 } as const;

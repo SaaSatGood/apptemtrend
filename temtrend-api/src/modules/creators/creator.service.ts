@@ -1,5 +1,7 @@
 import { findCreatorByUserId, createCreator, updateCreator } from './creator.repository.js';
 import { isAdminUser } from '../../plugins/auth.js';
+import { Errors } from '../../types/index.js';
+import type { Creator } from '../../types/index.js';
 import type { OnboardingInput } from './creator.schema.js';
 
 export async function getMe(userId: string) {
@@ -35,4 +37,15 @@ export async function onboarding(userId: string, data: OnboardingInput) {
   return existing
     ? await updateCreator(existing.id, preferences)
     : await createCreator({ user_id: userId, ...preferences });
+}
+
+/**
+ * Creator precisa existir e estar ativo para usar catálogo, IA e produção.
+ * Bloqueado -> 403. Ausente -> 404 (mantém contrato atual).
+ */
+export async function requireActiveCreator(userId: string): Promise<Creator> {
+  const creator = await findCreatorByUserId(userId);
+  if (!creator) throw Errors.NOT_FOUND('Creator');
+  if (creator.status === 'bloqueado') throw Errors.FORBIDDEN;
+  return creator;
 }

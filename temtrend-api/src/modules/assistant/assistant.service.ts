@@ -3,7 +3,16 @@ import type { AssistantProductSearchInput } from './assistant.schema.js';
 import type { Product } from '../../types/index.js';
 import { AIService } from './ai.service.js';
 import { AI_LIMITS } from '../../config/constants.js';
+import { TtlCache } from '../../lib/cache.js';
 import { env } from '../../config/env.js';
+
+// Cache de resposta completa para buscas simples repetidas (sem product_ids).
+// Em teste é bypassado para não vazar entre casos.
+const responseCache = new TtlCache<{ message: string; interpreted_as: string[]; products: unknown[]; meta: unknown }>(200);
+
+function responseCacheKey(message: string) {
+  return message.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('pt-BR').trim().slice(0, 200);
+}
 
 const STOP_WORDS = new Set([
   'a', 'algo', 'as', 'com', 'coisa', 'coisas', 'de', 'do', 'dos', 'e', 'eu',
@@ -167,6 +176,12 @@ export function isSearchableCatalogProduct(product: Product) {
 }
 
 export async function findProductsForMessage(input: AssistantProductSearchInput) {
+  const useResponseCache = env.NODE_ENV !== 'test' && !input.product_ids?.length;
+  const cacheKey = useResponseCache ? responseCacheKey(input.message) : null;
+  if (cacheKey) {
+    const cached = responseCache.get(cacheKey);
+    if (cached) return cached as ReturnType<typeof buildResponse>;
+  }
   const catalog = (await listSearchableCatalog()).filter(isSearchableCatalogProduct);
   const localTerms = expandedTerms(input.message);
   const requestedIds = input.product_ids?.length ? new Set(input.product_ids) : null;
@@ -246,5 +261,7 @@ export async function findProductsForMessage(input: AssistantProductSearchInput)
     return buildResponse(MESSAGES.empty, [], terms, decision);
   }
 
-  return buildResponse(message, chosen, terms, decision);
+  const response = buildResponse(message, chosen, terms, decision);
+  if (cacheKey) responseCache.set(cacheKey, response as never, AI_LIMITS.ASSISTANT_RESPONSE_CACHE_TTL_MS);
+  return response;
 }

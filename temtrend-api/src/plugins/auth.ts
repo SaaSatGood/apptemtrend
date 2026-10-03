@@ -124,3 +124,9 @@ export async function requireAdmin(request: FastifyRequest, reply: FastifyReply)
 
   request.isAdmin = true;
 }
+
+export function clearAuthCachesForUser(userId: string) {
+  adminFlagCache.delete(userId);
+  // Tokens são chaveados por hash; limpeza total é mais segura no delete.
+  authUserCache.clear();
+}

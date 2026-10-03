@@ -1,6 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import fp from 'fastify-plugin';
 import { requireAuth } from '../../plugins/auth.js';
+import { requireActiveCreator } from '../creators/creator.service.js';
 import { RATE_LIMITS } from '../../config/constants.js';
 import { logger } from '../../lib/logger.js';
 import { assistantProductSearchSchema } from './assistant.schema.js';
@@ -14,8 +15,11 @@ async function assistantRoutes(app: FastifyInstance) {
     const input = assistantProductSearchSchema.parse(request.body);
 
     try {
+      await requireActiveCreator(request.authUser.id);
       return reply.send(await findProductsForMessage(input));
     } catch (error) {
+      const status = (error as { statusCode?: number }).statusCode;
+      if (status && status < 500) throw error;
       logger.error({ err: error }, 'Assistant product search failed');
       return reply.status(503).send({
         error: {

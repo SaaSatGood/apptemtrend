@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { env } from '../../config/env.js';
 import { AI_LIMITS } from '../../config/constants.js';
+import { TtlCache } from '../../lib/cache.js';
 import { logger } from '../../lib/logger.js';
 import type { Product } from '../../types/index.js';
 
@@ -72,6 +73,29 @@ function usageFromResponse(response: z.infer<typeof geminiResponseSchema>): Assi
 
 const MAX_CATALOG_ITEMS = AI_LIMITS.MAX_CATALOG_ITEMS;
 const MAX_DESCRIPTION_CHARS = AI_LIMITS.MAX_DESCRIPTION_CHARS;
+const MAX_NAME_CHARS = AI_LIMITS.MAX_NAME_CHARS;
+
+// Cache de decisões por mensagem normalizada + hash dos candidatos.
+// Evita pagar 2x pela mesma pergunta ("produto academia") em 5min.
+const decisionCache = new TtlCache<GeminiCatalogDecision>(500);
+
+function normalizeMessage(value: string) {
+  return value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('pt-BR').trim().slice(0, 200);
+}
+
+function decisionCacheKey(message: string, ids: string[]) {
+  const sorted = [...ids].sort().join(',');
+  let hash = 0;
+  for (let i = 0; i < sorted.length; i += 1) {
+    hash = (hash * 31 + sorted.charCodeAt(i)) | 0;
+  }
+  return `${normalizeMessage(message)}|${ids.length}|${hash}`;
+}
+
+function truncate(value: string | null | undefined, max: number) {
+  const text = (value ?? '').trim();
+  return text.length > max ? text.slice(0, max) : text;
+}
 
 export async function classifyCatalogRequest(
   message: string,
@@ -80,20 +104,31 @@ export async function classifyCatalogRequest(
   if (!env.GEMINI_API_KEY || env.NODE_ENV === 'test') return null;
 
   const allowedIds = new Set(products.map((product) => product.id));
+
+  // Em teste o cache é bypassado; em prod evita recomputar a mesma pergunta.
+  const cacheKey = decisionCacheKey(message, [...allowedIds]);
+  const cached = decisionCache.get(cacheKey);
+  if (cached) {
+    logger.info({ cached: true, selected_products: cached.selected_product_ids.length }, 'Assistant classification cache hit');
+    return cached;
+  }
+
+  // Payload mínimo para intenção: só semântica (id/nome/categoria/desc).
+  // Preço/comissão/vendas não ajudam a interpretar intenção e custavam ~60% dos tokens.
   const catalog = products.slice(0, MAX_CATALOG_ITEMS).map((product) => ({
     id: product.id,
-    nome: product.nome,
-    categoria: product.categoria,
-    descricao: (product.descricao || '').slice(0, MAX_DESCRIPTION_CHARS),
-    loja: product.loja_nome,
-    preco: product.preco_texto,
-    preco_min_brl: product.preco_min_brl,
-    preco_max_brl: product.preco_max_brl,
-    comissao_percentual: product.comissao_percentual,
-    unidades_vendidas_periodo: product.unidades_vendidas_periodo,
-    crescimento_vendas_percentual: product.crescimento_vendas_percentual,
+    nome: truncate(product.nome, MAX_NAME_CHARS),
+    categoria: truncate(product.categoria, 40),
+    descricao: truncate(product.descricao, MAX_DESCRIPTION_CHARS),
   }));
   const startedAt = Date.now();
+  const systemText = [
+    'Assistente TemTrend: escolha no catálogo produtos reais para o creator gravar.',
+    'Use só IDs do catálogo. Sem item adequado, selected_product_ids vazio.',
+    'in_scope=false só para tema fora de e-commerce/vendas/conteúdo.',
+    'Responda só o JSON pedido.',
+  ].join(' ');
+  const userText = JSON.stringify({ mensagem: message, catalogo: catalog });
 
   try {
     const response = await fetch(
@@ -107,24 +142,16 @@ export async function classifyCatalogRequest(
         body: JSON.stringify({
           systemInstruction: {
             parts: [{
-              text: [
-                'Você é o assistente inteligente da TemTrend.',
-                'Seu papel é encontrar produtos reais já cadastrados no catálogo da plataforma para que o creator grave conteúdo.',
-                'Nunca crie, invente, proponha ou persista um produto novo. Somente administradores cadastram produtos.',
-                'Analise nome, categoria, descrição, finalidade, público e forma de uso de todos os itens do catálogo.',
-                'Selecione apenas IDs recebidos no catálogo. Se não houver opção adequada, mantenha selected_product_ids vazio e sugira outra busca.',
-                'Retorne in_scope=false apenas para assuntos totalmente fora do contexto de e-commerce, vendas ou produção de conteúdo.',
-                'Não inclua explicações fora do JSON solicitado.',
-              ].join(' '),
+              text: systemText,
             }],
           },
           contents: [{
             role: 'user',
-            parts: [{ text: JSON.stringify({ mensagem: message, catalogo: catalog }) }],
+            parts: [{ text: userText }],
           }],
           generationConfig: {
             temperature: 0,
-            maxOutputTokens: 256,
+            maxOutputTokens: AI_LIMITS.CLASSIFY_MAX_OUTPUT_TOKENS,
             responseMimeType: 'application/json',
             responseSchema: RESPONSE_SCHEMA,
           },
@@ -150,14 +177,18 @@ export async function classifyCatalogRequest(
       selected_products: decision.selected_product_ids.length,
       usage,
       latency_ms: latencyMs,
+      catalog_items: catalog.length,
+      prompt_chars: systemText.length + userText.length,
     }, 'Assistant classification completed');
 
-    return {
+    const result = {
       ...decision,
-      provider: 'gemini',
+      provider: 'gemini' as const,
       usage,
       latency_ms: latencyMs,
     };
+    decisionCache.set(cacheKey, result, AI_LIMITS.CLASSIFY_CACHE_TTL_MS);
+    return result;
   } catch (error) {
     logger.warn({
       err: error,

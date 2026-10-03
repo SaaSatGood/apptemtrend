@@ -33,7 +33,7 @@ import * as productRepo from '../src/modules/products/product.repository.js';
 import * as creatorContentService from '../src/modules/creator-content/creator-content.service.js';
 import * as productService from '../src/modules/products/product.service.js';
 import * as assistantService from '../src/modules/assistant/assistant.service.js';
-import { createProductSchema } from '../src/modules/products/product.schema.js';
+import { createProductSchema, updateProductSchema } from '../src/modules/products/product.schema.js';
 import { createContentKitSchema } from '../src/modules/content-kits/content-kit.schema.js';
 import { createCreatorContentSchema, updateCreatorContentSchema } from '../src/modules/creator-content/creator-content.schema.js';
 import { requireAuth, requireAdmin } from '../src/plugins/auth.js';
@@ -104,7 +104,7 @@ describe('critical Beta rules', () => {
     }).success).toBe(true);
     expect(createProductSchema.safeParse({ nome: 'Produto', imagem_url: 'https://example.com/a.png', campo_inventado: 99 }).success).toBe(false);
     expect(createProductSchema.safeParse({ nome: 'Produto', imagem_url: 'https://example.com/a.png', comissao_percentual: 120 }).success).toBe(false);
-    expect(createProductSchema.partial().safeParse({ status: 'pausado', destaque: true, ordem_destaque: 2 }).success).toBe(true);
+    expect(updateProductSchema.safeParse({ status: 'pausado', destaque: true, ordem_destaque: 2 }).success).toBe(true);
   });
 
   it('validates and creates a Content Kit payload', () => {

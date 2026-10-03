@@ -18,6 +18,7 @@ export function buildApp() {
   const app = Fastify({
     loggerInstance: logger,
     logController: new LogController({ disableRequestLogging: true }),
+    trustProxy: true,
   });
   app.register(errorHandler);
   app.setNotFoundHandler((_request, reply) => {

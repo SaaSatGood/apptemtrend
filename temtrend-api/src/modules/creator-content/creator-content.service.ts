@@ -25,6 +25,7 @@ const NEXT_STATUS: Record<string, string> = {
 async function requireCreator(userId: string) {
   const creator = await findCreatorByUserId(userId);
   if (!creator) throw Errors.NOT_FOUND('Creator');
+  if (creator.status === 'bloqueado') throw Errors.FORBIDDEN;
   return creator;
 }
 
@@ -68,12 +69,21 @@ export async function startProduction(userId: string, productId: string, briefin
     return updateCreatorContent(current.id, { content_kit_id: contentKit.id });
   }
 
-  return createCreatorContent({
-    creator_id: creator.id,
-    product_id: productId,
-    content_kit_id: contentKit.id,
-    status: CONTENT_STATUS.SALVO,
-  });
+  try {
+    return await createCreatorContent({
+      creator_id: creator.id,
+      product_id: productId,
+      content_kit_id: contentKit.id,
+      status: CONTENT_STATUS.SALVO,
+    });
+  } catch (error) {
+    // Corrida double-submit: unique parcial -> relê e retorna existente.
+    if ((error as { code?: string }).code === '23505') {
+      const raced = await findAnyByCreatorAndProduct(creator.id, productId);
+      if (raced) return raced;
+    }
+    throw error;
+  }
 }
 
 export async function selectContentKit(userId: string, contentId: string, contentKitId: string) {
@@ -98,6 +108,7 @@ export async function saveOpportunity(userId: string, contentKitId: string) {
   if (!creator) {
     throw Errors.NOT_FOUND('Creator');
   }
+  if (creator.status === 'bloqueado') throw Errors.FORBIDDEN;
 
   const contentKit = await findContentKitById(contentKitId);
   if (!contentKit || contentKit.creator_id !== creator.id) {
@@ -131,12 +142,22 @@ export async function saveOpportunity(userId: string, contentKitId: string) {
   }
 
   // Legacy shortcut: choosing a Content Kit means production has started.
-  return createCreatorContent({
-    creator_id: creator.id,
-    product_id: contentKit.product_id,
-    content_kit_id: contentKitId,
-    status: CONTENT_STATUS.EM_PRODUCAO,
-  });
+  try {
+    return await createCreatorContent({
+      creator_id: creator.id,
+      product_id: contentKit.product_id,
+      content_kit_id: contentKitId,
+      status: CONTENT_STATUS.EM_PRODUCAO,
+    });
+  } catch (error) {
+    if ((error as { code?: string }).code === '23505') {
+      const raced = await findByCreatorAndKit(creator.id, contentKitId);
+      if (raced) return raced;
+      const racedProduct = await findAnyByCreatorAndProduct(creator.id, contentKit.product_id);
+      if (racedProduct) return racedProduct;
+    }
+    throw error;
+  }
 }
 
 export async function updateCreatorContentStatus(
