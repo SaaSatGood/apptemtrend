@@ -1,0 +1,11 @@
+{
+  "name": "temtrend",
+  "private": true,
+  "workspaces": ["backend", "frontend"],
+  "scripts": {
+    "build": "npm run build --workspace backend && npm run build --workspace frontend",
+    "test": "npm test --workspace backend",
+    "lint": "npm run lint --workspace frontend",
+    "verify": "npm run test && npm run build && npm run lint"
+  }
+}

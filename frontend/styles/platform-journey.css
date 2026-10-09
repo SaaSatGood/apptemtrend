@@ -1,0 +1,176 @@
+/* Creator journey. Shared interaction tokens stay aligned with the TemTrend brand. */
+#app-view, .auth-view, .onboarding, .publication-dialog {
+  --tt-lime: #c8ff2e;
+  --tt-ink: #10110f;
+  --tt-soft: #f4f4f1;
+  --tt-line: #deded8;
+  --tt-muted: #62665d;
+  --tt-btn-h-sm: 44px;
+  --tt-radius-card: 20px;
+}
+#app-view :is(.primary, .button), .auth-view .primary, .onboarding .primary, .publication-dialog .primary {
+  min-height: 48px;
+  border: 1px solid var(--tt-lime);
+  background: var(--tt-lime);
+  color: var(--tt-ink);
+  font-size: 13px;
+  font-weight: 800;
+  border-radius: 999px;
+  white-space: normal;
+  padding: 13px 22px;
+  box-shadow: none;
+}
+#app-view :is(.primary, .button):hover:not(:disabled), .auth-view .primary:hover:not(:disabled), .onboarding .primary:hover:not(:disabled), .publication-dialog .primary:hover:not(:disabled) {
+  background: #bbed28; border-color: #bbed28; color: var(--tt-ink); transform: translateY(-1px);
+}
+#app-view :is(button, summary, .ghost, .text-button, .detail-back, .app-nav a), .auth-view :is(button, .back-home), .onboarding button, .publication-dialog button { min-height: 44px; }
+#app-view :where(a, button, input, textarea, select, summary):focus-visible, .auth-view :where(a, button, input):focus-visible, .onboarding :where(a, button):focus-visible, .publication-dialog :where(button, input, textarea):focus-visible { outline: 2px solid #385400; outline-offset: 4px; }
+#app-view :is(button, input, select):disabled, .auth-view button:disabled, .publication-dialog button:disabled { opacity: .55; cursor: not-allowed; }
+#app-view h1 em, #app-view h2 em { font-family: var(--font-instrument-serif), Georgia, serif; font-style: italic; font-weight: 400; color: #4f7a00; letter-spacing: -0.04em; }
+#app-view .topbar { box-shadow: 0 6px 25px #10110f08; border-color: #e9e9e3; }
+#app-view .app-nav a.active { background: var(--tt-ink); color: #fff; box-shadow: none; }
+#app-view .user-copy { display: none; }
+#app-view .greeting { margin: 30px 0 0; color: var(--tt-muted); font-size: 12px; }
+#app-view .assistant-hero.discovery-workspace { padding: 0; text-align: left; }
+#app-view .assistant-hero.discovery-workspace::before { display: none; }
+#app-view .discovery-hero { padding: 40px 0 42px; border-bottom: 1px solid var(--tt-line); }
+#app-view .discover-intro { max-width: 850px; margin: 0 auto 28px; text-align: center; }
+#app-view .discover-intro h1 { max-width: none; font-size: clamp(42px, 5.4vw, 70px); line-height: 1.05; margin: 0 0 20px; }
+#app-view .discover-intro h1 em { position: relative; z-index: 0; }
+#app-view .discover-intro h1 em::after { content: ""; position: absolute; z-index: -1; background: var(--tt-lime); height: 12px; bottom: 6px; left: -4px; right: -4px; transform: rotate(-2deg); }
+#app-view .discover-intro > p:last-child { margin: auto; max-width: 560px; font-size: 15px; line-height: 1.7; }
+#app-view .discovery-hero .assistant-form { max-width: 890px; margin: 0 auto; }
+#app-view .assistant-form > label { text-transform: none; letter-spacing: 0; font-size: 13px; margin-bottom: 10px; }
+#app-view .assistant-input-row { border: 1px solid #c7c9c0; box-shadow: 0 4px 16px #10110f06; border-radius: 18px; padding: 8px; }
+#app-view .assistant-input-row input { min-width: 0; border-radius: 12px; padding-inline: 14px; }
+#app-view .assistant-examples { max-width: 890px; margin: 16px auto 0; gap: 8px; justify-content: center; flex-wrap: wrap; overflow: visible; }
+#app-view .assistant-examples > span { display: none; }
+#app-view .assistant-examples button { padding: 10px 15px; background: #fff; color: #45483f; font-size: 12px; }
+#app-view .assistant-interest-shortcuts { justify-content: center; }
+#app-view .discovery-surprise { display: flex; align-items: center; margin: 16px auto 0; font-size: 13px; }
+#app-view .discovery-note { text-align: center; color: var(--tt-muted); font-size: 11px; margin: 6px 0 0; }
+#app-view .catalog-section, #app-view .resume-section { margin-top: 40px; }
+#app-view .section-heading { display: flex; align-items: end; justify-content: space-between; gap: 18px; margin-bottom: 24px; }
+#app-view .section-heading h2 { margin: 0; font-size: clamp(27px, 3vw, 38px); font-weight: 600; }
+#app-view .section-heading .eyebrow { font-size: 10px; margin-bottom: 12px; }
+#app-view .section-heading p:not(.eyebrow) { color: var(--tt-muted); margin: 10px 0 0; font-size: 13px; }
+#app-view .catalog-count { color: var(--tt-muted); font-size: 12px; white-space: nowrap; }
+#app-view .catalog-filters { display: flex; gap: 8px; flex-wrap: wrap; margin: 0 0 24px; }
+#app-view .catalog-filters button { border: 1px solid var(--tt-line); border-radius: 999px; padding: 10px 17px; background: #fff; color: #45483f; font-size: 12px; font-weight: 700; cursor: pointer; }
+#app-view .catalog-filters button[aria-pressed="true"] { background: var(--tt-ink); color: #fff; border-color: var(--tt-ink); }
+#app-view .discovery-workspace .product-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 20px; }
+#app-view .opportunity-card { padding: 8px; border-color: #e6e7e0; box-shadow: none; overflow: hidden; display: flex; flex-direction: column; }
+#app-view .opportunity-card .product-image-wrap { aspect-ratio: 1.2; height: auto; position: relative; border-radius: 14px; }
+#app-view .opportunity-card .product-image { width: 100%; height: 100%; object-fit: contain; padding: 12px; background: #f6f6f3; }
+#app-view .opportunity-card .product-body { padding: 16px 8px 8px; display: flex; flex: 1; flex-direction: column; gap: 0; }
+#app-view .opportunity-card .product-category { font-size: 10px; letter-spacing: .02em; text-transform: none; padding: 0; background: none; color: #62665d; border: 0; }
+#app-view .opportunity-card h3 { font-size: 15px; font-weight: 750; letter-spacing: -.025em; line-height: 1.45; margin: 10px 0; min-height: 44px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+#app-view .opportunity-price { font-size: 14px; font-weight: 750; color: var(--tt-ink); margin: auto 0 16px; }
+#app-view .opportunity-card .product-actions { display: block; margin: 0; }
+#app-view .opportunity-card .open-product { width: 100%; min-height: 44px; padding: 10px 15px; justify-content: space-between; font-size: 12px; }
+#app-view .opportunity-card:hover .open-product { background: var(--tt-lime); border-color: var(--tt-lime); }
+#app-view .catalog-saved { position: absolute; top: 10px; right: 10px; border-radius: 999px; background: #fff; color: #33450e; font-size: 10px; padding: 6px 10px; }
+#app-view .catalog-more { display: flex; margin: 28px auto 0; }
+#app-view .resume-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+#app-view .resume-card { display: grid; gap: 14px; border: 1px solid var(--tt-line); border-radius: 16px; padding: 20px; text-decoration: none; color: var(--tt-ink); background: #f9faf6; }
+#app-view .resume-card:hover { border-color: #8ba950; }
+#app-view .resume-card strong { font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#app-view .resume-card > span:last-child { font-size: 12px; }
+#app-view .resume-card .production-status { width: fit-content; }
+#app-view .product-detail-hero { gap: 40px; }
+#app-view .product-detail-hero > img { background: #f6f6f3; object-fit: contain; max-height: 510px; }
+#app-view .product-detail-copy h1 { font-size: clamp(28px, 3.5vw, 44px); line-height: 1.12; }
+#app-view .product-detail-primary { display: flex; flex-wrap: wrap; gap: 10px; }
+#app-view .product-detail-primary > .primary { order: 0; }
+#app-view .product-detail-primary > .ghost { order: 1; }
+#app-view .product-detail-metrics { display: flex; flex-wrap: wrap; gap: 24px; padding: 20px; border: 0; }
+#app-view .product-detail-metrics > div { flex: 1; min-width: 75px; }
+#app-view .content-kit-header h1 { font-size: clamp(30px, 4vw, 48px); line-height: 1.15; max-width: 850px; }
+#app-view .content-kit-header > .product-category { display: block; margin-bottom: 14px; text-transform: none; letter-spacing: 0; color: var(--tt-muted); }
+#app-view .content-kit-layout { gap: 28px; align-items: start; }
+#app-view .content-kit-layout .kit-actions { border: 1px solid var(--tt-line); border-radius: 20px; background: #f7f8f3; box-shadow: none; }
+#app-view .kit-actions > button { min-height: 44px; border-radius: 999px; padding: 12px 18px; cursor: pointer; }
+#app-view #copy-kit { border: 1px solid var(--tt-line); background: #fff; font-size: 13px; font-weight: 700; }
+#app-view .kit-block, #app-view #preferencias, #app-view #kit-document { scroll-margin-top: 110px; }
+#app-view .kit-block p { font-size: 14px; line-height: 1.8; overflow-wrap: anywhere; }
+#app-view .scene-card { padding: 22px; background: #f8f8f5; border: 1px solid #e6e7e0; border-radius: 14px; }
+#app-view .scene-card > strong { display: block; margin-bottom: 18px; }
+#app-view .block-heading { flex-wrap: wrap; gap: 10px; }
+#app-view .block-heading button { min-height: 44px; letter-spacing: 0; text-transform: none; color: #33392c; }
+#app-view .journey-steps { padding: 18px 0; margin: 12px 0 26px; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; list-style: none; border-block: 1px solid var(--tt-line); }
+#app-view .journey-steps li { display: flex; align-items: center; gap: 10px; font-size: 12px; font-weight: 700; color: #6b6f64; }
+#app-view .journey-steps li > span { display: grid; place-items: center; flex-shrink: 0; width: 28px; height: 28px; border-radius: 50%; background: #f0f1eb; color: #62665d; font-size: 11px; }
+#app-view .journey-steps .is-current { color: var(--tt-ink); }
+#app-view .journey-steps .is-current > span { background: var(--tt-lime); color: var(--tt-ink); }
+#app-view .journey-steps .is-done > span { background: #e7efdb; color: #365214; }
+#app-view .production-heading h1 { font-size: clamp(36px, 4vw, 52px); }
+#app-view .production-toolbar { box-shadow: none; }
+#app-view .production-card { box-shadow: none; border-color: var(--tt-line); }
+#app-view .production-filters { flex-wrap: wrap; }
+#app-view .production-status { text-transform: none; letter-spacing: .015em; }
+#app-view .account-signout { margin-top: 26px; }
+.auth-view, .onboarding { background: #f8f9f5; }
+.auth-view .auth-shell, .onboarding .onboarding-shell { box-shadow: 0 15px 50px #10110f06; border: 1px solid var(--tt-line); }
+.auth-view .auth-value { background: transparent; }
+.auth-view .auth-value h2 { font-family: var(--font-instrument-serif), Georgia, serif; font-size: clamp(36px, 5vw, 58px); font-weight: 400; font-style: italic; letter-spacing: -.035em; }
+.onboarding .onboarding-stepper { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.onboarding .onboarding-stepper li { font-size: 11px; gap: 7px; }
+.onboarding .onboarding-stepper li::after { display: none; }
+.onboarding .selection-card.selected { background: #f1ffd3; border-color: #87a952; }
+.publication-dialog { max-width: min(600px, calc(100vw - 32px)); max-height: calc(100svh - 48px); overflow-y: auto; border: 1px solid #deded8; border-radius: 24px; padding: 32px; box-shadow: 0 24px 80px #10110f26; font-family: var(--font-manrope), sans-serif; }
+.publication-dialog::backdrop { background: #10110f66; backdrop-filter: blur(4px); }
+.publication-dialog .dialog-close { min-width: 44px; }
+.publication-dialog .briefing-suggestions button { min-height: 44px; }
+@media (max-width: 900px) {
+  #app-view .discovery-workspace .product-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+  #app-view .resume-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  #app-view .content-kit-layout { grid-template-columns: minmax(0, 1fr); }
+  #app-view .content-kit-layout .kit-actions { position: static; grid-row: 1; }
+}
+@media (max-width: 650px) {
+  #app-view .page-wrap { width: calc(100% - 32px); padding-bottom: 40px; }
+  #app-view .topbar { top: 8px; min-height: 64px; height: auto; width: calc(100% - 20px); padding: 8px 10px; gap: 6px; flex-wrap: nowrap; }
+  #app-view .app-logo { gap: 0; }
+  #app-view .app-logo b { display: none; }
+  #app-view .app-nav { position: static; transform: none; margin: 0 auto; padding: 2px; }
+  #app-view .app-nav a { padding-inline: 13px; min-height: 44px; font-size: 12px; }
+  #app-view .user-menu { margin: 0; }
+  #app-view .user-menu > summary { padding: 0; min-width: 44px; }
+  #app-view .user-avatar { width: 34px; height: 34px; }
+  #app-view .admin-nav-label { font-size: 9px; }
+  #app-view .greeting { margin-top: 24px; }
+  #app-view .discovery-hero { padding: 28px 0 32px; }
+  #app-view .discover-intro { margin-bottom: 24px; }
+  #app-view .discover-intro h1 { font-size: clamp(36px, 9vw, 48px); }
+  #app-view .discover-intro > p:last-child { font-size: 13px; }
+  #app-view .assistant-input-row { grid-template-columns: minmax(0, 1fr); border-radius: 16px; }
+  #app-view .assistant-input-row input { font-size: 16px; padding-inline: 10px; }
+  #app-view .assistant-examples, #app-view .assistant-interest-shortcuts { margin-right: 0; padding-right: 0; gap: 7px; flex-wrap: wrap; overflow: visible; }
+  #app-view .assistant-examples button { padding: 8px 11px; font-size: 11px; }
+  #app-view .discovery-note { line-height: 1.7; }
+  #app-view .section-heading { align-items: start; flex-direction: column; gap: 12px; }
+  #app-view .catalog-filters { gap: 7px; }
+  #app-view .catalog-filters button { padding: 8px 12px; font-size: 11px; }
+  #app-view .discovery-workspace .product-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  #app-view .opportunity-card { padding: 5px; border-radius: 16px; }
+  #app-view .opportunity-card .product-body { padding: 12px 5px 5px; }
+  #app-view .opportunity-card h3 { font-size: 13px; }
+  #app-view .opportunity-card .product-image-wrap { aspect-ratio: 1; }
+  #app-view .opportunity-price { font-size: 12px; }
+  #app-view .opportunity-card .open-product { font-size: 11px; padding: 8px; }
+  #app-view .resume-grid { grid-template-columns: minmax(0, 1fr); }
+  #app-view .assistant-message { grid-template-columns: 32px minmax(0, 1fr); gap: 10px; }
+  #app-view .assistant-message > button { grid-column: 2; justify-self: start; }
+  #app-view .journey-steps { gap: 6px; }
+  #app-view .journey-steps li { flex-direction: column; text-align: center; font-size: 10px; gap: 8px; }
+  #app-view .product-detail-hero { gap: 24px; }
+  #app-view .product-detail-primary > :is(button, a) { width: 100%; }
+  #app-view .kit-block { padding: 20px; }
+  #app-view .scene-card { padding: 16px; }
+  #app-view .production-heading { align-items: start; }
+  .onboarding .onboarding-stepper li { flex-direction: column; font-size: 10px; }
+  .publication-dialog { padding: 26px 20px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  #app-view *, .auth-view *, .onboarding *, .publication-dialog * { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+}

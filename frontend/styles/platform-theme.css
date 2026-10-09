@@ -1,0 +1,1369 @@
+/* ============================================================
+   TemTrend — Plataforma unificada à Landing Page
+   Espelha os tokens, tipografia, botões, pills, cards e
+   hero da landing (tt-home) em todo o /app.
+   Tokens landing:
+   --tt-ink #10110f · --tt-lime #c8ff2e · --tt-soft #f4f4f1
+   --tt-line #deded8 · --tt-blue #c9f5ff · deep #82af00
+   ============================================================ */
+
+#app-view,
+.auth-view,
+.onboarding,
+.account-load-error,
+#admin-view {
+  --tt-ink: #10110f;
+  --tt-lime: #c8ff2e;
+  --tt-lime-soft: #f2ffcb;
+  --tt-lime-deep: #82af00;
+  --tt-soft: #f4f4f1;
+  --tt-line: #deded8;
+  --tt-blue: #c9f5ff;
+  --tt-muted: #62665d;
+  --ink: #10110f;
+  --muted: #62665d;
+  --line: #deded8;
+  --tt-radius-btn: 999px;
+  --tt-radius-input: 12px;
+  --tt-radius-card: 20px;
+  --tt-btn-h: 51px;
+  --tt-btn-h-sm: 38px;
+  font-family: var(--font-manrope), Arial, sans-serif;
+  color: var(--tt-ink);
+}
+
+/* ---------- Base / fundo ---------- */
+#app-view {
+  min-height: 100svh;
+  background: #fff;
+}
+#app-view .page-wrap {
+  width: min(1120px, calc(100% - 48px));
+  max-width: 1120px;
+  margin-inline: auto;
+  padding: 0 0 90px;
+}
+.auth-view,
+.onboarding {
+  background:
+    radial-gradient(ellipse 45% 43% at 8% 40%, #faff40 0%, #efff76 42%, transparent 100%),
+    radial-gradient(ellipse 48% 40% at 42% 97%, #b9fff5 0%, #e5fff9 55%, transparent 100%),
+    radial-gradient(ellipse 34% 38% at 77% 8%, #faffdd 0%, transparent 100%),
+    #fafff0;
+}
+
+/* ---------- Tipografia landing ---------- */
+#app-view :is(h1, h2, h3),
+.auth-view :is(h1, h2, h3),
+.onboarding :is(h1, h2, h3),
+#admin-view :is(h1, h2, h3) {
+  letter-spacing: -0.055em;
+  line-height: 1.02;
+  text-wrap: balance;
+}
+#app-view h1,
+.auth-heading h1,
+.onboarding-heading h1 {
+  font-weight: 610;
+  letter-spacing: -0.065em;
+  text-transform: none;
+}
+#app-view h1 em,
+#app-view h2 em,
+.auth-view h1 em,
+.onboarding-heading h1 em {
+  font-family: var(--font-instrument-serif), Georgia, serif;
+  font-style: italic;
+  font-weight: 400;
+  color: var(--tt-lime-deep);
+  letter-spacing: -0.04em;
+}
+
+/* Eyebrow = tt-eyebrow com dot lime */
+#app-view .eyebrow,
+.auth-view .eyebrow,
+.onboarding .eyebrow,
+#admin-view .eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 17px;
+  color: var(--tt-ink);
+  font-size: 11px;
+  font-weight: 850;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+#app-view .eyebrow::before,
+.auth-view .eyebrow::before,
+.onboarding .eyebrow::before,
+#admin-view .eyebrow::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--tt-lime);
+  box-shadow: 0 0 0 3px #c8ff2e38;
+  flex: 0 0 auto;
+}
+
+/* Pill estilo tt-pill */
+#app-view .product-category,
+#app-view .kit-meta span,
+#app-view .product-status,
+#app-view .production-status,
+#app-view .account-plan-pill,
+#app-view .product-saved-badge,
+#app-view .production-badge {
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* ---------- Logos = tt-logo ---------- */
+#app-view .app-logo,
+.auth-view .auth-logo,
+.onboarding .onboarding-logo,
+.account-load-error .app-logo,
+.app-boot-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 15px;
+  font-weight: 850;
+  letter-spacing: -0.03em;
+  text-decoration: none;
+  color: var(--tt-ink);
+}
+#app-view .app-logo span,
+.auth-view .auth-logo span,
+.onboarding .onboarding-logo span,
+.account-load-error .app-logo span,
+.app-boot-brand span {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--tt-lime);
+  color: #111;
+  font-size: 13px;
+  font-weight: 900;
+  box-shadow: none;
+}
+#app-view .app-logo b,
+.auth-view .auth-logo b {
+  font-weight: 850;
+}
+#app-view .app-logo,
+.app-boot-brand {
+  font-size: 15px;
+  letter-spacing: -0.03em;
+}
+#app-view .user-avatar,
+#app-view .account-avatar {
+  background: var(--tt-ink);
+  color: #fff;
+  box-shadow: none;
+}
+#app-view .account-avatar {
+  box-shadow: none;
+}
+
+/* ---------- Topbar = tt-header pill flutuante ---------- */
+#app-view .topbar {
+  position: sticky;
+  top: 12px;
+  z-index: 50;
+  height: 68px;
+  margin: 12px auto 0;
+  width: min(1120px, calc(100% - 32px));
+  padding: 0 12px 0 22px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  border: 1px solid #ffffffbd;
+  border-radius: 999px;
+  background: #fffffff0;
+  box-shadow: 0 12px 42px #233d1719;
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  transition: background-color .25s ease, box-shadow .25s ease;
+}
+#app-view .topbar.is-scrolled {
+  background: #ffffffcc;
+  box-shadow: 0 14px 42px #233d1722;
+}
+#app-view .app-nav {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 4px;
+  margin: 0;
+  padding: 4px;
+  border: 1px solid var(--tt-line);
+  border-radius: 999px;
+  background: var(--tt-soft);
+}
+#app-view .app-nav a {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 38px;
+  padding: 8px 16px;
+  border-radius: 999px;
+  color: #4f514b;
+  font-size: 12px;
+  font-weight: 750;
+  letter-spacing: -0.01em;
+  text-decoration: none;
+  box-shadow: none;
+}
+#app-view .app-nav a span {
+  font-size: 13px;
+  line-height: 1;
+}
+#app-view .app-nav a:hover {
+  background: #fff;
+  color: var(--tt-ink);
+}
+#app-view .app-nav a.active {
+  background: var(--tt-ink);
+  color: #fff;
+  box-shadow: none;
+}
+#app-view .user-menu > summary {
+  padding: 5px 7px 5px 10px;
+  border-radius: 999px;
+}
+#app-view .user-menu > summary:hover,
+#app-view .user-menu[open] > summary {
+  background: var(--tt-soft);
+}
+#app-view .user-menu-panel {
+  top: 54px;
+  width: 260px;
+  padding: 8px;
+  border: 1px solid var(--tt-line);
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 18px 55px rgba(16, 17, 15, 0.14);
+}
+.admin-nav-label {
+  margin-left: auto;
+  margin-right: 12px;
+  color: var(--tt-muted);
+  font-size: 11px;
+  font-weight: 850;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+/* ---------- Botões = tt-btn ---------- */
+#app-view :is(.primary, .button),
+.auth-view :is(.primary, .button),
+.onboarding :is(.primary, .button),
+.account-load-error :is(.primary, .button),
+#admin-view :is(.primary, .button) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: var(--tt-btn-h);
+  padding: 0 23px;
+  border: 1px solid var(--tt-ink);
+  border-radius: 999px;
+  background: var(--tt-ink);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 750;
+  letter-spacing: -0.01em;
+  text-decoration: none;
+  white-space: nowrap;
+  box-shadow: none;
+  cursor: pointer;
+  transition: transform 0.2s, background 0.2s;
+}
+#app-view :is(.primary, .button):hover:not(:disabled),
+.auth-view :is(.primary, .button):hover:not(:disabled),
+.onboarding :is(.primary, .button):hover:not(:disabled) {
+  transform: translateY(-2px);
+  background: #2b2c28;
+  border-color: #2b2c28;
+  box-shadow: none;
+}
+#app-view .button-small,
+.onboarding-actions .primary,
+.auth-form .primary {
+  min-height: var(--tt-btn-h-sm);
+  padding-inline: 17px;
+  font-size: 11px;
+}
+
+/* CTA principal estilo hero lime (Descobrir) */
+#app-view #assistant-submit,
+#app-view .production-new {
+  border: 0;
+  background: var(--tt-lime);
+  color: #111;
+  font-size: 13px;
+}
+#app-view #assistant-submit:hover:not(:disabled),
+#app-view .production-new:hover:not(:disabled) {
+  background: #d9ff74;
+  border-color: transparent;
+  color: #111;
+}
+
+/* Secundário = pill branco landing */
+#app-view :is(.ghost, .button-light),
+.auth-view :is(.ghost, .button-light),
+.onboarding :is(.ghost, .button-light),
+.account-load-error :is(.ghost, .button-light),
+#admin-view :is(.ghost, .button-light) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: var(--tt-btn-h);
+  padding: 0 23px;
+  border: 1px solid var(--tt-line);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--tt-ink);
+  font-size: 12px;
+  font-weight: 750;
+  letter-spacing: -0.01em;
+  text-decoration: none;
+  white-space: nowrap;
+  box-shadow: none;
+  cursor: pointer;
+  transition: transform 0.2s, border-color 0.2s, background 0.2s;
+}
+#app-view :is(.ghost, .button-light):hover:not(:disabled),
+.auth-view :is(.ghost, .button-light):hover:not(:disabled) {
+  transform: translateY(-2px);
+  border-color: var(--tt-ink);
+  background: #fff;
+}
+#app-view .google-button,
+.auth-view .google-button {
+  border: 1px solid var(--tt-line);
+  border-radius: 999px;
+  background: #fff;
+  min-height: 48px;
+  font-size: 13px;
+  font-weight: 750;
+}
+#app-view .google-button:hover,
+.auth-view .google-button:hover {
+  border-color: var(--tt-ink);
+  background: #fff;
+  transform: translateY(-2px);
+}
+
+/* Texto = link landing sem sublinhado pesado */
+#app-view :is(.text-button, .text-link, .back-button, .detail-back, .back-home),
+.auth-view :is(.text-button, .back-button, .back-home),
+.onboarding :is(.text-button, .back-button) {
+  background: transparent;
+  border: 0;
+  padding: 4px 0;
+  color: var(--tt-ink);
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+  text-underline-offset: 3px;
+  cursor: pointer;
+  min-height: 0;
+  box-shadow: none;
+}
+#app-view :is(.text-button, .back-button, .detail-back):hover,
+.auth-view :is(.text-button, .back-button):hover {
+  text-decoration: underline;
+  opacity: 1;
+}
+
+/* Perigo mantém função, forma pill */
+#app-view .danger-button,
+.account-danger .danger-button {
+  min-height: var(--tt-btn-h);
+  border: 1px solid #e3b3bf;
+  border-radius: 999px;
+  padding: 0 22px;
+  font-size: 12px;
+  font-weight: 750;
+  background: #fff;
+  color: #a92340;
+}
+#app-view .danger-button:hover,
+.account-danger .danger-button:hover {
+  background: #a92340;
+  border-color: #a92340;
+  color: #fff;
+  transform: translateY(-2px);
+}
+
+/* ---------- Inputs = landing ---------- */
+#app-view :is(input, textarea, select),
+.auth-view :is(input, textarea, select),
+.onboarding :is(input, textarea, select) {
+  border: 1px solid var(--tt-line);
+  border-radius: var(--tt-radius-input);
+  background: #fff;
+  color: var(--tt-ink);
+}
+#app-view :is(input, textarea, select):hover,
+.auth-view :is(input, textarea):hover {
+  border-color: #bfc2b8;
+}
+#app-view :is(input, textarea, select):focus,
+.auth-view :is(input, textarea):focus {
+  border-color: #8aad3c;
+  box-shadow: 0 0 0 3px #c8ff2e4d;
+  outline: none;
+}
+#app-view :where(a, button, input, textarea, select, summary):focus-visible,
+.auth-view :where(a, button, input, textarea, summary):focus-visible,
+.onboarding :where(a, button, input, textarea, summary):focus-visible {
+  outline: 3px solid #90be2855;
+  outline-offset: 3px;
+}
+
+/* ---------- Cards = tt-story / tt-kit-piece ---------- */
+#app-view :is(.card, .product-card, .kit-card, .kit-document, .account-card, .account-summary, .production-card, .production-overview, .assistant-message, .metric, .empty-state),
+#admin-view :is(.card, .metric, .empty-state) {
+  border: 1px solid #e2e8d9;
+  border-radius: var(--tt-radius-card);
+  background: #fff;
+  box-shadow: 0 12px 35px #2438130c;
+}
+#app-view :is(.product-card, .production-card, .kit-card):hover {
+  border-color: #b7d973;
+  box-shadow: 0 18px 36px #324b131a;
+  transform: translateY(-2px);
+}
+#app-view :is(.product-card, .production-card, .kit-card),
+#admin-view .card {
+  transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+}
+#app-view :is(.product-image-wrap, .production-image-wrap) {
+  overflow: hidden;
+  border-radius: 14px;
+  background: var(--tt-soft);
+}
+#app-view .product-image-wrap img,
+#app-view .production-image-wrap img {
+  background: var(--tt-soft);
+}
+
+/* Métricas internas = mockup landing */
+#app-view :is(.product-detail-metrics, .product-metrics, .plan-card) {
+  background: var(--tt-soft);
+  border: 1px solid #e2e8d9;
+  border-radius: 14px;
+}
+#app-view .production-overview {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 28px;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  padding: 0;
+}
+#app-view .production-overview > div {
+  display: grid;
+  gap: 8px;
+  align-content: center;
+  min-height: 118px;
+  padding: 20px 22px;
+  border: 1px solid #e2e8d9;
+  border-radius: 16px;
+  background: #fff;
+}
+#app-view .production-overview > div:nth-child(2) {
+  background: var(--tt-lime);
+  border-color: var(--tt-lime);
+}
+#app-view .production-overview > div:last-child {
+  background: #131511;
+  border-color: #131511;
+  color: #fff;
+}
+#app-view .production-overview > div:last-child span {
+  color: #c9cfc2;
+}
+#app-view .production-overview strong {
+  font-size: 2rem;
+  line-height: 1;
+  letter-spacing: -0.05em;
+}
+#app-view .production-overview span {
+  color: var(--tt-muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+/* ---------- Discover / Assistant = hero landing ---------- */
+#app-view .assistant-hero {
+  position: relative;
+  isolation: isolate;
+  max-width: none;
+  padding: 64px 0 20px;
+}
+#app-view .assistant-hero::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  top: -30px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(1120px, 100%);
+  height: 420px;
+  pointer-events: none;
+  border-radius: 28px;
+  background:
+    radial-gradient(ellipse 45% 43% at 8% 40%, #faff40 0%, #efff76 42%, transparent 100%),
+    radial-gradient(ellipse 48% 40% at 42% 97%, #b9fff5 0%, #e5fff9 55%, transparent 100%),
+    #fafff0;
+  opacity: 0.9;
+}
+#app-view .discover-intro h1 {
+  max-width: 900px;
+  font-size: clamp(48px, 5.7vw, 76px);
+  font-weight: 610;
+  line-height: 1.04;
+}
+#app-view .discover-intro > p:last-child {
+  max-width: 680px;
+  color: var(--tt-muted);
+  font-size: 15px;
+  line-height: 1.6;
+}
+#app-view .assistant-form {
+  max-width: 980px;
+}
+#app-view .assistant-form > label {
+  font-size: 11px;
+  font-weight: 850;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+#app-view .assistant-input-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  padding: 7px;
+  border: 1px solid #dce7cf;
+  border-radius: 999px;
+  background: #fff;
+  box-shadow: 0 12px 36px rgba(103, 143, 58, 0.12);
+}
+#app-view .assistant-input-row input {
+  border: 0;
+  border-radius: 999px;
+  min-height: 54px;
+  padding: 0 20px;
+  font-size: 14px;
+  box-shadow: none;
+}
+#app-view .assistant-input-row input:focus {
+  box-shadow: none;
+  border-color: transparent;
+}
+#app-view .assistant-input-row:focus-within {
+  border-color: #8aad3c;
+  box-shadow: 0 0 0 3px #c8ff2e4d, 0 12px 36px rgba(103, 143, 58, 0.12);
+}
+#app-view .assistant-examples button {
+  border: 1px solid var(--tt-line);
+  border-radius: 999px;
+  background: #ffffff90;
+  padding: 9px 14px;
+  font-size: 12px;
+  font-weight: 700;
+}
+#app-view .assistant-examples button:hover {
+  border-color: var(--tt-ink);
+  background: var(--tt-lime-soft);
+  transform: translateY(-1px);
+}
+#app-view .assistant-response {
+  border-top: 1px solid #e2e8d9;
+}
+#app-view .assistant-message {
+  grid-template-columns: 42px minmax(0, 1fr) auto;
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: var(--tt-soft);
+  border-color: #e2e8d9;
+}
+#app-view .assistant-mark {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: var(--tt-lime);
+  color: #111;
+  font-weight: 900;
+  box-shadow: none;
+}
+#app-view .product-commission-badge {
+  background: rgba(16, 17, 15, 0.86);
+  border-radius: 999px;
+  backdrop-filter: blur(8px);
+}
+#app-view .production-filters button {
+  border-radius: 999px;
+}
+#app-view .production-filters button.active {
+  background: var(--tt-ink);
+  border-color: var(--tt-ink);
+  color: #fff;
+}
+
+/* Product grid harmônico com landing tt-product-grid */
+#app-view .assistant-response .product-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+}
+#app-view .assistant-response .product-body h3 {
+  letter-spacing: -0.03em;
+}
+
+/* ---------- Produto detalhe ---------- */
+#app-view .product-detail-hero > img {
+  border-radius: 20px;
+  border: 1px solid #e2e8d9;
+}
+#app-view .product-saved-badge {
+  background: #eaffba;
+  color: #3f5c00;
+  padding: 8px 12px;
+}
+#app-view .product-shop-link {
+  font-weight: 750;
+  text-underline-offset: 3px;
+}
+#app-view .kits-section {
+  border-top: 1px solid #e2e8d9;
+}
+#app-view .kits-section-heading > span {
+  border-radius: 999px;
+  background: var(--tt-soft);
+  border: 1px solid #e2e8d9;
+}
+#app-view .kit-card strong {
+  font-size: 12px;
+  font-weight: 750;
+}
+
+/* ---------- Kit document = Content Kit landing ---------- */
+#app-view .kit-document {
+  overflow: hidden;
+  padding: 0;
+}
+#app-view .kit-block {
+  padding: 28px;
+  border-bottom: 1px solid #e7ebdf;
+}
+#app-view .kit-block small,
+#app-view .scene-card small,
+#app-view .block-heading button {
+  font-size: 11px;
+  font-weight: 850;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #6b705f;
+}
+#app-view .hook-block {
+  background: var(--tt-lime);
+  border-bottom-color: var(--tt-lime);
+}
+#app-view .hook-block small {
+  color: #2c3400;
+}
+#app-view .hook-block h2 {
+  font-size: clamp(1.6rem, 3vw, 2.2rem);
+  letter-spacing: -0.04em;
+}
+#app-view .block-heading button {
+  min-height: 34px;
+  padding: 7px 12px;
+  border: 1px solid #d6dccb;
+  border-radius: 999px;
+  background: #fff;
+  cursor: pointer;
+}
+#app-view .block-heading button:hover {
+  border-color: var(--tt-ink);
+}
+#app-view .hashtag-list span {
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: var(--tt-soft);
+  border: 1px solid #e2e8d9;
+  font-size: 12px;
+  font-weight: 700;
+}
+#app-view .content-kit-layout .kit-actions {
+  border: 1px solid #e2e8d9;
+  border-radius: 20px;
+  padding: 26px;
+  background: #fff;
+  box-shadow: 0 12px 35px #2438130c;
+}
+#app-view .production-badge {
+  background: #eaffba;
+  color: #3f5c00;
+  padding: 8px 12px;
+}
+#app-view .published-check {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  background: var(--tt-ink);
+  color: #fff;
+  border-radius: 50%;
+  box-shadow: none;
+}
+#app-view .production-guidance {
+  border-radius: 14px;
+  background: var(--tt-soft);
+  border: 1px solid #e2e8d9;
+  color: var(--tt-muted);
+}
+
+/* ---------- Produção ---------- */
+#app-view .production-card-topline > small {
+  color: #8a8d85;
+}
+#app-view .production-step {
+  border-radius: 999px;
+  background: rgba(16, 17, 15, 0.86);
+  backdrop-filter: blur(8px);
+}
+#app-view .production-progress-compact span {
+  height: 5px;
+  border-radius: 999px;
+  background: #e6e8df;
+}
+#app-view .production-progress-compact span.done,
+#app-view .onboarding-progress div {
+  background: var(--tt-lime);
+}
+#app-view .production-card-actions .production-action {
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 750;
+}
+#app-view a.production-action,
+#app-view button.production-action.continue-production {
+  background: var(--tt-ink);
+  border: 1px solid var(--tt-ink);
+  color: #fff;
+}
+#app-view button.production-action:not(.continue-production),
+#app-view a.production-script-link {
+  background: #fff;
+  border: 1px solid var(--tt-line);
+  color: var(--tt-ink);
+}
+
+/* ---------- Auth = landing final card ---------- */
+.auth-view {
+  min-height: 100svh;
+  padding: 28px clamp(20px, 5vw, 64px) 32px;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+}
+.auth-view::before,
+.auth-view::after {
+  display: none;
+}
+.auth-view .auth-layout {
+  width: min(100%, 1040px);
+  gap: clamp(40px, 6vw, 90px);
+}
+.auth-view .auth-value {
+  border-left: 3px solid var(--tt-ink);
+  padding-left: 30px;
+}
+.auth-view .auth-value h2 {
+  font-size: clamp(2.4rem, 4vw, 3.6rem);
+  font-weight: 610;
+  letter-spacing: -0.06em;
+  line-height: 0.98;
+}
+.auth-view .auth-shell {
+  padding: 36px;
+  border: 1px solid #e2e8d9;
+  border-radius: 24px;
+  background: #fffffff0;
+  box-shadow: 0 22px 65px #273a1319;
+}
+.auth-view .auth-heading h1 {
+  font-weight: 610;
+  text-transform: none;
+  letter-spacing: -0.06em;
+}
+.auth-view .auth-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 999px;
+  background: var(--tt-soft);
+  border: 1px solid #e2e8d9;
+}
+.auth-view .auth-tabs button {
+  border: 0;
+  background: transparent;
+  min-height: 40px;
+  border-radius: 999px;
+  font-weight: 800;
+  font-size: 13px;
+  color: #6b705f;
+  cursor: pointer;
+}
+.auth-view .auth-tabs button[aria-selected="true"] {
+  background: #fff;
+  color: var(--tt-ink);
+  box-shadow: 0 2px 9px rgba(16, 17, 15, 0.08);
+}
+.auth-view .auth-accent {
+  display: none;
+}
+.auth-view .divider span {
+  background: transparent;
+  color: #8a8d85;
+}
+
+/* ---------- Onboarding = landing steps ---------- */
+.onboarding {
+  padding: 28px clamp(20px, 5vw, 64px) 48px;
+}
+.onboarding .onboarding-shell {
+  width: min(100%, 640px);
+}
+.onboarding .onboarding-progress {
+  height: 6px;
+  border-radius: 999px;
+  background: #e6eddb;
+  overflow: hidden;
+}
+.onboarding .selection-card {
+  border: 1px solid var(--tt-line);
+  border-radius: 14px;
+  background: #fff;
+  font-size: 15px;
+  font-weight: 700;
+  transition: transform 0.18s, border-color 0.18s, background 0.18s;
+}
+.onboarding .selection-card:hover {
+  transform: translateY(-1px);
+  border-color: var(--tt-ink);
+}
+.onboarding .selection-card.selected {
+  border-color: var(--tt-lime);
+  background: var(--tt-lime-soft);
+}
+.onboarding .selection-card.selected i {
+  border-color: var(--tt-ink);
+}
+.onboarding .selection-card.selected i::after {
+  content: "";
+  position: absolute;
+  inset: 4px;
+  border-radius: 50%;
+  background: var(--tt-lime);
+}
+.onboarding .chip-grid button {
+  border: 1px solid var(--tt-line);
+  border-radius: 999px;
+  background: #fff;
+  transition: transform 0.18s, background 0.18s, border-color 0.18s;
+}
+.onboarding .chip-grid button:hover {
+  transform: translateY(-1px);
+}
+.onboarding .chip-grid button.selected {
+  border-color: var(--tt-ink);
+  background: var(--tt-ink);
+  color: #fff;
+  box-shadow: none;
+}
+.onboarding .onboarding-stepper li.is-current > span {
+  background: var(--tt-ink);
+  border-color: var(--tt-ink);
+  color: #fff;
+  box-shadow: none;
+}
+.onboarding .done-mark {
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--tt-lime);
+  color: #111;
+  font-size: 22px;
+  font-weight: 900;
+  margin-bottom: 20px;
+}
+.onboarding .onboarding-summary > span {
+  border: 1px solid #e2e8d9;
+  border-radius: 16px;
+  background: #fff;
+}
+
+/* ---------- Conta ---------- */
+#app-view .account-view {
+  padding: 40px 0 20px;
+}
+#app-view .account-heading h1 {
+  font-size: clamp(2.6rem, 5vw, 4.2rem);
+  font-weight: 610;
+}
+#app-view .account-summary {
+  padding: 18px 20px;
+  border-radius: 20px;
+}
+#app-view .account-plan-pill {
+  background: #eaffba;
+  color: #3f5c00;
+  padding: 8px 12px;
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: 12px;
+}
+#app-view .account-card {
+  padding: 26px;
+  border-radius: 20px;
+}
+#app-view .account-card-heading > span {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--tt-lime);
+  color: #111;
+  font-size: 12px;
+  font-weight: 900;
+}
+#app-view .account-preference-list span {
+  border-radius: 999px;
+  background: var(--tt-soft);
+  border: 1px solid #e2e8d9;
+}
+
+/* ---------- Admin herda landing ---------- */
+#admin-view {
+  font-family: var(--font-manrope), Arial, sans-serif;
+}
+#admin-view .metric strong {
+  letter-spacing: -0.05em;
+}
+#admin-view .admin-row {
+  border: 1px solid #e2e8d9;
+  border-radius: 14px;
+  padding: 14px 16px;
+  background: #fff;
+}
+
+/* ---------- Dialogs / Toast / Estados ---------- */
+.publication-dialog,
+.content-kit-dialog {
+  border: 1px solid #e2e8d9;
+  border-radius: 24px;
+  box-shadow: 0 30px 80px rgba(16, 17, 15, 0.22);
+  padding: 30px;
+}
+.publication-dialog::backdrop,
+.content-kit-dialog::backdrop {
+  background: rgba(16, 17, 15, 0.55);
+  backdrop-filter: blur(6px);
+}
+.dialog-close {
+  border: 0;
+  background: var(--tt-soft);
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  font-size: 18px;
+  cursor: pointer;
+}
+.briefing-suggestions button {
+  border-radius: 999px;
+}
+.briefing-suggestions button.selected {
+  border: 2px solid var(--tt-ink);
+  background: var(--tt-lime-soft);
+  box-shadow: none;
+}
+#app-view .toast,
+.toast {
+  background: var(--tt-ink);
+  color: #fff;
+  border-radius: 999px;
+  padding: 12px 20px;
+  font-size: 13px;
+  font-weight: 700;
+  box-shadow: 0 12px 32px rgba(16, 17, 15, 0.22);
+}
+#app-view .empty-state,
+.auth-view .empty-state {
+  border-radius: 20px;
+  border: 1px solid #e2e8d9;
+  background: #fff;
+}
+#app-view .skeleton,
+#app-view .skeleton-card {
+  border-radius: 16px;
+}
+.app-boot {
+  background: #fafff0;
+  font-family: var(--font-manrope), Arial, sans-serif;
+}
+.app-boot-bar {
+  border-radius: 999px;
+  overflow: hidden;
+}
+.app-boot-bar i {
+  background: var(--tt-lime);
+}
+.account-load-error .empty-state {
+  border-radius: 24px;
+}
+.account-load-error .state-icon {
+  background: var(--tt-ink);
+  box-shadow: none;
+  border-radius: 50%;
+}
+
+/* Breadcrumb landing */
+#app-view .detail-breadcrumb {
+  color: #8a8d85;
+  font-size: 12px;
+  font-weight: 700;
+}
+#app-view .detail-breadcrumb a:hover {
+  color: var(--tt-ink);
+}
+#app-view .greeting {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 18px;
+  padding: 7px 12px;
+  border: 1px solid #dce7cf;
+  border-radius: 999px;
+  background: #ffffff90;
+  font-size: 12px;
+  font-weight: 700;
+  color: #4f514b;
+}
+#app-view .greeting::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--tt-lime);
+  box-shadow: 0 0 0 3px #c8ff2e38;
+}
+
+/* ---------- Responsivo alinhado à landing ---------- */
+@media (max-width: 850px) {
+  .auth-view .auth-layout {
+    grid-template-columns: 1fr;
+  }
+  .auth-view .auth-value {
+    display: none;
+  }
+}
+@media (max-width: 750px) {
+  #app-view .page-wrap {
+    width: calc(100% - 32px);
+    padding-bottom: 120px;
+  }
+  #app-view .topbar {
+    top: 8px;
+    width: calc(100% - 20px);
+    height: 62px;
+    padding-inline: 8px 8px;
+  }
+  #app-view .app-logo {
+    font-size: 0;
+    gap: 0;
+  }
+  #app-view .app-logo span {
+    width: 32px;
+    height: 32px;
+  }
+  #app-view .app-nav {
+    position: fixed;
+    z-index: 70;
+    left: 50%;
+    bottom: max(12px, env(safe-area-inset-bottom));
+    width: min(calc(100vw - 24px), 380px);
+    transform: translateX(-50%);
+    background: #fffffff2;
+    box-shadow: 0 14px 45px rgba(16, 17, 15, 0.18);
+  }
+  #app-view .app-nav a {
+    flex: 1;
+    justify-content: center;
+    min-height: 48px;
+  }
+  #app-view .app-nav a.active {
+    background: var(--tt-ink);
+    color: #fff;
+  }
+  #app-view .assistant-hero::before {
+    border-radius: 20px;
+    height: 340px;
+  }
+  #app-view .assistant-input-row {
+    grid-template-columns: 1fr;
+    border-radius: 20px;
+    padding: 7px;
+  }
+  #app-view .assistant-input-row input {
+    min-height: 50px;
+  }
+  #app-view .assistant-input-row .primary {
+    width: 100%;
+    min-height: 50px;
+  }
+  #app-view .production-overview {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .auth-view .auth-shell {
+    padding: 28px 22px;
+    border-radius: 20px;
+  }
+  .publication-dialog {
+    inset: auto 0 0;
+    width: 100%;
+    max-width: none;
+    border-radius: 22px 22px 0 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #app-view *,
+  .auth-view *,
+  .onboarding * {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* A short, actionable path from discovery to recording. */
+#app-view .discover-journey {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  max-width: 980px;
+  margin-top: 46px;
+}
+#app-view .discover-journey > div {
+  display: grid;
+  align-content: space-between;
+  gap: 10px;
+  min-height: 155px;
+  padding: 22px;
+  border: 1px solid #e2e8d9;
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 10px 28px #2438130a;
+}
+#app-view .discover-journey > div:first-child { background: var(--tt-lime); border-color: var(--tt-lime); }
+#app-view .discover-journey > div:last-child { background: var(--tt-ink); border-color: var(--tt-ink); color: #fff; }
+#app-view .discover-journey span { font-size: 11px; font-weight: 850; letter-spacing: .12em; }
+#app-view .discover-journey strong { align-self: end; font-size: 20px; font-weight: 650; letter-spacing: -.04em; line-height: 1.1; }
+#app-view .discover-journey small { color: #63675e; font-size: 12px; line-height: 1.4; }
+#app-view .discover-journey > div:last-child small { color: #c6cbbe; }
+
+/* Make the recording document scan like the landing's step cards. */
+#app-view .scene-list { gap: 10px; }
+#app-view .scene-card,
+#app-view .scene-card:first-child {
+  padding: 19px 20px;
+  border: 1px solid #e3e9da;
+  border-radius: 15px;
+  background: #f9fbf5;
+}
+#app-view .scene-card > strong { margin-bottom: 12px; color: #557400; font-size: 12px; }
+#app-view .scene-card p { color: #333b2b; line-height: 1.55; }
+#app-view .kit-actions .production-progress span.done { color: #456600; font-weight: 750; }
+#app-view .kit-actions .production-progress span.done::before { content: "✓ "; color: #6ea800; }
+
+/* Clear navigation and feedback across the content workflow. */
+#app-view .kit-card.open-kit {
+  display: flex;
+  flex-direction: column;
+  color: var(--tt-ink);
+  text-decoration: none;
+}
+#app-view .kit-card.open-kit strong { margin-top: auto; padding-top: 18px; }
+#app-view .kit-card.open-kit:hover strong { text-decoration: underline; text-underline-offset: 4px; }
+#app-view .kit-jump-nav {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 9px;
+  margin: -16px 0 25px;
+}
+#app-view .kit-jump-nav span {
+  margin-right: 3px;
+  color: var(--tt-muted);
+  font-size: 12px;
+  font-weight: 750;
+}
+#app-view .kit-jump-nav a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+  padding: 8px 13px;
+  border: 1px solid #dfe7d4;
+  border-radius: 999px;
+  background: #fff;
+  color: var(--tt-ink);
+  font-size: 12px;
+  font-weight: 750;
+  text-decoration: none;
+  transition: background .18s ease, border-color .18s ease, transform .18s ease;
+}
+#app-view .kit-jump-nav a:hover {
+  border-color: var(--tt-lime);
+  background: var(--tt-lime-soft);
+  transform: translateY(-2px);
+}
+#app-view .kit-document,
+#app-view .kit-document .kit-block { scroll-margin-top: 100px; }
+#app-view .production-results-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: -8px 0 17px;
+  color: var(--tt-muted);
+  font-size: 13px;
+}
+#app-view .production-results-bar p { margin: 0; }
+#app-view .production-results-bar strong { color: var(--tt-ink); }
+#app-view .production-results-bar button {
+  border: 0;
+  background: transparent;
+  color: #3f6100;
+  font: inherit;
+  font-weight: 750;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+@media (max-width: 750px) {
+  #app-view .discover-journey { grid-template-columns: 1fr; gap: 8px; margin-top: 30px; }
+  #app-view .discover-journey > div { min-height: 0; grid-template-columns: 30px minmax(0, 1fr); gap: 4px 12px; padding: 17px 18px; }
+  #app-view .discover-journey span { grid-row: span 2; padding-top: 3px; }
+  #app-view .discover-journey strong { font-size: 18px; }
+  #app-view .scene-card, #app-view .scene-card:first-child { padding: 17px; }
+  #app-view .kit-jump-nav { gap: 7px; margin-top: -8px; }
+  #app-view .kit-jump-nav span { flex-basis: 100%; }
+  #app-view .production-results-bar { align-items: flex-start; font-size: 12px; }
+}
+
+/* Shared TemTrend mark across the public and authenticated experience. */
+.tt-home .tt-logo > span,
+#app-view .app-logo span,
+.auth-view .auth-logo span,
+.onboarding .onboarding-logo span,
+.app-boot-brand span {
+  border-radius: 0;
+  background: url("/temtrend-mark.svg") center / contain no-repeat;
+  color: transparent;
+  font-size: 0;
+  box-shadow: none;
+}
+
+/* Onboarding choices explain their value and feed the first discovery actions. */
+.onboarding .selection-card { gap: 14px; min-height: 82px; }
+.onboarding .selection-card .selection-icon {
+  display: grid;
+  place-items: center;
+  flex: 0 0 38px;
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  background: var(--tt-soft);
+  color: #3a5200;
+  font-size: 18px;
+  font-weight: 800;
+}
+.onboarding .selection-card.selected .selection-icon { background: var(--tt-lime); color: #111; }
+.onboarding .selection-copy { display: grid; flex: 1; min-width: 0; gap: 3px; }
+.onboarding .selection-copy strong { font-size: 14px; line-height: 1.25; }
+.onboarding .selection-copy small { color: #70776b; font-size: 11px; font-weight: 550; line-height: 1.3; }
+.onboarding .selection-card > i { flex: 0 0 19px; }
+.onboarding .onboarding-tip {
+  margin: 19px 0 0;
+  padding: 13px 15px;
+  border-left: 3px solid var(--tt-lime);
+  border-radius: 0 10px 10px 0;
+  background: #f5f9ec;
+  color: #57604d;
+  font-size: 12px;
+  line-height: 1.45;
+}
+.onboarding .onboarding-summary { max-width: 470px; }
+.onboarding .onboarding-summary .onboarding-summary-goal {
+  grid-column: 1 / -1;
+  background: var(--tt-lime-soft);
+  font-size: 17px;
+  font-weight: 750;
+}
+.onboarding .onboarding-next-tip { max-width: 440px; margin: 20px auto 0; color: #58624a; font-size: 13px; line-height: 1.5; }
+#app-view .assistant-interest-shortcuts {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 17px;
+}
+#app-view .assistant-interest-shortcuts > span { margin-right: 2px; color: #58624c; font-size: 12px; font-weight: 750; }
+#app-view .assistant-interest-shortcuts button {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 36px;
+  padding: 7px 13px;
+  border: 1px solid #b9d484;
+  border-radius: 999px;
+  background: var(--tt-lime-soft);
+  color: #27380e;
+  font-size: 12px;
+  font-weight: 750;
+  cursor: pointer;
+  transition: transform .18s ease, background .18s ease;
+}
+#app-view .assistant-interest-shortcuts button:hover { transform: translateY(-2px); background: var(--tt-lime); }
+#app-view .assistant-interest-shortcuts + .assistant-examples { margin-top: 10px; }
+@media (max-width: 650px) {
+  .onboarding .selection-card { min-height: 76px; gap: 11px; padding-inline: 13px; }
+  .onboarding .selection-copy strong { font-size: 13px; }
+  .onboarding .selection-copy small { font-size: 10px; }
+  #app-view .assistant-interest-shortcuts { flex-wrap: nowrap; overflow-x: auto; margin-right: -16px; padding-right: 16px; scrollbar-width: none; }
+  #app-view .assistant-interest-shortcuts::-webkit-scrollbar { display: none; }
+  #app-view .assistant-interest-shortcuts > span,
+  #app-view .assistant-interest-shortcuts button { flex: 0 0 auto; }
+}
