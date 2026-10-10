@@ -30,6 +30,36 @@ describe('Gemini assistant guardrails', () => {
     expect(decision).not.toHaveProperty('should_create_product');
   });
 
+  it('keeps motivos only for catalog products and truncates long ones', () => {
+    const longMotivo = 'x'.repeat(200);
+    const decision = parseAndConstrainDecision(JSON.stringify({
+      in_scope: true,
+      intent_summary: 'produtos fitness',
+      search_terms: ['fitness'],
+      selected_product_ids: ['catalog-product'],
+      motivos: [
+        { product_id: 'catalog-product', motivo: 'Barato e fácil de demonstrar em vídeo' },
+        { product_id: 'invented-product', motivo: 'Produto inventado com motivo inventado' },
+        { product_id: 'long-product', motivo: longMotivo },
+      ],
+    }), new Set(['catalog-product', 'long-product']));
+
+    expect(decision.motivos['catalog-product']).toBe('Barato e fácil de demonstrar em vídeo');
+    expect(decision.motivos).not.toHaveProperty('invented-product');
+    expect(decision.motivos['long-product'].length).toBeLessThanOrEqual(140);
+  });
+
+  it('accepts decisions without motivos', () => {
+    const decision = parseAndConstrainDecision(JSON.stringify({
+      in_scope: true,
+      intent_summary: 'produtos fitness',
+      search_terms: ['fitness'],
+      selected_product_ids: ['catalog-product'],
+    }), new Set(['catalog-product']));
+
+    expect(decision.motivos).toEqual({});
+  });
+
   it('rejects free-form or structurally invalid model output', () => {
     expect(() => parseAndConstrainDecision('Posso responder qualquer coisa.', new Set()))
       .toThrow();

@@ -38,7 +38,53 @@ const INTENT_TERMS: Record<string, string[]> = {
   moda: ['moda', 'roupa', 'acessorio', 'look'],
 };
 
-const MAX_RESULTS = 3;
+const MAX_RESULTS = 5;
+
+export interface CreatorPrefs {
+  temas_interesse?: string[] | null;
+  estilos_conteudo?: string[] | null;
+}
+
+function prefsFingerprint(prefs?: CreatorPrefs | null): string {
+  const temas = (prefs?.temas_interesse || []).map(normalize).filter(Boolean).sort().join(',');
+  const estilos = (prefs?.estilos_conteudo || []).map(normalize).filter(Boolean).sort().join(',');
+  let hash = 0;
+  const raw = `${temas}|${estilos}`;
+  for (let i = 0; i < raw.length; i += 1) {
+    hash = (hash * 31 + raw.charCodeAt(i)) | 0;
+  }
+  return `${hash}`;
+}
+
+// Motivo intrínseco: só dados reais do produto (ou frase da IA, já limitada
+// a preço/comissão/vendas/categoria no prompt). Nunca inventa atributo.
+function intrinsicMotivo(product: Product, aiMotivo?: string | null): string | null {
+  if (aiMotivo?.trim()) return aiMotivo.trim().replace(/\s+/g, ' ').slice(0, 140);
+  const clauses: string[] = [];
+  const sold = product.unidades_vendidas_total ?? product.unidades_vendidas_periodo;
+  if (product.preco_min_brl != null && product.preco_min_brl <= 50) clauses.push('Preço acessível');
+  if (product.comissao_percentual != null) clauses.push(`Comissão de ${product.comissao_percentual}%`);
+  if (sold != null) clauses.push(`${sold.toLocaleString('pt-BR')} vendidos`);
+  if (!clauses.length) return 'Selecionado para a sua busca';
+  return clauses.slice(0, 2).join(' · ');
+}
+
+function prefsClause(product: Product, prefs?: CreatorPrefs | null): string | null {
+  const categoria = normalize(product.categoria || '');
+  if (!categoria) return null;
+  const temas = (prefs?.temas_interesse || []).filter((t) => t && t.trim());
+  const hit = temas.find((tema) => {
+    const t = normalize(tema);
+    return t.length >= 3 && (categoria.includes(t) || t.includes(categoria));
+  });
+  return hit ? `Combina com seu tema ${hit.trim()}` : null;
+}
+
+function finalMotivo(product: Product, aiMotivo: string | null | undefined, prefs?: CreatorPrefs | null): string | null {
+  const parts = [prefsClause(product, prefs), intrinsicMotivo(product, aiMotivo)].filter(Boolean) as string[];
+  if (!parts.length) return null;
+  return parts.join(' · ').slice(0, 140);
+}
 
 const MESSAGES = {
   outOfScope: 'Posso te ajudar a encontrar produtos e a preparar seu conteúdo. Conte o que você quer vender.',
@@ -151,11 +197,15 @@ function buildResponse(
   products: Product[],
   terms: string[],
   decision: Decision,
+  prefs?: CreatorPrefs | null,
 ) {
-  return {
+  const motivos = decision?.motivos ?? {};  return {
     message,
     interpreted_as: terms.slice(0, 12),
-    products: products.map(publicProduct),
+    products: products.map((product) => ({
+      ...publicProduct(product),
+      motivo: finalMotivo(product, motivos[product.id], prefs),
+    })),
     meta: decision ? {
       provider: decision.provider,
       model: env.GEMINI_MODEL,
@@ -185,12 +235,13 @@ export function isSearchableCatalogProduct(product: Product) {
   return Boolean(product.imagem_url?.trim());
 }
 
-export async function findProductsForMessage(input: AssistantProductSearchInput) {
+export async function findProductsForMessage(input: AssistantProductSearchInput, prefs?: CreatorPrefs | null) {
   const catalog = (await listSearchableCatalog()).filter(isSearchableCatalogProduct);
-  // Cache isolado por mensagem + snapshot do catálogo: nunca serve produtos de outro catálogo.
+  // Cache isolado por mensagem + snapshot do catálogo + preferências:
+  // nunca serve produtos nem motivos de outro contexto.
   const useResponseCache = env.NODE_ENV !== 'test' && !input.product_ids?.length;
   const cacheKey = useResponseCache
-    ? `${responseCacheKey(input.message)}|${catalog.length}|${catalogFingerprint(catalog)}`
+    ? `${responseCacheKey(input.message)}|${prefsFingerprint(prefs)}|${catalog.length}|${catalogFingerprint(catalog)}`
     : null;
   if (cacheKey) {
     const cached = responseCache.get(cacheKey);
@@ -209,7 +260,7 @@ export async function findProductsForMessage(input: AssistantProductSearchInput)
     : catalog;
 
   if (!candidates.length) {
-    return buildResponse(MESSAGES.empty, [], localTerms, null);
+    return buildResponse(MESSAGES.empty, [], localTerms, null, prefs);
   }
 
   // "Esse aqui" fecha a escolha sem gastar uma chamada de IA.
@@ -222,6 +273,7 @@ export async function findProductsForMessage(input: AssistantProductSearchInput)
       chosen,
       localTerms,
       null,
+      prefs,
     );
   }
 
@@ -236,7 +288,7 @@ export async function findProductsForMessage(input: AssistantProductSearchInput)
     : await AIService.interpretIntent(input.message, aiCandidates);
 
   if (decision && !decision.in_scope) {
-    return buildResponse(MESSAGES.outOfScope, [], [], decision);
+    return buildResponse(MESSAGES.outOfScope, [], [], decision, prefs);
   }
 
   const terms = [...new Set([
@@ -267,14 +319,14 @@ export async function findProductsForMessage(input: AssistantProductSearchInput)
     chosen = ranked.slice(0, MAX_RESULTS).map((item) => item.product);
     message = chosen.length ? MESSAGES.discovery : MESSAGES.empty;
   } else {
-    return buildResponse(MESSAGES.empty, [], terms, decision);
+    return buildResponse(MESSAGES.empty, [], terms, decision, prefs);
   }
 
   if (!chosen.length) {
-    return buildResponse(MESSAGES.empty, [], terms, decision);
+    return buildResponse(MESSAGES.empty, [], terms, decision, prefs);
   }
 
-  const response = buildResponse(message, chosen, terms, decision);
+  const response = buildResponse(message, chosen, terms, decision, prefs);
   if (cacheKey) responseCache.set(cacheKey, response as never, AI_LIMITS.ASSISTANT_RESPONSE_CACHE_TTL_MS);
   return response;
 }

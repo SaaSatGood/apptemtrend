@@ -30,8 +30,8 @@ export const AIService = {
   },
 
   /** Monta um Content Kit usando somente informações reais do produto. */
-  async generateContentKit(product: Product, previousKits: Partial<ContentKit>[] = [], creatorBriefing?: string): Promise<GeneratedContentKit | null> {
-    const result = await generateContentKit(product, previousKits, creatorBriefing);
+  async generateContentKit(product: Product, previousKits: Partial<ContentKit>[] = [], creatorBriefing?: string, creatorVoice?: string | null): Promise<GeneratedContentKit | null> {
+    const result = await generateContentKit(product, previousKits, creatorBriefing, creatorVoice);
     if (!result) {
       logger.warn({ product_id: product.id }, 'AIService could not generate a content kit');
     }

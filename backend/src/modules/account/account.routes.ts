@@ -6,9 +6,11 @@ import { RATE_LIMITS } from '../../config/constants.js';
 import { supabaseAdmin } from '../../lib/supabase.js';
 import { Errors } from '../../types/index.js';
 import { logger } from '../../lib/logger.js';
+import { findCreatorByUserId, updateCreator } from '../creators/creator.repository.js';
 
 const profileSchema = z.object({
   nome: z.string().trim().min(2, 'O nome deve ter pelo menos 2 caracteres.').max(120),
+  voz_exemplo: z.string().trim().max(500).optional(),
 }).strict();
 
 async function routes(app: FastifyInstance) {
@@ -35,13 +37,23 @@ async function routes(app: FastifyInstance) {
   });
 
   app.patch('/account/profile', write, async (request) => {
-    const { nome } = profileSchema.parse(request.body);
+    const { nome, voz_exemplo } = profileSchema.parse(request.body);
     const { data: current, error: currentError } = await supabaseAdmin.auth.admin.getUserById(request.authUser.id);
     if (currentError || !current.user) throw currentError ?? Errors.NOT_FOUND('Conta');
     const metadata = { ...(current.user.user_metadata ?? {}), full_name: nome, name: nome };
     const { data, error } = await supabaseAdmin.auth.admin.updateUserById(request.authUser.id, { user_metadata: metadata });
     if (error) throw error;
-    return { nome: data.user?.user_metadata?.full_name ?? nome };
+    let voz: string | null | undefined;
+    if (voz_exemplo !== undefined) {
+      const creator = await findCreatorByUserId(request.authUser.id);
+      if (!creator) throw Errors.NOT_FOUND('Creator');
+      voz = voz_exemplo.trim() ? voz_exemplo.trim().slice(0, 500) : null;
+      await updateCreator(creator.id, { voz_exemplo: voz });
+    }
+    return {
+      nome: data.user?.user_metadata?.full_name ?? nome,
+      ...(voz !== undefined ? { voz_exemplo: voz } : {}),
+    };
   });
 
   app.delete('/account', write, async (request, reply) => {

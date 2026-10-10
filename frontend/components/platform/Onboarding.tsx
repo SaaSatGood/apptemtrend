@@ -20,12 +20,15 @@ const STYLES = [
 
 const THEMES = ["Beleza", "Casa", "Tecnologia", "Fitness", "Moda", "Lifestyle", "Gastronomia", "Outros"];
 
-const STEP_LABELS = ["Objetivo", "Estilos", "Temas", "Pronto"];
+const STEP_LABELS = ["Objetivo", "Estilos", "Temas", "Sua voz", "Pronto"];
+
+const VOZ_MAX = 500;
 
 interface Saved {
   objetivo: string;
   estilos_conteudo: string[];
   temas_interesse: string[];
+  voz_exemplo: string;
   step: number;
 }
 
@@ -40,7 +43,8 @@ function loadSaved(current: Saved, editing: boolean, storageKey: string): Saved 
       objetivo: typeof parsed.objetivo === "string" ? parsed.objetivo : empty.objetivo,
       estilos_conteudo: Array.isArray(parsed.estilos_conteudo) ? parsed.estilos_conteudo : empty.estilos_conteudo,
       temas_interesse: Array.isArray(parsed.temas_interesse) ? parsed.temas_interesse : empty.temas_interesse,
-      step: editing ? 1 : parsed.step === 2 || parsed.step === 3 ? parsed.step : 1,
+      voz_exemplo: typeof parsed.voz_exemplo === "string" ? parsed.voz_exemplo : empty.voz_exemplo,
+      step: editing ? 1 : parsed.step === 2 || parsed.step === 3 || parsed.step === 4 ? parsed.step : 1,
     };
   } catch {
     return empty;
@@ -54,6 +58,7 @@ export default function Onboarding({ editing, onDone }: { editing: boolean; onDo
     objetivo: me?.creator?.objetivo || "",
     estilos_conteudo: me?.creator?.estilos_conteudo || [],
     temas_interesse: me?.creator?.temas_interesse || [],
+    voz_exemplo: me?.creator?.voz_exemplo || "",
     step: 1,
   };
   const [saved] = useState<Saved>(() => loadSaved(current, editing, storageKey));
@@ -61,18 +66,19 @@ export default function Onboarding({ editing, onDone }: { editing: boolean; onDo
   const [objetivo, setObjetivo] = useState(saved.objetivo);
   const [estilos, setEstilos] = useState<string[]>(saved.estilos_conteudo);
   const [temas, setTemas] = useState<string[]>(saved.temas_interesse);
+  const [voz, setVoz] = useState(saved.voz_exemplo);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     try {
       window.localStorage.setItem(
         storageKey,
-        JSON.stringify({ objetivo, estilos_conteudo: estilos, temas_interesse: temas, step })
+        JSON.stringify({ objetivo, estilos_conteudo: estilos, temas_interesse: temas, voz_exemplo: voz, step })
       );
     } catch {
       /* noop */
     }
-  }, [objetivo, estilos, temas, step, storageKey]);
+  }, [objetivo, estilos, temas, voz, step, storageKey]);
 
   function toggle(list: string[], value: string, set: (v: string[]) => void) {
     set(list.includes(value) ? list.filter((v) => v !== value) : [...list, value]);
@@ -87,10 +93,16 @@ export default function Onboarding({ editing, onDone }: { editing: boolean; onDo
       return;
     }
     if (step === 3) {
+      if (skip && !editing) setTemas([]);
+      setStep(4);
+      return;
+    }
+    if (step === 4) {
       const payload = {
         objetivo,
         estilos_conteudo: estilos,
-        temas_interesse: skip && !editing ? [] : temas,
+        temas_interesse: temas,
+        voz_exemplo: voz.trim(),
       };
       setSaving(true);
       try {
@@ -99,7 +111,7 @@ export default function Onboarding({ editing, onDone }: { editing: boolean; onDo
           method: "POST",
           body: JSON.stringify(payload),
         });
-        setStep(4);
+        setStep(5);
       } catch (error) {
         toast(friendlyError(error, "Não conseguimos salvar suas preferências. Tente novamente."));
       } finally {
@@ -107,7 +119,7 @@ export default function Onboarding({ editing, onDone }: { editing: boolean; onDo
       }
       return;
     }
-    if (step === 4) {
+    if (step === 5) {
       try {
         window.localStorage.removeItem(storageKey);
       } catch {
@@ -135,7 +147,7 @@ export default function Onboarding({ editing, onDone }: { editing: boolean; onDo
     setStep((s) => Math.max(1, s - 1));
   }
 
-  const done = step === 4;
+  const done = step === 5;
   const selectedObjective = OBJECTIVES.find((item) => item.value === objetivo);
   const suggestedTheme = temas[0];
 
@@ -158,10 +170,10 @@ export default function Onboarding({ editing, onDone }: { editing: boolean; onDo
           </ol>
         )}
         <div className="onboarding-progress" aria-label="Progresso do onboarding">
-          <div id="onboarding-progress-bar" style={{ width: `${(step / 4) * 100}%` }}></div>
+          <div id="onboarding-progress-bar" style={{ width: `${(Math.min(step, 5) / 5) * 100}%` }}></div>
         </div>
         <div className="onboarding-meta">
-          <p id="onboarding-count" className="step-count">{done ? "Perfil configurado" : `Etapa ${step} de 4`}</p>
+          <p id="onboarding-count" className="step-count">{done ? "Perfil configurado" : `Etapa ${step} de 5`}</p>
           {!done && <p>Leva menos de 1 minuto</p>}
         </div>
         <div id="onboarding-form">
@@ -236,7 +248,27 @@ export default function Onboarding({ editing, onDone }: { editing: boolean; onDo
             <p className="onboarding-tip">Seus temas aparecerão como atalhos de busca na área Descobrir.</p>
           </div>
 
-          <div className={`onboarding-step onboarding-done${done ? " is-active" : ""}`} data-step="4">
+          <div className={`onboarding-step${step === 4 ? " is-active" : ""}`} data-step="4">
+            <div className="onboarding-heading">
+              <p className="eyebrow">Sua voz</p>
+              <h1>Como você fala nos vídeos?</h1>
+              <p>Escreva 2 ou 3 frases do seu jeito. Usamos isso para o roteiro parecer seu — ou pule, sem problema.</p>
+            </div>
+            <label className="voice-field">
+              <span className="sr-only">Exemplo do seu jeito de falar</span>
+              <textarea
+                rows={4}
+                maxLength={VOZ_MAX}
+                placeholder="Ex.: Gente, preciso mostrar isso pra vocês. Testei por uma semana e olha no que deu..."
+                value={voz}
+                onChange={(e) => setVoz(e.target.value)}
+              />
+            </label>
+            <p className="selection-feedback" aria-live="polite">{voz.trim() ? `${voz.trim().length} de ${VOZ_MAX} caracteres` : "Opcional — roteiros funcionam sem isso"}</p>
+            <p className="onboarding-tip">Vale gíria, vale bordão. Evite contar sua vida: o que importa é o tom.</p>
+          </div>
+
+          <div className={`onboarding-step onboarding-done${done ? " is-active" : ""}`} data-step="5">
             <span className="done-mark" aria-hidden="true">✓</span>
             <div className="onboarding-heading">
               <p className="eyebrow">Tudo certo</p>
@@ -247,6 +279,7 @@ export default function Onboarding({ editing, onDone }: { editing: boolean; onDo
               {selectedObjective && <span className="onboarding-summary-goal">{selectedObjective.label}<small>seu objetivo</small></span>}
               <span>{estilos.length || 0}<small>formatos escolhidos</small></span>
               <span>{temas.length || 0}<small>temas de interesse</small></span>
+              {voz.trim() && <span>Roteiros no seu jeito ✓<small>sua voz</small></span>}
             </div>
             {suggestedTheme && !editing && (
               <p className="onboarding-next-tip">Na próxima tela, experimente buscar produtos de {suggestedTheme.toLocaleLowerCase("pt-BR")}.</p>
@@ -277,7 +310,7 @@ export default function Onboarding({ editing, onDone }: { editing: boolean; onDo
               disabled={(step === 1 && !objetivo) || saving}
               onClick={() => advance(false)}
             >
-              {saving ? "Salvando preferências..." : done ? editing ? "Voltar à conta →" : "Ir para Descobrir →" : step === 3 ? "Concluir configuração →" : "Continuar →"}
+              {saving ? "Salvando preferências..." : done ? editing ? "Voltar à conta →" : "Ir para Descobrir →" : step === 4 ? "Concluir configuração →" : "Continuar →"}
             </button>
           </div>
         </div>

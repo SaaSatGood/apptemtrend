@@ -25,10 +25,12 @@ export async function getMe(userId: string) {
 }
 
 export async function onboarding(userId: string, data: OnboardingInput) {
+  const voz = data.voz_exemplo?.trim() ? data.voz_exemplo.trim().slice(0, 500) : null;
   const preferences = {
     objetivo: data.objetivo,
     estilos_conteudo: data.estilos_conteudo,
     temas_interesse: data.temas_interesse,
+    voz_exemplo: voz,
     onboarding_completo: true,
   };
 

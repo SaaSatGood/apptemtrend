@@ -17,12 +17,15 @@ async function assistantRoutes(app: FastifyInstance) {
     const input = assistantProductSearchSchema.parse(request.body);
 
     try {
-      await requireActiveCreator(request.authUser.id);
+      const creator = await requireActiveCreator(request.authUser.id);
       if (!await reserveAssistantQuota(request.authUser.id)) {
         throw Errors.CONFLICT('Limite diário de buscas atingido. Tente novamente amanhã.');
       }
       try {
-        const response = await findProductsForMessage(input);
+        const response = await findProductsForMessage(input, {
+          temas_interesse: creator.temas_interesse,
+          estilos_conteudo: creator.estilos_conteudo,
+        });
         return reply.send(response);
       } catch (error) {
         await releaseQuota(request.authUser.id, 'assistant');

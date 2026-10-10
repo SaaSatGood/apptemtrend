@@ -1332,6 +1332,8 @@
   font-size: 17px;
   font-weight: 750;
 }
+.onboarding .voice-field { display: block; }
+.onboarding .voice-field textarea { min-height: 110px; resize: vertical; }
 .onboarding .onboarding-next-tip { max-width: 440px; margin: 20px auto 0; color: #58624a; font-size: 13px; line-height: 1.5; }
 #app-view .assistant-interest-shortcuts {
   display: flex;

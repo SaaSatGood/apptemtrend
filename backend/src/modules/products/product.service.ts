@@ -122,23 +122,24 @@ function inflightKey(productId: string, creatorId: string, briefing?: string) {
   return `${creatorId}:${productId}:${briefingHash(briefing)}`;
 }
 
-async function createContentKitResult(productId: string, creatorId: string, briefing?: string) {
+async function createContentKitResult(productId: string, creatorId: string, briefing?: string, voz?: string | null) {
   const { product, content_kits } = await getProductById(productId, { creatorId });
+  const temVoz = Boolean(voz?.trim());
   // Roteiro base garantido: se a IA estiver fora, salva um kit honesto com os
   // dados reais do produto em vez de falhar. `fallback: true` avisa o frontend.
   if (!AIService.isAvailable() && env.NODE_ENV !== 'test') {
     const fallback = buildFallbackKit(product);
     const input = createContentKitSchema.parse(fallback);
-    const contentKit = await createContentKit(product.id, input, { creatorId, briefing });
+    const contentKit = await createContentKit(product.id, input, { creatorId, briefing, usouVoz: false });
     return { content_kit: contentKit, created: true, fallback: true };
   }
-  const generated = await AIService.generateContentKit(product, content_kits, briefing);
+  const generated = await AIService.generateContentKit(product, content_kits, briefing, voz);
   if (!generated) {
     // Última tentativa esgotada: entrega o roteiro base em vez de 503.
     try {
       const fallback = buildFallbackKit(product);
       const input = createContentKitSchema.parse(fallback);
-      const contentKit = await createContentKit(product.id, input, { creatorId, briefing });
+      const contentKit = await createContentKit(product.id, input, { creatorId, briefing, usouVoz: false });
       return { content_kit: contentKit, created: true, fallback: true };
     } catch {
       throw createAppError(
@@ -150,16 +151,16 @@ async function createContentKitResult(productId: string, creatorId: string, brie
   }
 
   const input = createContentKitSchema.parse(generated.content_kit);
-  const contentKit = await createContentKit(product.id, input, { creatorId, briefing });
+  const contentKit = await createContentKit(product.id, input, { creatorId, briefing, usouVoz: temVoz });
   return { content_kit: contentKit, created: true };
 }
 
-async function createOnceWhilePending(productId: string, creatorId: string, briefing?: string) {
+async function createOnceWhilePending(productId: string, creatorId: string, briefing?: string, voz?: string | null) {
   const key = inflightKey(productId, creatorId, briefing);
   const pending = contentKitCreationInFlight.get(key);
   if (pending) return pending;
 
-  const creation = createContentKitResult(productId, creatorId, briefing);
+  const creation = createContentKitResult(productId, creatorId, briefing, voz);
   contentKitCreationInFlight.set(key, creation);
   // Evita vazamento se a promise nunca assentar; limpa em 5min.
   const guard = setTimeout(() => {
@@ -179,17 +180,17 @@ async function createOnceWhilePending(productId: string, creatorId: string, brie
 }
 
 /** Reutiliza o kit mais recente; só cria quando o produto ainda não possui nenhum. */
-export async function ensureContentKit(productId: string, creatorId: string, briefing?: string) {
+export async function ensureContentKit(productId: string, creatorId: string, briefing?: string, voz?: string | null) {
   const { content_kits } = await getProductById(productId, { creatorId });
   if (content_kits[0]) return { content_kit: content_kits[0], created: false };
 
   // Uma segunda leitura dentro do bloqueio evita duplicação por cliques simultâneos.
   const pending = contentKitCreationInFlight.get(inflightKey(productId, creatorId, briefing));
   if (pending) return pending;
-  return createOnceWhilePending(productId, creatorId, briefing);
+  return createOnceWhilePending(productId, creatorId, briefing, voz);
 }
 
 /** Cria deliberadamente uma nova versão quando o usuário pede outro roteiro. */
-export function createFreshContentKit(productId: string, creatorId: string, briefing?: string) {
-  return createOnceWhilePending(productId, creatorId, briefing);
+export function createFreshContentKit(productId: string, creatorId: string, briefing?: string, voz?: string | null) {
+  return createOnceWhilePending(productId, creatorId, briefing, voz);
 }

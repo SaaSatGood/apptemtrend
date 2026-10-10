@@ -37,7 +37,7 @@ async function setup(page: Page, options: { saved?: boolean; onboarding?: boolea
     if (path === "/assistant/products") {
       searchCalls++;
       if (options.failSearch && searchCalls === 1) return route.fulfill({ status: 503, json: { error: { message: "Tente novamente em instantes." } } });
-      return route.fulfill({ json: { message: "Encontrei uma oportunidade no catálogo.", products: [product] } });
+      return route.fulfill({ json: { message: "Encontrei uma oportunidade no catálogo.", products: [{ ...product, motivo: "Preço acessível · 125 vendidos" }] } });
     }
     if (path === "/creators/onboarding") { onboarded = true; return route.fulfill({ json: {} }); }
     if (path === "/account") return route.fulfill({ json: { nome: "Rafa", email: "creator@temtrend.test" } });
@@ -50,11 +50,11 @@ test("descoberta, kit e produção até publicação manual", async ({ page }, t
   const fixture = await setup(page);
   await page.goto("/app");
   await expect(page.getByRole("heading", { name: /Descubra o que vale/ })).toBeVisible();
-  await expect(page.getByText("2 produtos no catálogo")).toBeVisible();
+  await page.getByLabel("O que você quer vender?").fill("organizador de cozinha");
+  await page.getByRole("button", { name: "Encontrar produtos →" }).click();
+  await expect(page.getByText("Top 1 mais vendidos")).toBeVisible();
+  await expect(page.getByText(/Preço acessível/)).toBeVisible();
   await page.screenshot({ path: testInfo.outputPath("discover-desktop.png"), fullPage: true });
-  const filters = page.getByRole("group", { name: "Filtrar oportunidades" });
-  await filters.getByRole("button", { name: "Até R$ 50" }).click();
-  await expect(page.getByRole("heading", { name: "Kit de cuidados para cabelo" })).toBeHidden();
   await page.getByRole("button", { name: "Ver produto Organizador de cozinha" }).click();
   await expect(page.getByRole("heading", { name: product.nome, exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Criar Content Kit →", exact: true }).click();
@@ -84,12 +84,11 @@ test("descoberta, kit e produção até publicação manual", async ({ page }, t
   await expect(page.getByRole("heading", { name: product.nome })).toBeVisible();
 });
 
-test("salvo não avança ao abrir o kit; filtros e retomada no celular", async ({ page }, testInfo) => {
+test("salvo não avança ao abrir o kit; retomada no celular", async ({ page }, testInfo) => {
   await page.setViewportSize({ width: 390, height: 844 });
   const fixture = await setup(page, { saved: true });
   await page.goto("/app");
   await expect(page.getByRole("heading", { name: "Continue de onde parou" })).toBeVisible();
-  await expect(page.getByText("2 produtos no catálogo")).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await page.screenshot({ path: testInfo.outputPath("discover-mobile.png"), fullPage: true });
   await page.getByRole("link", { name: "Produção", exact: true }).click();
@@ -120,7 +119,7 @@ test("busca preserva texto após erro e atalho busca produtos reais", async ({ p
   await expect(page.getByRole("heading", { name: product.nome })).toBeVisible();
 });
 
-test("onboarding em quatro etapas e menu acessível", async ({ page }, testInfo) => {
+test("onboarding em cinco etapas e menu acessível", async ({ page }, testInfo) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await setup(page, { onboarding: true });
   await page.goto("/app");
@@ -130,6 +129,9 @@ test("onboarding em quatro etapas e menu acessível", async ({ page }, testInfo)
   await page.getByRole("button", { name: "Continuar →" }).click();
   await page.getByRole("button", { name: "Casa", exact: true }).click();
   await page.screenshot({ path: testInfo.outputPath("onboarding-mobile.png"), fullPage: true });
+  await page.getByRole("button", { name: "Continuar →" }).click();
+  await expect(page.getByRole("heading", { name: "Como você fala nos vídeos?" })).toBeVisible();
+  await page.getByPlaceholder(/Gente, preciso mostrar/).fill("Falo direto, sem enrolação, e mostro o teste na hora.");
   await page.getByRole("button", { name: "Concluir configuração →" }).click();
   await expect(page.getByRole("heading", { name: "Pronto.", exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Ir para Descobrir →" }).click();
@@ -139,7 +141,7 @@ test("onboarding em quatro etapas e menu acessível", async ({ page }, testInfo)
   await expect(page.getByRole("link", { name: "Minha conta", exact: true })).toBeHidden();
   await page.getByLabel("Abrir menu da conta").click();
   await page.getByRole("link", { name: "Preferências", exact: true }).click();
-  await expect(page.getByRole("heading", { name: "Preferências de conteúdo" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "O que você quer fazer no TikTok?" })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await page.screenshot({ path: testInfo.outputPath("account-mobile.png"), fullPage: true });
 });

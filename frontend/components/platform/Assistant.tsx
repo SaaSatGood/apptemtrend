@@ -59,6 +59,7 @@ export function ProductCard({
       <div className="product-body">
         <span className="product-category">{product.categoria || "Produto"}</span>
         <h3 title={product.nome}>{name}</h3>
+        {product.motivo && <p className="opportunity-motivo"><strong>Por que este:</strong> {product.motivo}</p>}
         <p className="opportunity-price">{product.preco_texto || "Preço não informado"}</p>
         <div className="product-actions">
           <button className="ghost open-product" type="button" aria-label={`Ver produto ${name}`} onClick={() => onOpen(product.id)}>

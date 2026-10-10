@@ -16,6 +16,7 @@ export interface Product {
   tiktok_shop_url?: string | null;
   fastmoss_produto_url?: string | null;
   atualizado_em?: string | null;
+  motivo?: string | null;
 }
 
 export interface ContentKit {
@@ -34,6 +35,7 @@ export interface ContentKit {
   audio_sugerido?: string | null;
   duracao_seg?: number | null;
   briefing_usuario?: string | null;
+  usou_voz?: boolean | null;
 }
 
 export interface CreatorContent {
@@ -56,6 +58,7 @@ export interface MeResponse {
     objetivo?: string | null;
     estilos_conteudo?: string[];
     temas_interesse?: string[];
+    voz_exemplo?: string | null;
   } | null;
   onboarding_completo: boolean;
   is_admin: boolean;

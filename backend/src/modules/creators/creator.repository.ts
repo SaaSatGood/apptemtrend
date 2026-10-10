@@ -24,6 +24,7 @@ export async function createCreator(input: {
   objetivo: string;
   estilos_conteudo: string[];
   temas_interesse: string[];
+  voz_exemplo?: string | null;
   onboarding_completo: boolean;
 }): Promise<Creator> {
   const { data, error } = await supabaseAdmin
@@ -35,6 +36,7 @@ export async function createCreator(input: {
       objetivo: input.objetivo,
       estilos_conteudo: input.estilos_conteudo,
       temas_interesse: input.temas_interesse,
+      voz_exemplo: input.voz_exemplo ?? null,
       onboarding_completo: input.onboarding_completo,
       status: 'ativo',
     })

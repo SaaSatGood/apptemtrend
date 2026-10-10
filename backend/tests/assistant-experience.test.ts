@@ -249,8 +249,8 @@ describe('assistant experience', () => {
     }
   });
 
-  it('retorna no máximo 3 produtos por busca', async () => {
-    const many = Array.from({ length: 5 }, (_, i) => ({
+  it('retorna no máximo 5 produtos por busca', async () => {
+    const many = Array.from({ length: 7 }, (_, i) => ({
       id: `0000000${i}-1111-4111-8111-111111111111`,
       nome: 'Produto academia fitness treino',
       descricao: 'Treino em casa academia',
@@ -261,8 +261,57 @@ describe('assistant experience', () => {
     }));
     vi.mocked(productRepo.listActiveProducts).mockResolvedValue(many as never);
     const result = await findProductsForMessage({ message: 'Quero vender produtos para academia fitness treino' });
-    expect(result.products.length).toBeLessThanOrEqual(3);
+    expect(result.products.length).toBeLessThanOrEqual(5);
     expect(result.products.length).toBeGreaterThan(0);
+  });
+
+  it('anexa motivo real a cada produto recomendado', async () => {
+    const items = [
+      {
+        id: '11111111-1111-4111-8111-111111111111',
+        nome: 'Fone academia treino',
+        descricao: 'Fone para treino academia',
+        categoria: 'Fitness',
+        imagem_url: 'https://example.com/f.jpg',
+        preco_min_brl: 39.9,
+        comissao_percentual: 12,
+        unidades_vendidas_total: 1500,
+        status: 'ativo',
+        destaque: false,
+      },
+    ];
+    vi.mocked(productRepo.listActiveProducts).mockResolvedValue(items as never);
+    const result = await findProductsForMessage(
+      { message: 'Quero vender fone para academia treino' },
+      { temas_interesse: ['Fitness'], estilos_conteudo: [] },
+    );
+    expect(result.products.length).toBeGreaterThan(0);
+    const motivo = String(result.products[0].motivo ?? '');
+    expect(motivo.length).toBeGreaterThan(0);
+    expect(motivo.length).toBeLessThanOrEqual(140);
+    expect(motivo).toMatch(/Fitness|39|12|1\.500|acessível|Comissão|vendidos|busca/i);
+  });
+
+  it('não inventa motivo sem dados reais', async () => {
+    const items = [
+      {
+        id: '22222222-2222-4222-8222-222222222222',
+        nome: 'Produto academia treino',
+        descricao: 'Treino academia',
+        categoria: 'Fitness',
+        imagem_url: 'https://example.com/g.jpg',
+        preco_min_brl: null,
+        comissao_percentual: null,
+        unidades_vendidas_total: null,
+        unidades_vendidas_periodo: null,
+        status: 'ativo',
+        destaque: false,
+      },
+    ];
+    vi.mocked(productRepo.listActiveProducts).mockResolvedValue(items as never);
+    const result = await findProductsForMessage({ message: 'Quero vender produto academia treino' });
+    expect(result.products.length).toBeGreaterThan(0);
+    expect(String(result.products[0].motivo ?? '')).toBe('Selecionado para a sua busca');
   });
 
   it('answers with a retry state when the catalog is empty, without spending AI calls', async () => {
@@ -309,8 +358,24 @@ describe('content kit preparation', () => {
 
     expect(result.created).toBe(true);
     expect(result.content_kit).toMatchObject({ id: 'kit-new' });
-    expect(AIService.generateContentKit).toHaveBeenCalledWith(product, [previous], undefined);
+    expect(AIService.generateContentKit).toHaveBeenCalledWith(product, [previous], undefined, undefined);
     expect(kitRepo.createContentKit).toHaveBeenCalledOnce();
+  });
+
+  it('aplica a voz do creator e marca usou_voz no kit', async () => {
+    vi.mocked(kitRepo.listContentKitsByProductId).mockResolvedValue([]);
+    vi.mocked(AIService.generateContentKit).mockResolvedValue({ content_kit: contentKit } as never);
+    vi.mocked(kitRepo.createContentKit).mockResolvedValue({ id: 'kit-voz', product_id: product.id, ...contentKit } as never);
+
+    const result = await ensureContentKit(product.id, creatorId, undefined, 'falo direto e sem enrolação');
+
+    expect(result.created).toBe(true);
+    expect(AIService.generateContentKit).toHaveBeenCalledWith(product, [], undefined, 'falo direto e sem enrolação');
+    expect(kitRepo.createContentKit).toHaveBeenCalledWith(product.id, contentKit, {
+      creatorId,
+      briefing: undefined,
+      usouVoz: true,
+    });
   });
 
   it('creates a Content Kit from real product data', async () => {
@@ -324,8 +389,9 @@ describe('content kit preparation', () => {
     expect(kitRepo.createContentKit).toHaveBeenCalledWith(product.id, contentKit, {
       creatorId,
       briefing: 'Vídeo curto e agressivo, com 15 segundos',
+      usouVoz: false,
     });
-    expect(AIService.generateContentKit).toHaveBeenCalledWith(product, [], 'Vídeo curto e agressivo, com 15 segundos');
+    expect(AIService.generateContentKit).toHaveBeenCalledWith(product, [], 'Vídeo curto e agressivo, com 15 segundos', undefined);
   });
 
   it('delivers a base kit when AI generation fails instead of erroring', async () => {

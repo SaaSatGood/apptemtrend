@@ -231,6 +231,12 @@ function truncateBriefing(value?: string) {
   return text.length > AI_LIMITS.MAX_BRIEFING_CHARS ? text.slice(0, AI_LIMITS.MAX_BRIEFING_CHARS) : text;
 }
 
+function truncateVoice(value?: string | null) {
+  const text = (value ?? '').trim().replace(/\s+/g, ' ');
+  if (!text) return undefined;
+  return text.length > 500 ? text.slice(0, 500) : text;
+}
+
 function previousKitsCompact(previousKits: Partial<ContentKit>[]) {
   return previousKits.slice(0, AI_LIMITS.MAX_PREVIOUS_KITS).map((kit) => ({
     titulo: (kit.titulo ?? '').trim().slice(0, AI_LIMITS.MAX_PREVIOUS_KIT_CHARS),
@@ -298,6 +304,7 @@ export async function generateContentKit(
   product: Product,
   previousKits: Partial<ContentKit>[] = [],
   creatorBriefing?: string,
+  creatorVoice?: string | null,
 ): Promise<GeneratedContentKit | null> {
   if (env.NODE_ENV === 'test') return null;
   if (!env.GEMINI_API_KEY) {
@@ -305,16 +312,21 @@ export async function generateContentKit(
     return null;
   }
   const startedAt = Date.now();
+  const voice = truncateVoice(creatorVoice);
 
   for (let attempt = 1; attempt <= MAX_GENERATION_ATTEMPTS; attempt += 1) try {
     const systemText = [
       CONTENT_STRATEGY_INSTRUCTIONS,
       'Use só dados reais do produto. Entregue todos os campos do schema, abordagem inédita vs kits anteriores, sem genéricos/placeholders.',
       'Siga o briefing do creator sem contradizer dados reais. Vídeo gravado fora da TemTrend. Hashtags com # sem espaços.',
+      voice
+        ? 'Escreva hook, falas e copy no jeito de falar do creator (amostra abaixo); o briefing pontual prevalece em conflito. Nunca mude dados reais para combinar com a amostra.'
+        : 'Sem amostra de voz; use um tom direto e prático.',
     ].join(' ');
     const userText = JSON.stringify({
       produto: productContext(product),
       orientacoes_do_creator: truncateBriefing(creatorBriefing) || 'Sem orientação adicional; crie uma abordagem clara e prática.',
+      ...(voice ? { voz_do_creator: voice } : {}),
       contexto_temporal: { data_iso: new Date().toISOString(), pais: 'Brasil' },
       kits_anteriores_a_evitar: previousKitsCompact(previousKits),
       tentativa: attempt,

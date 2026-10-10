@@ -144,6 +144,7 @@ export default function KitDetail({ productId, kitId }: { productId: string; kit
         <p className="eyebrow">Seu Content Kit</p>
         <span className="product-category">{currentProduct.nome}</span>
         <h1>{currentKit.titulo}</h1>
+        {currentKit.usou_voz && <p className="kit-voice-badge" role="note">No seu jeito ✓</p>}
         {currentKit.descricao && <p className="preserve-lines">{currentKit.descricao}</p>}
         <div className="kit-meta">
           {[currentKit.formato, currentKit.nivel_dificuldade, currentKit.duracao_seg ? `${currentKit.duracao_seg}s` : null]

@@ -38,7 +38,7 @@ export async function listContentKitsByProductId(productId: string, creatorId?: 
 export async function createContentKit(
   productId: string,
   input: Record<string, unknown>,
-  ownership?: { creatorId?: string; briefing?: string },
+  ownership?: { creatorId?: string; briefing?: string; usouVoz?: boolean },
 ): Promise<ContentKit> {
   const { data, error } = await supabaseAdmin
     .from('content_kits')
@@ -47,6 +47,7 @@ export async function createContentKit(
       product_id: productId,
       creator_id: ownership?.creatorId ?? null,
       briefing_usuario: ownership?.briefing || null,
+      usou_voz: ownership?.usouVoz ?? false,
     })
     .select()
     .single();

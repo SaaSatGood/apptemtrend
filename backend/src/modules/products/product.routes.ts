@@ -93,8 +93,8 @@ async function productRoutes(fastify: FastifyInstance) {
         }
       }
       const result = body.force_new
-        ? await productService.createFreshContentKit(id, creator.id, body.instructions)
-        : await productService.ensureContentKit(id, creator.id, body.instructions);
+        ? await productService.createFreshContentKit(id, creator.id, body.instructions, creator.voz_exemplo ?? null)
+        : await productService.ensureContentKit(id, creator.id, body.instructions, creator.voz_exemplo ?? null);
       if (!result.created) {
         await releaseQuota(request.authUser.id, 'kit');
         quotaReleased = true;

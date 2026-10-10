@@ -14,10 +14,12 @@ interface AccountData {
 }
 
 export default function Account({ onEditPreferences }: { onEditPreferences: () => void }) {
-  const { toast, me, signOut } = usePlatform();
+  const { toast, me, signOut, reloadMe } = usePlatform();
   const [account, setAccount] = useState<AccountData | null>(null);
   const [name, setName] = useState("");
+  const [voz, setVoz] = useState(me?.creator?.voz_exemplo || "");
   const [savingName, setSavingName] = useState(false);
+  const [savingVoice, setSavingVoice] = useState(false);
   const [savingPass, setSavingPass] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -46,6 +48,18 @@ export default function Account({ onEditPreferences }: { onEditPreferences: () =
     ...(me?.creator?.estilos_conteudo || []),
     ...(me?.creator?.temas_interesse || []),
   ];
+  const savedVoz = me?.creator?.voz_exemplo || "";
+  const voiceChanged = voz.trim() !== savedVoz.trim();
+
+  useEffect(() => {
+    let active = true;
+    queueMicrotask(() => {
+      if (active) setVoz(savedVoz);
+    });
+    return () => {
+      active = false;
+    };
+  }, [savedVoz]);
   const nameChanged = Boolean(account && name.trim() !== account.nome.trim());
 
   async function saveName(e: React.FormEvent) {
@@ -73,6 +87,25 @@ export default function Account({ onEditPreferences }: { onEditPreferences: () =
       toast(friendlyError(error, "Não conseguimos concluir agora. Tente novamente."));
     } finally {
       setSavingName(false);
+    }
+  }
+
+  async function saveVoice(e: React.FormEvent) {
+    e.preventDefault();
+    const trimmed = voz.trim().slice(0, 500);
+    setSavingVoice(true);
+    try {
+      const { data } = await supabase().auth.getSession();
+      await api("/account/profile", data.session?.access_token, {
+        method: "PATCH",
+        body: JSON.stringify({ nome: name.trim() || account?.nome || "", voz_exemplo: trimmed }),
+      });
+      await reloadMe();
+      toast(trimmed ? "Sua voz foi salva. Roteiros novos saem no seu jeito ✓" : "Sua voz foi removida.");
+    } catch (error) {
+      toast(friendlyError(error, "Não conseguimos salvar sua voz. Tente novamente."));
+    } finally {
+      setSavingVoice(false);
     }
   }
 
@@ -207,6 +240,29 @@ export default function Account({ onEditPreferences }: { onEditPreferences: () =
             <button className="ghost" type="button" onClick={onEditPreferences}>
               Editar preferências →
             </button>
+          </section>
+        )}
+        {!me?.is_admin && (
+          <section id="voz" className="card account-card account-voice">
+            <div className="account-card-heading compact">
+              <div><h2>Sua voz</h2><p>Roteiros novos saem no seu jeito de falar.</p></div>
+            </div>
+            <form className="stack" onSubmit={saveVoice}>
+              <label>
+                Como você fala nos vídeos? (opcional)
+                <textarea
+                  rows={4}
+                  maxLength={500}
+                  placeholder="Ex.: Gente, preciso mostrar isso pra vocês..."
+                  value={voz}
+                  onChange={(e) => setVoz(e.target.value)}
+                />
+              </label>
+              <small className="muted">{voz.trim().length} de 500 caracteres</small>
+              <button className="primary account-save" type="submit" disabled={savingVoice || !voiceChanged || !account}>
+                {savingVoice ? "Salvando..." : voiceChanged ? "Salvar minha voz" : "Voz atualizada ✓"}
+              </button>
+            </form>
           </section>
         )}
         </aside>

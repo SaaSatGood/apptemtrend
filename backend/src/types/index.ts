@@ -34,6 +34,7 @@ export interface Creator {
   objetivo?: string | null;
   estilos_conteudo?: string[];
   temas_interesse?: string[];
+  voz_exemplo?: string | null;
   onboarding_completo?: boolean;
   status: string;
   criado_em: string;
@@ -79,6 +80,7 @@ export interface ContentKit {
   product_id: string;
   creator_id: string | null;
   briefing_usuario: string | null;
+  usou_voz?: boolean | null;
   titulo: string;
   descricao: string | null;
   formato: string | null;
