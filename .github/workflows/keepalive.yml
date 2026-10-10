@@ -1,0 +1,20 @@
+# Mantém o backend Render Free aquecido: ping a cada 30min evita
+# sono prolongado (o plano free dorme após ~15min sem tráfego).
+# Stopgap automático; o ideal é um monitor externo de 5min (ex.: UptimeRobot).
+# Sem checkout: o job só faz curl, ~20s por execução (~1440 min/mês).
+name: keepalive-backend
+
+on:
+  schedule:
+    - cron: "*/30 * * * *"
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Ping health
+        run: curl -fsS --max-time 60 https://temtrend-api.onrender.com/health
+      - name: Ping readiness
+        run: curl -fsS --max-time 60 https://temtrend-api.onrender.com/ready
