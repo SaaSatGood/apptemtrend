@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import { supabase } from "@/lib/supabase";
 import { api, friendlyError } from "@/lib/api";
@@ -22,6 +22,12 @@ const EXAMPLES = [
 
 const DISCOVERY_STATE_KEY = "temtrend_discovery_state";
 const DISCOVERY_STATE_TTL = 2 * 60 * 60 * 1000;
+const TOP_RESULTS = 5;
+const PAGE_SIZE = 3;
+
+function salesOf(product: Product): number {
+  return product.unidades_vendidas_total ?? product.unidades_vendidas_periodo ?? -1;
+}
 
 export function ProductCard({
   product,
@@ -71,6 +77,7 @@ export default function Assistant({ onOpen }: { onOpen: (id: string) => void }) 
   const [searched, setSearched] = useState(false);
   const [message, setMessage] = useState("");
   const [results, setResults] = useState<Product[]>([]);
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [error, setError] = useState(false);
   const [contextIds, setContextIds] = useState<string[]>([]);
   const inFlight = useRef(false);
@@ -118,6 +125,12 @@ export default function Assistant({ onOpen }: { onOpen: (id: string) => void }) 
     };
   }, [storageKey]);
 
+  const topResults = useMemo(
+    () => [...results].sort((a, b) => salesOf(b) - salesOf(a)).slice(0, TOP_RESULTS),
+    [results]
+  );
+  const visibleResults = topResults.slice(0, visibleCount);
+
   const savedFor = (id: string) =>
     Boolean(
       productions.find((item) => item.product_id === id || item.products?.id === id)
@@ -131,6 +144,7 @@ export default function Assistant({ onOpen }: { onOpen: (id: string) => void }) 
       setSearched(true);
       setMessage("Descreva com pelo menos 3 caracteres o produto que você procura.");
       setResults([]);
+      setVisibleCount(PAGE_SIZE);
       return;
     }
     inFlight.current = true;
@@ -154,6 +168,7 @@ export default function Assistant({ onOpen }: { onOpen: (id: string) => void }) 
       setContextIds(list.map((p) => p.id));
       setMessage(result.message || "Nenhum produto encontrado.");
       setResults(list);
+      setVisibleCount(PAGE_SIZE);
       try { sessionStorage.setItem(storageKey, JSON.stringify({
         savedAt: Date.now(),
         query: trimmed,
@@ -164,6 +179,7 @@ export default function Assistant({ onOpen }: { onOpen: (id: string) => void }) 
     } catch (err) {
       setError(true);
       setResults([]);
+      setVisibleCount(PAGE_SIZE);
       setMessage("Não conseguimos concluir sua busca agora.");
       toast(friendlyError(err, "Não conseguimos concluir sua busca agora."));
     } finally {
@@ -178,6 +194,7 @@ export default function Assistant({ onOpen }: { onOpen: (id: string) => void }) 
     setContextIds([]);
     setSearched(false);
     setResults([]);
+    setVisibleCount(PAGE_SIZE);
     setMessage("");
     setError(false);
   }
@@ -258,7 +275,7 @@ export default function Assistant({ onOpen }: { onOpen: (id: string) => void }) 
       <button className="text-button discovery-surprise" type="button" disabled={searching} onClick={() => void search("Não sei o que vender. Sugira oportunidades do catálogo para começar a criar conteúdo.", true)}>Não sei o que vender →</button>
       <p className="discovery-note">Produtos reais. Você escolhe a oportunidade, a TemTrend ajuda com o roteiro.</p>
       </div>
-      {!searched && <Opportunities onOpen={onOpen} />}
+      {!searched && <Opportunities />}
       {searched && (
         <div className="assistant-response" aria-live="polite" aria-busy={searching}>
           <div className="assistant-message">
@@ -268,10 +285,10 @@ export default function Assistant({ onOpen }: { onOpen: (id: string) => void }) 
               Voltar a explorar
             </button>
           </div>
-          {!searching && results.length > 0 && (
+          {!searching && topResults.length > 0 && (
             <div className="discover-results-heading">
               <div>
-                <span>{results.length} oportunidades encontradas</span>
+                <span>Top {topResults.length} mais vendidos</span>
                 <h2>Compare e escolha seu produto</h2>
               </div>
               <small>Dados do catálogo TemTrend</small>
@@ -289,8 +306,8 @@ export default function Assistant({ onOpen }: { onOpen: (id: string) => void }) 
                   </div>
                 </div>
               ))
-            ) : results.length ? (
-              results.map((p) => (
+            ) : topResults.length ? (
+              visibleResults.map((p) => (
                 <ProductCard
                   key={p.id}
                   product={p}
@@ -316,6 +333,15 @@ export default function Assistant({ onOpen }: { onOpen: (id: string) => void }) 
               </div>
             )}
           </div>
+          {!searching && !error && visibleCount < topResults.length && (
+            <button
+              className="ghost catalog-more"
+              type="button"
+              onClick={() => setVisibleCount((c) => c + PAGE_SIZE)}
+            >
+              Mostrar mais ({topResults.length - visibleCount} restantes) ↓
+            </button>
+          )}
         </div>
       )}
     </section>

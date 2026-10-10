@@ -73,7 +73,7 @@ function UserMenu({ onSignOut, active }: { onSignOut: () => void; active: boolea
           <small>{session?.user.email || ""}</small>
         </div>
         <Link href="/app/conta" onClick={() => ref.current?.removeAttribute("open")}>Minha conta</Link>
-        {!admin && <Link href="/app/conta#preferencias" onClick={() => ref.current?.removeAttribute("open")}>Preferências</Link>}
+        {!admin && <Link href="/app/conta?preferencias=1" onClick={() => ref.current?.removeAttribute("open")}>Preferências</Link>}
         <button type="button" onClick={onSignOut}>
           Sair
         </button>
