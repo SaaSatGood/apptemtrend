@@ -10,6 +10,8 @@ import { ProductCard, productionForProduct } from "./Assistant";
 import { Skeletons } from "./ProductKit";
 
 const FILTERS = ["Todos", "Mais vendidos", "Casa", "Beleza", "Fitness", "Tecnologia", "Até R$ 50"];
+const CATALOG_CACHE_KEY = "temtrend_catalog_cache_v1";
+const CATALOG_CACHE_TTL_MS = 10 * 60 * 1000;
 const CATEGORY_TERMS: Record<string, RegExp> = {
   Casa: /casa|cozinha|domestic|decor|jardim|limpeza|organiz/,
   Beleza: /beleza|cabelo|cosmetic|cuidados|maquiagem|perfume/,
@@ -29,20 +31,43 @@ export default function Opportunities({ onOpen }: { onOpen: (id: string) => void
 
   useEffect(() => {
     let active = true;
-    (async () => {
-      setLoading(true); setFailed(false);
+    queueMicrotask(() => {
+      if (!active) return;
       try {
-        const { data } = await supabase().auth.getSession();
-        const all: Product[] = [];
-        for (let page = 1; active; page++) {
-          const batch = await api<Product[]>(`/products?page=${page}&limit=50`, data.session?.access_token);
-          all.push(...batch);
-          if (batch.length < 50) break;
+        const raw = sessionStorage.getItem(CATALOG_CACHE_KEY);
+        if (raw) {
+          const cached = JSON.parse(raw) as { savedAt?: number; items?: Product[] };
+          if (cached?.savedAt && Array.isArray(cached.items) && Date.now() - cached.savedAt < CATALOG_CACHE_TTL_MS) {
+            setCatalog([...new Map(cached.items.map((p) => [p.id, p])).values()]);
+            setLoading(false);
+            return;
+          }
         }
-        if (active) setCatalog([...new Map(all.map((p) => [p.id, p])).values()]);
-      } catch { if (active) setFailed(true); }
-      finally { if (active) setLoading(false); }
-    })();
+      } catch {
+        /* Cache é opcional; segue para a rede. */
+      }
+      void (async () => {
+        setLoading(true); setFailed(false);
+        try {
+          const { data } = await supabase().auth.getSession();
+          const all: Product[] = [];
+          for (let page = 1; active; page++) {
+            const batch = await api<Product[]>(`/products?page=${page}&limit=50`, data.session?.access_token);
+            all.push(...batch);
+            if (batch.length < 50) break;
+          }
+          if (!active) return;
+          const deduped = [...new Map(all.map((p) => [p.id, p])).values()];
+          setCatalog(deduped);
+          try {
+            sessionStorage.setItem(CATALOG_CACHE_KEY, JSON.stringify({ savedAt: Date.now(), items: deduped }));
+          } catch {
+            /* Storage cheio ou indisponível; segue sem cache. */
+          }
+        } catch { if (active) setFailed(true); }
+        finally { if (active) setLoading(false); }
+      })();
+    });
     return () => { active = false; };
   }, [retry]);
 

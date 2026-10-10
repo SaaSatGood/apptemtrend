@@ -35,7 +35,7 @@ export const UPLOAD = {
 export const CACHE_TTL_MS = {
   AUTH_USER: 90 * 1000, // 90s por token
   ADMIN_FLAG: 60 * 1000, // 60s por user_id (revogação rápida)
-  CATALOG: 60 * 1000, // 60s catálogo ativo
+  CATALOG: 5 * 60 * 1000, // 5min catálogo ativo (escritas invalidam na hora)
   DASHBOARD: 30 * 1000, // 30s métricas admin
   USER_DIRECTORY: 10 * 60 * 1000, // 10min diretório auth
 } as const;
@@ -55,8 +55,8 @@ export const AI_LIMITS = {
   MAX_NAME_CHARS: 50,
   CLASSIFY_TIMEOUT_MS: 8_000,
   CLASSIFY_MAX_OUTPUT_TOKENS: 150,
-  CLASSIFY_CACHE_TTL_MS: 10 * 60 * 1000,
-  ASSISTANT_RESPONSE_CACHE_TTL_MS: 2 * 60 * 1000,
+  CLASSIFY_CACHE_TTL_MS: 30 * 60 * 1000,
+  ASSISTANT_RESPONSE_CACHE_TTL_MS: 10 * 60 * 1000,
   // Geração de kit: 1 tentativa inicial + 2 retries (confiabilidade primeiro).
   MAX_GENERATION_ATTEMPTS: 3,
   GENERATE_TIMEOUT_MS: 30_000,
