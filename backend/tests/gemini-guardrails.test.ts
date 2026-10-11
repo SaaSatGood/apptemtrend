@@ -5,6 +5,7 @@ import {
   isProductNovel,
   missingStrategySections,
   parseGeneratedPackage,
+  ROTEIRO_SKELETON_INSTRUCTIONS,
 } from '../src/modules/assistant/gemini-generation.service.js';
 
 describe('Gemini assistant guardrails', () => {
@@ -63,6 +64,11 @@ describe('Gemini assistant guardrails', () => {
   it('accepts natural phrasing of the required sections', () => {
     expect(missingStrategySections('hooks alternativos, faceless, quando publicar, roteiros alternativos')).toEqual([]);
     expect(missingStrategySections('um roteiro curto e direto')).toHaveLength(4);
+  });
+
+  it('skeleton teaches the exact required titles', () => {
+    const missing = missingStrategySections(ROTEIRO_SKELETON_INSTRUCTIONS);
+    expect(missing).toEqual([]);
   });
 
   it('accepts decisions without motivos', () => {

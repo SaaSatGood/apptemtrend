@@ -194,6 +194,18 @@ export const REQUIRED_STRATEGY_SECTIONS = [
   'variacoes de roteiro',
 ];
 
+// Esqueleto few-shot: o modelo copia estrutura muito melhor do que segue
+// regra abstrata. Mantido fora de CONTENT_STRATEGY_INSTRUCTIONS (que tem
+// teto de tamanho nos testes de custo) e enviado só na geração de kit.
+export const ROTEIRO_SKELETON_INSTRUCTIONS = [
+  'ESQUELETO OBRIGATÓRIO DO ROTEIRO (copie estes títulos exatamente):',
+  'ROTEIRO PRINCIPAL: <sequência 0-30s>.',
+  '3 VARIAÇÕES DE HOOK: 1) <curiosidade> 2) <identificação> 3) <resultado>.',
+  'VERSÃO SEM SEGUIDORES: <como gravar sem audiência, ex. faceless/demonstração>.',
+  'DICA DE PUBLICAÇÃO: <horário, frequência, áudio e comentário fixado, sem garantias>.',
+  '3 VARIAÇÕES DE ROTEIRO: A) <abordagem 1> B) <abordagem 2> C) <abordagem 3>.',
+].join(' ');
+
 // Validação tolerante: o modelo pode frasear os títulos de outro jeito
 // ("hooks alternativos", "faceless"...). Exige as 4 seções, aceita sinônimos.
 const STRATEGY_SECTION_ALIASES: Array<[string, string[]]> = [
@@ -340,6 +352,7 @@ export async function generateContentKit(
       voice
         ? 'Escreva hook, falas e copy no jeito de falar do creator (amostra abaixo); o briefing pontual prevalece em conflito. Nunca mude dados reais para combinar com a amostra.'
         : 'Sem amostra de voz; use um tom direto e prático.',
+      ROTEIRO_SKELETON_INSTRUCTIONS,
     ].join(' ');
     const userText = JSON.stringify({
       produto: productContext(product),
