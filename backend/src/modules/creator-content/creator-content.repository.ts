@@ -41,9 +41,12 @@ export async function listCreatorContent(
   creatorId: string,
   options?: { limit?: number; offset?: number },
 ): Promise<CreatorContentWithRelations[]> {
+  // Relações enxutas: a lista só mostra nome/imagem do produto e título/hook do kit.
+  // Detalhe e roteiro completo vêm de endpoints próprios.
+  const RELATIONS = '*, products(id,nome,imagem_url), content_kits(id,titulo,hook)';
   let query = supabaseAdmin
     .from('creator_content')
-    .select('*, products(*), content_kits(*)')
+    .select(RELATIONS)
     .eq('creator_id', creatorId)
     .order('criado_em', { ascending: false });
 

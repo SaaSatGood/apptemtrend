@@ -164,6 +164,7 @@ function scoreProduct(product: Product, terms: string[]) {
 }
 
 function publicProduct(product: Product) {
+  // Vitrine enxuta: só o que o card usa + sinais do motivo.
   return {
     id: product.id,
     produto_externo_id: product.produto_externo_id,
@@ -178,9 +179,7 @@ function publicProduct(product: Product) {
     comissao_percentual: product.comissao_percentual,
     unidades_vendidas_periodo: product.unidades_vendidas_periodo,
     unidades_vendidas_total: product.unidades_vendidas_total,
-    crescimento_vendas_percentual: product.crescimento_vendas_percentual,
     tiktok_shop_url: product.tiktok_shop_url,
-    fastmoss_produto_url: product.fastmoss_produto_url,
   };
 }
 

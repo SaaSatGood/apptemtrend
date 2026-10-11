@@ -11,21 +11,19 @@ import { Errors } from '../../types/index.js';
 import type { Product } from '../../types/index.js';
 
 function publicProduct(product: Product) {
+  // Serializador enxuto da vitrine: só o que a UI do creator exibe.
+  // Admin e geração usam linhas completas em endpoints próprios.
   const {
     id, produto_externo_id, nome, descricao, categoria, imagem_url, loja_nome,
-    preco_texto, preco_min_brl, preco_max_brl, pais_regiao, comissao_percentual,
-    unidades_vendidas_periodo, crescimento_vendas_percentual, unidades_vendidas_total,
-    receita_periodo_brl, receita_total_brl, data_estimada_upload,
-    unidades_vendidas_total_loja, fastmoss_produto_url, tiktok_shop_url,
-    fastmoss_loja_url, status_origem, ranking_origem, atualizado_em,
+    preco_texto, preco_min_brl, preco_max_brl, comissao_percentual,
+    unidades_vendidas_periodo, unidades_vendidas_total,
+    tiktok_shop_url, atualizado_em,
   } = product;
   return {
     id, produto_externo_id, nome, descricao, categoria, imagem_url, loja_nome,
-    preco_texto, preco_min_brl, preco_max_brl, pais_regiao, comissao_percentual,
-    unidades_vendidas_periodo, crescimento_vendas_percentual, unidades_vendidas_total,
-    receita_periodo_brl, receita_total_brl, data_estimada_upload,
-    unidades_vendidas_total_loja, fastmoss_produto_url, tiktok_shop_url,
-    fastmoss_loja_url, status_origem, ranking_origem, atualizado_em,
+    preco_texto, preco_min_brl, preco_max_brl, comissao_percentual,
+    unidades_vendidas_periodo, unidades_vendidas_total,
+    tiktok_shop_url, atualizado_em,
   };
 }
 

@@ -40,9 +40,17 @@ export async function listActiveProducts(filters?: {
   offset?: number;
   onlySearchable?: boolean;
 }): Promise<Product[]> {
+  // Select enxuto: cobre listagem pública, descoberta e IA (rank/motivos).
+  // Detalhe do produto e geração usam findProductById (linha completa).
+  const COLUMNS = [
+    'id', 'produto_externo_id', 'nome', 'descricao', 'categoria',
+    'imagem_url', 'loja_nome', 'preco_texto', 'preco_min_brl', 'preco_max_brl',
+    'comissao_percentual', 'unidades_vendidas_total', 'unidades_vendidas_periodo',
+    'tiktok_shop_url', 'status', 'destaque', 'ordem_destaque', 'criado_em',
+  ].join(',');
   let query = supabaseAdmin
     .from('products')
-    .select('*')
+    .select(COLUMNS)
     .eq('status', PRODUCT_STATUS.ATIVO);
 
   if (filters?.categoria) {
@@ -72,7 +80,9 @@ export async function listActiveProducts(filters?: {
     throw error;
   }
 
-  return data || [];
+  // Linhas parciais por desenho (COLUMNS enxuto); o restante do código
+  // só toca nos campos selecionados.
+  return (data || []) as unknown as Product[];
 }
 
 export async function listAllProducts(options?: { limit?: number; offset?: number }): Promise<Product[]> {

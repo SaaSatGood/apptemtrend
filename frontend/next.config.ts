@@ -34,6 +34,12 @@ const nextConfig: NextConfig = {
     ],
   },
   async headers() {
+    const preconnect = [
+      "https://s.500fd.com",
+      "https://images.unsplash.com",
+      "https://images.pexels.com",
+      "https://videos.pexels.com",
+    ].map((origin) => `<${origin}>; rel=preconnect`).join(", ");
     return [
       {
         source: "/:path*",
@@ -44,6 +50,7 @@ const nextConfig: NextConfig = {
           { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=(), browsing-topics=()" },
           { key: "Content-Security-Policy", value: contentSecurityPolicy },
           { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains" },
+          { key: "Link", value: preconnect },
         ],
       },
     ];

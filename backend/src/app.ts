@@ -1,4 +1,5 @@
 import Fastify, { LogController } from 'fastify';
+import compress from '@fastify/compress';
 import multipart from '@fastify/multipart';
 import { logger } from './lib/logger.js';
 import cors from './plugins/cors.js';
@@ -22,6 +23,7 @@ export function buildApp() {
     trustProxy: true,
   });
   app.register(errorHandler);
+  app.register(compress, { global: true, threshold: 1024 });
   app.setNotFoundHandler((_request, reply) => {
     return reply.status(404).send({
       error: { code: 'RESOURCE_NOT_FOUND', message: 'Rota não encontrada.' },
