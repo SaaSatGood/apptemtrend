@@ -67,4 +67,5 @@ export interface MeResponse {
 export interface AssistantResponse {
   message: string;
   products: Product[];
+  needs_clarification?: boolean;
 }

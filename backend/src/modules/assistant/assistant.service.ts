@@ -8,7 +8,7 @@ import { env } from '../../config/env.js';
 
 // Cache de resposta completa para buscas simples repetidas (sem product_ids).
 // Em teste é bypassado para não vazar entre casos.
-const responseCache = new TtlCache<{ message: string; interpreted_as: string[]; products: unknown[]; meta: unknown }>(200);
+const responseCache = new TtlCache<{ message: string; interpreted_as: string[]; products: unknown[]; needs_clarification: boolean; meta: unknown }>(200);
 
 function responseCacheKey(message: string) {
   return message.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('pt-BR').trim().slice(0, 200);
@@ -87,6 +87,8 @@ function finalMotivo(product: Product, aiMotivo: string | null | undefined, pref
 }
 
 const MESSAGES = {
+  clarify: 'O que você quer vender? Posso sugerir por preço, nicho ou facilidade de gravar.',
+  demonstrationClarify: 'Para sugerir algo fácil de gravar, diga um nicho ou produto. O catálogo não informa a facilidade de demonstração.',
   outOfScope: 'Posso te ajudar a encontrar produtos e a preparar seu conteúdo. Conte o que você quer vender.',
   empty: 'Não encontrei um produto para essa busca. Experimente descrever de outra forma.',
   discovery: 'Separei algumas opções para você começar.',
@@ -98,6 +100,23 @@ const MESSAGES = {
 
 function normalize(value: string) {
   return value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('pt-BR');
+}
+
+export function isGreetingOnly(message: string) {
+  return /^(oi|ola|bom dia|boa tarde|boa noite|e ai|hey|hello|tudo bem)[!?.\s]*$/.test(normalize(message.trim()));
+}
+
+function maximumPriceFrom(message: string): number | null {
+  const normalized = normalize(message);
+  const match = normalized.match(/(?:ate|abaixo de|menos de|no maximo)\s*(?:r\$\s*)?(\d+(?:[.,]\d{1,2})?)\s*(?:reais)?/)
+    ?? normalized.match(/r\$\s*(\d+(?:[.,]\d{1,2})?)/);
+  if (!match) return null;
+  const value = Number(match[1].replace(',', '.'));
+  return Number.isFinite(value) && value > 0 ? value : null;
+}
+
+function isDemonstrationRequest(message: string) {
+  return /(?:facil|faceis)\s+de\s+(demonstrar|gravar|mostrar)|facilidade\s+de\s+(demonstrar|gravar|mostrar)/.test(normalize(message));
 }
 
 function tokens(value: string) {
@@ -197,10 +216,13 @@ function buildResponse(
   terms: string[],
   decision: Decision,
   prefs?: CreatorPrefs | null,
+  needsClarification = false,
 ) {
-  const motivos = decision?.motivos ?? {};  return {
+  const motivos = decision?.motivos ?? {};
+  return {
     message,
     interpreted_as: terms.slice(0, 12),
+    needs_clarification: needsClarification,
     products: products.map((product) => ({
       ...publicProduct(product),
       motivo: finalMotivo(product, motivos[product.id], prefs),
@@ -235,6 +257,9 @@ export function isSearchableCatalogProduct(product: Product) {
 }
 
 export async function findProductsForMessage(input: AssistantProductSearchInput, prefs?: CreatorPrefs | null) {
+  if (isGreetingOnly(input.message)) {
+    return buildResponse(MESSAGES.clarify, [], [], null, prefs, true);
+  }
   const catalog = (await listSearchableCatalog()).filter(isSearchableCatalogProduct);
   // Cache isolado por mensagem + snapshot do catálogo + preferências:
   // nunca serve produtos nem motivos de outro contexto.
@@ -247,6 +272,7 @@ export async function findProductsForMessage(input: AssistantProductSearchInput,
     if (cached) return cached as ReturnType<typeof buildResponse>;
   }
   const localTerms = expandedTerms(input.message);
+  const maximumPrice = maximumPriceFrom(input.message);
   const requestedIds = input.product_ids?.length ? new Set(input.product_ids) : null;
   const discovery = isDiscoveryRequest(input.message);
 
@@ -257,18 +283,21 @@ export async function findProductsForMessage(input: AssistantProductSearchInput,
   const candidates = isRefinement
     ? catalog.filter((product) => requestedIds!.has(product.id))
     : catalog;
+  const eligibleCandidates = maximumPrice == null
+    ? candidates
+    : candidates.filter((product) => product.preco_min_brl != null && product.preco_min_brl <= maximumPrice);
 
-  if (!candidates.length) {
+  if (!eligibleCandidates.length) {
     return buildResponse(MESSAGES.empty, [], localTerms, null, prefs);
   }
 
   // "Esse aqui" fecha a escolha sem gastar uma chamada de IA.
   if (isRefinement && isSelectionRequest(input.message)) {
-    const chosen = rankProducts(candidates, localTerms)
+    const chosen = rankProducts(eligibleCandidates, localTerms)
       .slice(0, MAX_RESULTS)
       .map((item) => item.product);
     return buildResponse(
-      candidates.length === 1 ? MESSAGES.selected : MESSAGES.chooseOne,
+      eligibleCandidates.length === 1 ? MESSAGES.selected : MESSAGES.chooseOne,
       chosen,
       localTerms,
       null,
@@ -279,8 +308,8 @@ export async function findProductsForMessage(input: AssistantProductSearchInput,
   // Pré-rank local: envia ao Gemini só o topo relevante (custo/latência).
   // Refinos já são pequenos; discovery usa topo por destaque+score.
   const aiCandidates = isRefinement
-    ? candidates.slice(0, AI_LIMITS.MAX_CATALOG_ITEMS)
-    : rankProducts(candidates, localTerms).slice(0, AI_LIMITS.MAX_CATALOG_ITEMS).map((item) => item.product);
+    ? eligibleCandidates.slice(0, AI_LIMITS.MAX_CATALOG_ITEMS)
+    : rankProducts(eligibleCandidates, localTerms).slice(0, AI_LIMITS.MAX_CATALOG_ITEMS).map((item) => item.product);
 
   const decision = isRefinement
     ? await AIService.refineProductSearch(input.message, aiCandidates)
@@ -295,12 +324,13 @@ export async function findProductsForMessage(input: AssistantProductSearchInput,
     ...(decision?.search_terms ?? []).map((term) => normalize(term)),
   ])];
 
-  const ranked = rankProducts(candidates, terms);
-  const matched = ranked.filter((item) => item.score > 0);
+  const ranked = rankProducts(eligibleCandidates, terms);
+  const matched = ranked.filter((item) => item.score > 0 || maximumPrice != null);
 
   const selectedByModel = (decision?.selected_product_ids ?? [])
-    .map((id) => candidates.find((product) => product.id === id))
-    .filter((product): product is Product => Boolean(product));
+    .map((id) => eligibleCandidates.find((product) => product.id === id))
+    .filter((product): product is Product => Boolean(product))
+    .filter((product) => discovery || !localTerms.length || maximumPrice != null || isDemonstrationRequest(input.message) || scoreProduct(product, localTerms) > 0);
 
   let chosen: Product[] = [];
   let message: string;
@@ -314,9 +344,11 @@ export async function findProductsForMessage(input: AssistantProductSearchInput,
   } else if (isRefinement) {
     chosen = ranked.slice(0, MAX_RESULTS).map((item) => item.product);
     message = MESSAGES.keptPrevious;
-  } else if (discovery || isProductCatalogRequest(input.message)) {
+  } else if (discovery || (!localTerms.length && isProductCatalogRequest(input.message))) {
     chosen = ranked.slice(0, MAX_RESULTS).map((item) => item.product);
     message = chosen.length ? MESSAGES.discovery : MESSAGES.empty;
+  } else if (isDemonstrationRequest(input.message)) {
+    return buildResponse(MESSAGES.demonstrationClarify, [], terms, decision, prefs, true);
   } else {
     return buildResponse(MESSAGES.empty, [], terms, decision, prefs);
   }

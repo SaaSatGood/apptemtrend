@@ -14,6 +14,7 @@ import ContentKitDialog from "./ContentKitDialog";
 import { kitCopyText } from "./kit-text";
 import { PublicationDialog } from "./Production";
 import { productionForProduct } from "./Assistant";
+import GuidedKit from "./GuidedKit";
 
 export default function KitDetail({ productId, kitId }: { productId: string; kitId: string }) {
   const router = useRouter();
@@ -154,7 +155,20 @@ export default function KitDetail({ productId, kitId }: { productId: string; kit
             ))}
         </div>
       </header>
+      <GuidedKit
+        kit={currentKit}
+        product={currentProduct}
+        readyLabel={!otherKitInProgress && (!production || production.status === "salvo") ? "Começar produção →" : "Ver meu próximo passo →"}
+        onReady={() => {
+          if (!otherKitInProgress && (!production || production.status === "salvo")) {
+            void choose();
+          } else {
+            document.getElementById("kit-production-actions")?.scrollIntoView({ behavior: "smooth", block: "center" });
+          }
+        }}
+      />
       <ProductionSteps current={production ? current : 0} />
+      <div className="kit-complete-heading"><div><p className="eyebrow">Para consultar e copiar</p><h2>Roteiro completo</h2></div><p>Todos os textos do seu vídeo em um só lugar.</p></div>
       <nav className="kit-jump-nav" aria-label="Ir para uma seção do plano de gravação">
         <span>Ir para</span>
         {currentKit.hook && <a href="#kit-hook">Hook ↗</a>}
@@ -164,7 +178,7 @@ export default function KitDetail({ productId, kitId }: { productId: string; kit
       </nav>
       <div className="content-kit-layout">
         <KitDocument kit={currentKit} />
-        <aside className="kit-actions">
+        <aside id="kit-production-actions" className="kit-actions">
           {productionsError ? <><h3>Atualize sua produção</h3><p>Precisamos conferir seu progresso antes de continuar.</p><button className="primary" type="button" disabled={productionsLoading} onClick={() => void loadProductions().catch(() => {})}>Tentar novamente</button></> : productionsLoading ? <p role="status">Conferindo sua produção…</p> : otherKitInProgress ? <><h3>Você já tem uma produção</h3><p>Este kit é uma alternativa. O roteiro escolhido e o progresso atual foram mantidos.</p><Link className="primary" href={`/app/produtos/${productId}/kits/${productProduction.content_kit_id}`}>Continuar produção →</Link></> : !production || production.status === "salvo" ? (
             <>
               <h3>Pronto para gravar?</h3>

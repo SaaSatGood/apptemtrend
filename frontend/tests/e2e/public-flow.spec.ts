@@ -38,3 +38,22 @@ test("headers defensivos são enviados", async ({ request }) => {
   expect(response.headers()["content-security-policy"]).toContain("frame-ancestors 'none'");
   expect(response.headers()["permissions-policy"]).toContain("camera=()");
 });
+
+for (const viewport of [{ width: 320, height: 568 }, { width: 390, height: 844 }, { width: 360, height: 640 }, { width: 1280, height: 720 }]) {
+  test(`criar conta cabe em ${viewport.width}x${viewport.height}`, async ({ page }, testInfo) => {
+    await page.setViewportSize(viewport);
+    await page.goto("/app?mode=signup");
+    await expect(page.getByRole("button", { name: /começar agora →/i })).toBeVisible();
+    const size = await page.evaluate(() => ({
+      width: document.documentElement.scrollWidth,
+      height: document.documentElement.scrollHeight,
+      viewportWidth: window.innerWidth,
+      viewportHeight: window.innerHeight,
+      buttonBottom: document.querySelector(".auth-form .primary")?.getBoundingClientRect().bottom ?? 0,
+    }));
+    expect(size.width).toBeLessThanOrEqual(size.viewportWidth);
+    expect(size.height).toBeLessThanOrEqual(size.viewportHeight);
+    expect(size.buttonBottom).toBeLessThanOrEqual(size.viewportHeight);
+    if (viewport.width === 360) await page.screenshot({ path: testInfo.outputPath("signup-small-mobile.png") });
+  });
+}

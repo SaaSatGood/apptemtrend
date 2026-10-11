@@ -31,6 +31,7 @@ import * as kitRepo from '../src/modules/content-kits/content-kit.repository.js'
 import { AIService } from '../src/modules/assistant/ai.service.js';
 import {
   findProductsForMessage,
+  isGreetingOnly,
   isDiscoveryRequest,
   isProductCatalogRequest,
 } from '../src/modules/assistant/assistant.service.js';
@@ -165,16 +166,59 @@ describe('assistant experience', () => {
     expect(AIService.refineProductSearch).not.toHaveBeenCalled();
   });
 
-  it('never invents products when nothing matches the catalog', async () => {
+  it('does not recommend unrelated products when a specific search has no match', async () => {
     expect(isProductCatalogRequest('Crie um produto fácil de demonstrar para carro')).toBe(true);
 
     const result = await findProductsForMessage({ message: 'Crie um produto fácil de demonstrar para carro' });
 
-    expect(result.products.length).toBeGreaterThan(0);
+    expect(result.products).toHaveLength(0);
     expect(result.products.every((product) => catalog.some((item) => item.id === product.id))).toBe(true);
     expect(result.message).not.toMatch(/criei|criado|novo produto/i);
     expect(result).not.toHaveProperty('created');
     expect(result).not.toHaveProperty('content_kit_id');
+  });
+
+  it('ignores an AI selection unrelated to the requested category', async () => {
+    vi.mocked(AIService.interpretIntent).mockResolvedValue({
+      in_scope: true,
+      intent_summary: 'Produtos para academia',
+      search_terms: [],
+      selected_product_ids: [catalog[1].id],
+      motivos: {},
+      provider: 'gemini',
+      usage: { prompt_tokens: 0, response_tokens: 0, thoughts_tokens: 0, total_tokens: 0 },
+      latency_ms: 0,
+    });
+    const result = await findProductsForMessage({ message: 'Quero vender produtos para academia' });
+    expect(result.products.map((product) => product.id)).toEqual([catalog[0].id]);
+  });
+
+  it('asks a follow-up for a greeting instead of returning random products', async () => {
+    expect(isGreetingOnly('Olá!')).toBe(true);
+    expect(isGreetingOnly('Olá, quero produtos para casa')).toBe(false);
+    const result = await findProductsForMessage({ message: 'Olá!' });
+    expect(result.products).toHaveLength(0);
+    expect(result.needs_clarification).toBe(true);
+    expect(result.message).toMatch(/O que você quer vender\?/);
+    expect(AIService.interpretIntent).not.toHaveBeenCalled();
+    expect(productRepo.listActiveProducts).not.toHaveBeenCalled();
+  });
+
+  it('asks for a niche when ease of filming cannot be verified from catalog data', async () => {
+    const result = await findProductsForMessage({ message: 'Quero produtos fáceis de demonstrar em vídeo' });
+    expect(result.products).toHaveLength(0);
+    expect(result.needs_clarification).toBe(true);
+    expect(result.message).toMatch(/O catálogo não informa/);
+  });
+
+  it('respeita um teto de preço antes de pedir sugestões à IA', async () => {
+    vi.mocked(productRepo.listActiveProducts).mockResolvedValue([
+      { ...catalog[0], preco_min_brl: 39.9 },
+      { ...catalog[1], preco_min_brl: 89.9 },
+    ]);
+    const result = await findProductsForMessage({ message: 'Quero produtos com preço de até 50 reais' });
+    expect(result.products.map((product) => product.id)).toEqual([catalog[0].id]);
+    expect(vi.mocked(AIService.interpretIntent).mock.calls[0]?.[1]).toHaveLength(1);
   });
 
   it('does not persist a product even when the creator explicitly asks for one', async () => {

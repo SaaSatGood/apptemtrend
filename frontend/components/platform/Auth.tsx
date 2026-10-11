@@ -73,18 +73,22 @@ function ProviderButtons({
 }) {
   return (
     <>
-      {PROVIDERS.map(({ id, label, icon }) => (
-        <button
-          key={id}
-          className="provider-button google-button"
-          type="button"
-          onClick={() => onSelect(id)}
-          disabled={busyProvider !== null || busy}
-        >
-          <span className="provider-icon google-icon" aria-hidden="true">{icon}</span>
-          {busyProvider === id ? "Conectando..." : label}
-        </button>
-      ))}
+      <div className="auth-providers">
+        {PROVIDERS.map(({ id, label, icon }) => (
+          <button
+            key={id}
+            className="provider-button google-button"
+            type="button"
+            aria-label={busyProvider === id ? `Conectando com ${id}` : label}
+            onClick={() => onSelect(id)}
+            disabled={busyProvider !== null || busy}
+          >
+            <span className="provider-icon google-icon" aria-hidden="true">{icon}</span>
+            <span className="provider-label">{busyProvider === id ? "Conectando..." : label}</span>
+            <span className="provider-label-short" aria-hidden="true">{id === "google" ? "Google" : id === "facebook" ? "Facebook" : "Apple"}</span>
+          </button>
+        ))}
+      </div>
       <div className="divider"><span>{dividerLabel}</span></div>
     </>
   );
@@ -272,7 +276,7 @@ export default function AuthPanel({
   }
 
   return (
-    <main id="login-view" className="auth-view">
+    <main id="login-view" className={`auth-view${panel === "signup" ? " auth-view--signup" : ""}`}>
       <Link className="auth-logo" href="/" aria-label="Voltar para a página inicial">
         <span aria-hidden="true">T</span><b>TemTrend</b>
       </Link>

@@ -11,6 +11,9 @@ import "../styles/landing-experience.css";
 import "../styles/platform-theme.css";
 import "../styles/platform-journey.css";
 import "../styles/onboarding.css";
+import "../styles/signup-fit.css";
+import "../styles/discovery-results.css";
+import "../styles/guided-kit.css";
 
 const manrope = Manrope({
   subsets: ["latin"],

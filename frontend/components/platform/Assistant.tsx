@@ -2,12 +2,14 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { api, friendlyError } from "@/lib/api";
 import { FALLBACK_IMAGE, displayProductName } from "@/lib/format";
 import type { AssistantResponse, CreatorContent, Product } from "@/lib/types";
 import { usePlatform } from "./store";
 import Opportunities from "./Opportunities";
+import ContentKitDialog from "./ContentKitDialog";
 
 const EXAMPLES = [
   ["Produto para academia", "Quero vender produtos para academia"],
@@ -23,24 +25,60 @@ const EXAMPLES = [
 const DISCOVERY_STATE_KEY = "temtrend_discovery_state";
 const DISCOVERY_STATE_TTL = 2 * 60 * 60 * 1000;
 const TOP_RESULTS = 5;
-const PAGE_SIZE = 3;
+const BRL = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
+const CLARIFICATION_CHOICES = [
+  ["Por preço", "Quero produtos com preço de até 50 reais"],
+  ["Por nicho", "Quero vender produtos para casa"],
+  ["Fáceis de gravar", "Quero produtos fáceis de demonstrar em vídeo"],
+] as const;
 
 function salesOf(product: Product): number {
   return product.unidades_vendidas_total ?? product.unidades_vendidas_periodo ?? -1;
 }
 
+function commissionOf(product: Product): number | null {
+  return product.preco_min_brl != null && product.comissao_percentual != null
+    ? product.preco_min_brl * product.comissao_percentual / 100
+    : null;
+}
+
+function highlightFor(products: Product[]): { id: string; label: string } | null {
+  if (products.length < 2) return null;
+  const commissions = products
+    .map((product) => ({ id: product.id, value: commissionOf(product) }))
+    .filter((item): item is { id: string; value: number } => item.value !== null);
+  if (commissions.length >= 2) {
+    return { id: commissions.reduce((best, item) => item.value > best.value ? item : best).id, label: "Maior comissão estimada" };
+  }
+  const sales = products.filter((product) => salesOf(product) >= 0);
+  if (sales.length >= 2) {
+    return { id: sales.reduce((best, product) => salesOf(product) > salesOf(best) ? product : best).id, label: "Mais vendido do grupo" };
+  }
+  return null;
+}
+
 export function ProductCard({
   product,
   saved,
+  saving,
+  highlightLabel,
   onOpen,
+  onSave,
+  onGenerate,
 }: {
   product: Product;
   saved: boolean;
+  saving: boolean;
+  highlightLabel?: string;
   onOpen: (id: string) => void;
+  onSave: (id: string) => void;
+  onGenerate: (id: string) => void;
 }) {
   const name = displayProductName(product);
+  const commission = commissionOf(product);
+  const sold = salesOf(product);
   return (
-    <article className="product-card opportunity-card">
+    <article className={`product-card opportunity-card${highlightLabel ? " is-featured" : ""}`}>
       <div className="product-image-wrap">
         <Image
           className="product-image"
@@ -54,17 +92,26 @@ export function ProductCard({
             (e.target as HTMLImageElement).src = FALLBACK_IMAGE;
           }}
         />
+        {highlightLabel && <span className="opportunity-highlight">{highlightLabel}</span>}
         {saved && <span className="catalog-saved">Salvo ✓</span>}
       </div>
       <div className="product-body">
         <span className="product-category">{product.categoria || "Produto"}</span>
         <h3 title={product.nome}>{name}</h3>
         {product.motivo && <p className="opportunity-motivo"><strong>Por que este:</strong> {product.motivo}</p>}
-        <p className="opportunity-price">{product.preco_texto || "Preço não informado"}</p>
+        <dl className="opportunity-metrics">
+          <div><dt>Preço</dt><dd>{product.preco_texto || (product.preco_min_brl != null ? BRL.format(product.preco_min_brl) : "Não informado")}</dd></div>
+          <div><dt>Comissão / venda</dt><dd>{commission != null ? BRL.format(commission) : "Não informado"}{commission != null && <small>{product.comissao_percentual}% do menor preço</small>}</dd></div>
+          <div><dt>Vendas</dt><dd>{sold >= 0 ? sold.toLocaleString("pt-BR") : "Não informado"}{sold >= 0 && <small>{product.unidades_vendidas_total != null ? "no total" : "no período"}</small>}</dd></div>
+        </dl>
         <div className="product-actions">
           <button className="ghost open-product" type="button" aria-label={`Ver produto ${name}`} onClick={() => onOpen(product.id)}>
             Ver produto →
           </button>
+          <div className="opportunity-secondary-actions">
+            <button type="button" disabled={saved || saving} aria-label={`Salvar ${name}`} onClick={() => onSave(product.id)}>{saving ? "Salvando…" : saved ? "Salvo ✓" : "Salvar"}</button>
+            <button type="button" aria-label={`Gerar roteiro para ${name}`} onClick={() => onGenerate(product.id)}>Gerar roteiro ↗</button>
+          </div>
         </div>
       </div>
     </article>
@@ -72,14 +119,17 @@ export function ProductCard({
 }
 
 export default function Assistant({ onOpen }: { onOpen: (id: string) => void }) {
-  const { toast, productions, me } = usePlatform();
+  const router = useRouter();
+  const { toast, productions, me, loadProductions } = usePlatform();
   const [query, setQuery] = useState("");
   const [searching, setSearching] = useState(false);
   const [searched, setSearched] = useState(false);
   const [message, setMessage] = useState("");
   const [results, setResults] = useState<Product[]>([]);
-  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+  const [needsClarification, setNeedsClarification] = useState(false);
   const [error, setError] = useState(false);
+  const [savingProductId, setSavingProductId] = useState<string | null>(null);
+  const [kitProductId, setKitProductId] = useState<string | null>(null);
   const [contextIds, setContextIds] = useState<string[]>([]);
   const inFlight = useRef(false);
   const storageKey = `${DISCOVERY_STATE_KEY}:${me?.user_id}`;
@@ -97,6 +147,7 @@ export default function Assistant({ onOpen }: { onOpen: (id: string) => void }) 
           query?: string;
           message?: string;
           results?: Product[];
+          needsClarification?: boolean;
           contextIds?: string[];
         } | null;
         if (!saved?.savedAt || Date.now() - saved.savedAt > DISCOVERY_STATE_TTL) {
@@ -105,6 +156,7 @@ export default function Assistant({ onOpen }: { onOpen: (id: string) => void }) 
           setQuery(saved.query);
           setMessage(saved.message);
           setResults(saved.results);
+          setNeedsClarification(Boolean(saved.needsClarification));
           setContextIds(Array.isArray(saved.contextIds) ? saved.contextIds : []);
           setSearched(true);
         }
@@ -126,26 +178,41 @@ export default function Assistant({ onOpen }: { onOpen: (id: string) => void }) 
     };
   }, [storageKey]);
 
-  const topResults = useMemo(
-    () => [...results].sort((a, b) => salesOf(b) - salesOf(a)).slice(0, TOP_RESULTS),
-    [results]
-  );
-  const visibleResults = topResults.slice(0, visibleCount);
+  const topResults = useMemo(() => results.slice(0, TOP_RESULTS), [results]);
+  const highlight = useMemo(() => highlightFor(topResults), [topResults]);
+  const clarificationChoices = /(?:facil|faceis|facilidade) de (?:gravar|demonstrar|mostrar)/.test(query.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase())
+    ? CLARIFICATION_CHOICES.filter(([label]) => label !== "Fáceis de gravar")
+    : CLARIFICATION_CHOICES;
 
   const savedFor = (id: string) =>
-    Boolean(
-      productions.find((item) => item.product_id === id || item.products?.id === id)
-        ?.content_kit_id
-    );
+    Boolean(productionForProduct(productions, id));
+
+  async function saveProduct(id: string) {
+    if (savingProductId || savedFor(id)) return;
+    setSavingProductId(id);
+    try {
+      const { data } = await supabase().auth.getSession();
+      await api("/creator-content", data.session?.access_token, {
+        method: "POST",
+        body: JSON.stringify({ product_id: id }),
+      });
+      await loadProductions();
+      toast("Produto salvo ✓ Encontre seu roteiro na área Produção.");
+    } catch (err) {
+      toast(friendlyError(err, "Não conseguimos salvar este produto. Tente novamente."));
+    } finally {
+      setSavingProductId(null);
+    }
+  }
 
   async function search(text: string, fresh = false) {
     if (inFlight.current) return;
     const trimmed = text.trim();
-    if (trimmed.length < 3) {
+    if (trimmed.length < 2) {
       setSearched(true);
-      setMessage("Descreva com pelo menos 3 caracteres o produto que você procura.");
+      setMessage("Conte um pouco mais sobre o produto que você procura.");
       setResults([]);
-      setVisibleCount(PAGE_SIZE);
+      setNeedsClarification(true);
       return;
     }
     inFlight.current = true;
@@ -153,6 +220,7 @@ export default function Assistant({ onOpen }: { onOpen: (id: string) => void }) 
     setQuery(trimmed);
     setSearched(true);
     setError(false);
+    setNeedsClarification(false);
     setMessage("A IA está procurando no catálogo...");
     const slow = setTimeout(() => {
       setMessage("Estou conferindo os produtos cadastrados. Isso pode levar alguns segundos.");
@@ -169,18 +237,19 @@ export default function Assistant({ onOpen }: { onOpen: (id: string) => void }) 
       setContextIds(list.map((p) => p.id));
       setMessage(result.message || "Nenhum produto encontrado.");
       setResults(list);
-      setVisibleCount(PAGE_SIZE);
+      setNeedsClarification(Boolean(result.needs_clarification));
       try { sessionStorage.setItem(storageKey, JSON.stringify({
         savedAt: Date.now(),
         query: trimmed,
         message: result.message || "Nenhum produto encontrado.",
         results: list,
+        needsClarification: Boolean(result.needs_clarification),
         contextIds: list.map((product) => product.id),
       })); } catch { /* Storage is optional. */ }
     } catch (err) {
       setError(true);
       setResults([]);
-      setVisibleCount(PAGE_SIZE);
+      setNeedsClarification(false);
       setMessage("Não conseguimos concluir sua busca agora.");
       toast(friendlyError(err, "Não conseguimos concluir sua busca agora."));
     } finally {
@@ -195,7 +264,7 @@ export default function Assistant({ onOpen }: { onOpen: (id: string) => void }) 
     setContextIds([]);
     setSearched(false);
     setResults([]);
-    setVisibleCount(PAGE_SIZE);
+    setNeedsClarification(false);
     setMessage("");
     setError(false);
   }
@@ -223,7 +292,7 @@ export default function Assistant({ onOpen }: { onOpen: (id: string) => void }) 
           <input
             id="assistant-input"
             type="text"
-            minLength={3}
+            minLength={2}
             maxLength={500}
             required
             autoComplete="off"
@@ -286,10 +355,17 @@ export default function Assistant({ onOpen }: { onOpen: (id: string) => void }) 
               Voltar a explorar
             </button>
           </div>
+          {!searching && needsClarification && (
+            <div className="assistant-clarification" role="group" aria-label="Escolha como buscar produtos">
+              {clarificationChoices.map(([label, text]) => (
+                <button key={label} type="button" onClick={() => { setContextIds([]); void search(text, true); }}>{label} →</button>
+              ))}
+            </div>
+          )}
           {!searching && topResults.length > 0 && (
             <div className="discover-results-heading">
               <div>
-                <span>Top {topResults.length} mais vendidos</span>
+                <span>{topResults.length} {topResults.length === 1 ? "produto encontrado" : "produtos encontrados"}</span>
                 <h2>Compare e escolha seu produto</h2>
               </div>
               <small>Dados do catálogo TemTrend</small>
@@ -308,15 +384,19 @@ export default function Assistant({ onOpen }: { onOpen: (id: string) => void }) 
                 </div>
               ))
             ) : topResults.length ? (
-              visibleResults.map((p) => (
+              topResults.map((p) => (
                 <ProductCard
                   key={p.id}
                   product={p}
                   saved={savedFor(p.id)}
+                  saving={savingProductId === p.id}
+                  highlightLabel={highlight?.id === p.id ? highlight.label : undefined}
                   onOpen={onOpen}
+                  onSave={(id) => void saveProduct(id)}
+                  onGenerate={setKitProductId}
                 />
               ))
-            ) : (
+            ) : needsClarification ? null : (
               <div className="empty-state">
                 <h3>{error ? "Tente novamente." : "Nenhum produto encontrado."}</h3>
                 <p>
@@ -334,16 +414,16 @@ export default function Assistant({ onOpen }: { onOpen: (id: string) => void }) 
               </div>
             )}
           </div>
-          {!searching && !error && visibleCount < topResults.length && (
-            <button
-              className="ghost catalog-more"
-              type="button"
-              onClick={() => setVisibleCount((c) => c + PAGE_SIZE)}
-            >
-              Mostrar mais ({topResults.length - visibleCount} restantes) ↓
-            </button>
-          )}
         </div>
+      )}
+      {kitProductId && (
+        <ContentKitDialog
+          productId={kitProductId}
+          mode="kit"
+          forceNew={false}
+          onClose={() => setKitProductId(null)}
+          onCreated={(kit) => { setKitProductId(null); router.push(`/app/produtos/${kit.product_id}/kits/${kit.id}`); }}
+        />
       )}
     </section>
   );

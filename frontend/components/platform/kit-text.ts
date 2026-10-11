@@ -15,7 +15,7 @@ function sceneCopyText(scene: Scene | string, index: number): string {
     .join("\n");
 }
 
-function sceneParts(scene: Scene): { show: string; say: string; time: string; edit: string } {
+export function sceneParts(scene: Scene): { show: string; say: string; time: string; edit: string } {
   const s = scene as unknown as Record<string, unknown>;
   const str = (v: unknown) => (typeof v === "string" || typeof v === "number" ? String(v) : "");
   return {

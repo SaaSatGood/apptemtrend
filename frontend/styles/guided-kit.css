@@ -1,0 +1,129 @@
+#app-view .recording-guide {
+  margin: 6px 0 34px;
+  padding: clamp(18px, 3vw, 30px);
+  border: 1px solid #e1e5d9;
+  border-radius: 26px;
+  background: #fff;
+  box-shadow: 0 22px 65px #27351312;
+}
+#app-view .recording-guide-heading {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 22px;
+  margin-bottom: 22px;
+}
+#app-view .recording-guide-heading .eyebrow { margin-bottom: 9px; }
+#app-view .recording-guide-heading h2 {
+  margin: 0 0 7px;
+  font-size: clamp(25px, 3vw, 37px);
+  line-height: 1.07;
+}
+#app-view .recording-guide-heading p:last-child { margin: 0; color: #66705c; font-size: 13px; line-height: 1.5; }
+#app-view .recording-guide-counter { flex: 0 0 auto; color: #1a2410; font-size: 30px; font-weight: 850; letter-spacing: -.08em; }
+#app-view .recording-guide-counter small { color: #949c8d; font-size: 14px; letter-spacing: 0; }
+#app-view .recording-guide-grid { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, .95fr); gap: 14px; align-items: stretch; }
+#app-view .recording-guide-stage,
+#app-view .recording-guide-navigation { min-width: 0; border-radius: 20px; }
+#app-view .recording-guide-stage {
+  display: flex;
+  flex-direction: column;
+  min-height: 500px;
+  padding: 22px;
+  overflow: hidden;
+  background: radial-gradient(circle at 22% 86%, #eaffba 0, #f4f6ee 34%);
+  animation: guide-in .23s ease both;
+}
+@keyframes guide-in { from { opacity: .5; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+#app-view .recording-guide-stage-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
+#app-view .recording-guide-stage-label,
+#app-view .recording-guide-time {
+  padding: 7px 10px;
+  border: 1px solid #e1e6d8;
+  border-radius: 999px;
+  background: #fff;
+  color: #5f6958;
+  font-size: 10px;
+  font-weight: 850;
+  letter-spacing: .08em;
+}
+#app-view .recording-guide-instruction {
+  position: relative;
+  z-index: 1;
+  padding: clamp(18px, 2.4vw, 28px);
+  border: 1px solid #e8ede0;
+  border-radius: 17px;
+  background: #fff;
+  box-shadow: 0 12px 30px #3d4c2512;
+}
+#app-view .recording-guide-instruction h3 { margin: 0 0 9px; font-size: clamp(20px, 2.2vw, 26px); }
+#app-view .recording-guide-instruction > p { margin: 0; color: #687162; font-size: 13px; line-height: 1.6; }
+#app-view .recording-guide-details { display: grid; gap: 13px; margin-top: 17px; padding-top: 16px; border-top: 1px solid #e9ede4; }
+#app-view .recording-guide-details strong { display: block; margin-bottom: 5px; color: #657c2f; font-size: 10px; font-weight: 850; letter-spacing: .12em; text-transform: uppercase; }
+#app-view .recording-guide-details p { margin: 0; color: #293021; font-size: 14px; font-weight: 650; line-height: 1.55; white-space: pre-wrap; overflow-wrap: anywhere; }
+#app-view .recording-guide-product { display: flex; align-items: end; gap: 14px; min-width: 0; margin-top: auto; padding-top: 24px; }
+#app-view .recording-guide-image { display: grid; place-items: center; flex: 0 0 auto; width: clamp(135px, 16vw, 190px); aspect-ratio: 1; overflow: hidden; border: 1px solid #e7ecd8; border-radius: 20px; background: #eaffaa; }
+#app-view .recording-guide-image img { width: 100%; height: 100%; object-fit: contain; }
+#app-view .recording-guide-product > div:last-child { display: grid; gap: 6px; min-width: 0; padding-bottom: 7px; }
+#app-view .recording-guide-product span { color: #76816a; font-size: 10px; font-weight: 850; letter-spacing: .11em; }
+#app-view .recording-guide-product strong { color: #27311e; font-size: 13px; line-height: 1.4; overflow-wrap: anywhere; }
+
+#app-view .recording-guide-navigation { display: flex; flex-direction: column; padding: 22px; border: 1px solid #e9ece4; background: #fff; }
+#app-view .recording-guide-progress-heading { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
+#app-view .recording-guide-progress-heading strong { font-size: 17px; }
+#app-view .recording-guide-progress-heading span { color: #858e7d; font-size: 11px; font-weight: 700; }
+#app-view .recording-guide-progress { width: 100%; height: 5px; margin: 15px 0 13px; overflow: hidden; border-radius: 999px; background: #e9eee0; }
+#app-view .recording-guide-progress span { display: block; height: 100%; border-radius: inherit; background: #9bcb36; transition: width .2s ease; }
+#app-view .recording-guide-steps { display: grid; gap: 3px; max-height: 330px; overflow-y: auto; overscroll-behavior: contain; padding-right: 4px; }
+#app-view .recording-guide-steps button { display: flex; align-items: center; gap: 12px; width: 100%; min-width: 0; min-height: 57px; padding: 8px 10px; border: 1px solid transparent; border-radius: 12px; background: transparent; color: #52604a; text-align: left; cursor: pointer; }
+#app-view .recording-guide-steps button:hover { background: #f6f9f0; }
+#app-view .recording-guide-steps button.active { border-color: #b9d880; background: #f0fadf; color: #1f3410; }
+#app-view .recording-guide-step-number { display: grid; place-items: center; flex: 0 0 auto; width: 28px; height: 28px; border-radius: 50%; background: #edf0e7; color: #63705b; font-size: 11px; font-weight: 850; }
+#app-view .recording-guide-steps button.active .recording-guide-step-number { background: var(--tt-lime); color: #1b2910; }
+#app-view .recording-guide-step-copy { display: grid; gap: 3px; min-width: 0; }
+#app-view .recording-guide-step-copy strong { overflow: hidden; font-size: 12px; font-weight: 780; text-overflow: ellipsis; white-space: nowrap; }
+#app-view .recording-guide-step-copy small { color: #838d79; font-size: 10px; }
+#app-view .recording-guide-step-arrow { margin-left: auto; opacity: 0; color: #55731d; font-size: 15px; }
+#app-view .recording-guide-steps button.active .recording-guide-step-arrow { opacity: 1; }
+#app-view .recording-guide-controls { margin-top: auto; padding-top: 18px; }
+#app-view .recording-guide-audio { display: flex; align-items: center; gap: 11px; min-height: 54px; margin-bottom: 14px; padding: 7px 9px; border: 1px solid #e7ebe1; border-radius: 999px; background: #f7f8f4; }
+#app-view .recording-guide-audio button { display: grid; place-items: center; flex: 0 0 auto; width: 37px; height: 37px; padding: 0; border: 0; border-radius: 50%; background: #1b2016; color: #fff; font-size: 11px; cursor: pointer; }
+#app-view .recording-guide-audio button:hover { background: #415c12; }
+#app-view .recording-guide-audio div { display: grid; gap: 2px; }
+#app-view .recording-guide-audio strong { color: #262d20; font-size: 11px; }
+#app-view .recording-guide-audio small { color: #818a79; font-size: 10px; }
+#app-view .recording-guide-copy { padding: 0; border: 0; background: none; color: #52760c; font-size: 11px; font-weight: 800; cursor: pointer; }
+#app-view .recording-guide-copy:hover { text-decoration: underline; text-underline-offset: 3px; }
+#app-view .recording-guide-actions { display: flex; gap: 8px; margin-top: 14px; }
+#app-view .recording-guide-actions .primary { flex: 1 1 auto; min-width: 0; }
+#app-view .recording-guide-actions .ghost { flex: 0 0 auto; min-width: 91px; }
+#app-view .kit-complete-heading { display: flex; align-items: end; justify-content: space-between; gap: 15px; margin: 30px 0 18px; }
+#app-view .kit-complete-heading .eyebrow { margin-bottom: 8px; }
+#app-view .kit-complete-heading h2 { margin: 0; font-size: clamp(27px, 3vw, 36px); }
+#app-view .kit-complete-heading > p { max-width: 280px; margin: 0 0 3px; color: #747d6d; font-size: 12px; line-height: 1.45; }
+#app-view #kit-production-actions { scroll-margin-top: 110px; }
+
+@media (max-width: 760px) {
+  #app-view .recording-guide-grid { grid-template-columns: 1fr; }
+  #app-view .recording-guide-stage { min-height: 0; }
+  #app-view .recording-guide-product { padding-top: 18px; }
+  #app-view .recording-guide-steps { max-height: 250px; }
+}
+@media (max-width: 480px) {
+  #app-view .recording-guide { padding: 12px; border-radius: 20px; }
+  #app-view .recording-guide-heading { align-items: start; margin: 5px 4px 17px; }
+  #app-view .recording-guide-heading h2 { font-size: 24px; }
+  #app-view .recording-guide-counter { font-size: 23px; }
+  #app-view .recording-guide-counter small { font-size: 11px; }
+  #app-view .recording-guide-stage, #app-view .recording-guide-navigation { padding: 16px; border-radius: 15px; }
+  #app-view .recording-guide-instruction { padding: 17px; }
+  #app-view .recording-guide-product { gap: 11px; }
+  #app-view .recording-guide-image { width: 92px; }
+  #app-view .recording-guide-actions .primary, #app-view .recording-guide-actions .ghost { padding-inline: 14px; font-size: 11px; }
+  #app-view .kit-complete-heading { display: block; }
+  #app-view .kit-complete-heading > p { margin-top: 9px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  #app-view .recording-guide-stage { animation: none; }
+  #app-view .recording-guide-progress span { transition: none; }
+}
