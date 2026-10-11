@@ -24,6 +24,8 @@ const envSchema = z.object({
   ),
   CATALOG_FEED_URL: z.string().url().optional(),
   CATALOG_FEED_TOKEN: z.string().min(1).optional(),
+  RESEND_API_KEY: z.string().min(1).optional(),
+  RESEND_AUDIENCE_ID: z.string().min(1).optional(),
 });
 
 const parsed = envSchema.safeParse(process.env);

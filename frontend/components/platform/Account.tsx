@@ -20,6 +20,7 @@ export default function Account({ onEditPreferences }: { onEditPreferences: () =
   const [voz, setVoz] = useState(me?.creator?.voz_exemplo || "");
   const [savingName, setSavingName] = useState(false);
   const [savingVoice, setSavingVoice] = useState(false);
+  const [savingPass, setSavingPass] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState("");
@@ -108,6 +109,30 @@ export default function Account({ onEditPreferences }: { onEditPreferences: () =
     }
   }
 
+  async function savePassword(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const formElement = e.currentTarget;
+    const form = new FormData(formElement);
+    const password = String(form.get("new-password"));
+    if (password.length < 6) {
+      toast("A senha precisa ter pelo menos 6 caracteres.");
+      return;
+    }
+    if (password !== String(form.get("confirm-password"))) {
+      toast("As senhas não conferem.");
+      return;
+    }
+    setSavingPass(true);
+    const { error } = await supabase().auth.updateUser({ password });
+    setSavingPass(false);
+    if (error) {
+      toast(friendlyError(error, "Não conseguimos atualizar sua senha. Tente novamente."));
+      return;
+    }
+    formElement.reset();
+    toast("Senha atualizada com sucesso.");
+  }
+
   async function confirmDelete() {
     if (deleting) return;
     setDeleting(true);
@@ -134,7 +159,7 @@ export default function Account({ onEditPreferences }: { onEditPreferences: () =
         <div>
           <p className="eyebrow">Minha conta</p>
           <h1>Minha <em>conta.</em></h1>
-          <p className="muted">Atualize seu perfil e personalização em um só lugar.</p>
+          <p className="muted">Atualize seu perfil, personalização e segurança em um só lugar.</p>
         </div>
         <Link className="ghost" href="/app">
           ← Voltar para Descobrir
@@ -169,10 +194,31 @@ export default function Account({ onEditPreferences }: { onEditPreferences: () =
             <label>
               Email
               <input type="email" disabled value={account?.email || ""} />
-              <small>O email vem do provedor usado no login (Google, Facebook ou Apple) e não pode ser alterado aqui.</small>
+              <small>O email é usado para entrar na sua conta e não pode ser alterado aqui.</small>
             </label>
             <button className="primary account-save" type="submit" disabled={savingName || !nameChanged}>
               {savingName ? "Salvando..." : nameChanged ? "Salvar alterações" : "Dados atualizados ✓"}
+            </button>
+          </form>
+        </section>
+        <section className="card account-card">
+          <div className="account-card-heading">
+            <span aria-hidden="true">02</span>
+            <div><h2>Segurança</h2><p>Defina uma nova senha para sua conta.</p></div>
+          </div>
+          <form className="stack" onSubmit={savePassword}>
+            <div className="account-password-grid">
+              <label>
+                Nova senha
+                <input name="new-password" type="password" autoComplete="new-password" required minLength={6} placeholder="Mínimo de 6 caracteres" />
+              </label>
+              <label>
+                Confirmar nova senha
+                <input name="confirm-password" type="password" autoComplete="new-password" required minLength={6} placeholder="Digite novamente" />
+              </label>
+            </div>
+            <button className="primary account-save" type="submit" disabled={savingPass}>
+              {savingPass ? "Atualizando senha..." : "Atualizar senha"}
             </button>
           </form>
         </section>

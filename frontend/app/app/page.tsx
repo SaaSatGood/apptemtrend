@@ -1,7 +1,7 @@
 "use client";
 
-import { Suspense } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { usePlatform } from "@/components/platform/store";
 import AuthPanel from "@/components/platform/Auth";
 import Onboarding from "@/components/platform/Onboarding";
@@ -11,15 +11,28 @@ import { AccountLoadError, AppBoot } from "@/components/platform/PlatformState";
 
 function Discover() {
   const { session, me, meLoading, globalError, booted } = usePlatform();
+  const params = useSearchParams();
   const router = useRouter();
+  const [authPanel] = useState<"login" | "signup">(() =>
+    params.get("mode") === "signup" ? "signup" : "login"
+  );
+
+  const recovery =
+    typeof window !== "undefined" && window.location.hash.includes("type=recovery");
 
   if (!booted) {
     return <AppBoot />;
   }
 
-  if (!session) {
+  if (!session || recovery) {
     return (
       <AuthPanel
+        initialPanel={recovery ? "reset" : authPanel}
+        recoveryHint={
+          recovery && !session
+            ? "Se o link expirou, volte e solicite um novo link de recuperação."
+            : null
+        }
         onAuthenticated={() => window.location.reload()}
       />
     );

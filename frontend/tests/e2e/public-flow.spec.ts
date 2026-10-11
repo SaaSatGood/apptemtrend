@@ -14,6 +14,17 @@ test("login, termos e privacidade estão acessíveis", async ({ page }) => {
   await expect(page.getByRole("button", { name: /continuar com google/i })).toBeVisible();
   await expect(page.getByRole("button", { name: /continuar com facebook/i })).toBeVisible();
   await expect(page.getByRole("button", { name: /continuar com apple/i })).toBeVisible();
+  await expect(page.getByPlaceholder("seu@email.com").first()).toBeVisible();
+  await expect(page.getByRole("button", { name: /entrar →/i })).toBeVisible();
+  // Recuperação de senha
+  await page.getByRole("button", { name: /esqueci minha senha/i }).click();
+  await expect(page.getByRole("heading", { name: /esqueceu sua senha/i })).toBeVisible();
+  await expect(page.getByRole("button", { name: /enviar link →/i })).toBeVisible();
+  await page.getByRole("button", { name: /voltar para entrar/i }).click();
+  // Cadastro com email
+  await page.getByRole("tab", { name: /criar conta/i }).click();
+  await expect(page.getByPlaceholder("Como podemos chamar você?")).toBeVisible();
+  await expect(page.getByRole("button", { name: /começar agora →/i })).toBeVisible();
   await page.goto("/termos");
   await expect(page.getByRole("heading", { name: /termos de uso/i })).toBeVisible();
   await page.goto("/privacidade");
