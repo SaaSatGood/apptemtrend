@@ -6,6 +6,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 import type { Session } from "@/lib/supabase";
@@ -21,6 +22,7 @@ interface ToastItem {
 interface PlatformState {
   session: Session | null;
   me: MeResponse | null;
+  meLoading: boolean;
   booted: boolean;
   globalError: string | null;
   admin: boolean;
@@ -58,15 +60,52 @@ async function fetchAllProductions(token: string): Promise<CreatorContent[]> {
   return all;
 }
 
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function isRetryableStatus(status: number | undefined): boolean {
+  // Sem status = falha de rede/timeout: sempre tenta de novo.
+  // 401 entra na lista porque logo após o login o token pode ainda não
+  // ter propagado no Supabase; as tentativas são poucas e com backoff.
+  if (status === undefined) return true;
+  return status === 401 || status === 408 || status === 429 || (status >= 500 && status <= 599);
+}
+
+async function fetchMeWithRetry(token: string, attempts = 3): Promise<MeResponse> {
+  let lastError: unknown = null;
+  for (let attempt = 0; attempt < attempts; attempt += 1) {
+    try {
+      return await api<MeResponse>("/me", token);
+    } catch (error) {
+      lastError = error;
+      const status = (error as { status?: number })?.status;
+      const retryable = isRetryableStatus(status);
+      if (!retryable || attempt === attempts - 1) throw error;
+      await sleep(500 * (attempt + 1));
+    }
+  }
+  throw lastError;
+}
+
 export function PlatformProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [me, setMe] = useState<MeResponse | null>(null);
+  const [meLoading, setMeLoading] = useState(false);
   const [booted, setBooted] = useState(false);
   const [productions, setProductions] = useState<CreatorContent[]>([]);
   const [productionsLoading, setProductionsLoading] = useState(false);
   const [productionsError, setProductionsError] = useState(false);
   const [toasts, setToasts] = useState<ToastItem[]>([]);
   const [globalError, setGlobalError] = useState<string | null>(null);
+
+  const meRef = useRef<MeResponse | null>(null);
+  useEffect(() => {
+    meRef.current = me;
+  }, [me]);
+  // userId para o qual já existe um carregamento de perfil em voo.
+  // Evita boot + INITIAL_SESSION dispararem dois /me em paralelo.
+  const fetchingForRef = useRef<string | null>(null);
 
   const toast = useCallback((message: string) => {
     const id = ++toastId;
@@ -90,25 +129,80 @@ export function PlatformProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  const loadMeForSession = useCallback(
+    async (activeSession: Session, options: { force?: boolean } = {}) => {
+      const userId = activeSession.user.id;
+      if (!options.force && fetchingForRef.current === userId) return;
+      // Se já temos o perfil deste usuário e não é recarga forçada, nada a fazer.
+      if (!options.force && meRef.current?.user_id === userId) return;
+      fetchingForRef.current = userId;
+      setMeLoading(true);
+      try {
+        let token = activeSession.access_token;
+        let profile: MeResponse;
+        try {
+          profile = await fetchMeWithRetry(token);
+        } catch (error) {
+          // Token pode ter expirado entre getSession e /me: renova uma vez
+          // antes de declarar falha (cobre o "logado mas sem conta").
+          const status = (error as { status?: number })?.status;
+          if (status === 401) {
+            try {
+              const { data } = await supabase().auth.refreshSession();
+              if (data.session) {
+                setSession(data.session);
+                token = data.session.access_token;
+                profile = await fetchMeWithRetry(token, 2);
+              } else {
+                throw error;
+              }
+            } catch {
+              throw error;
+            }
+          } else {
+            throw error;
+          }
+        }
+        setMe(profile!);
+        meRef.current = profile!;
+        setGlobalError(null);
+        if (!profile!.is_admin && profile!.onboarding_completo) {
+          setProductionsLoading(true);
+          try {
+            const list = await fetchAllProductions(token);
+            setProductions(list);
+          } catch {
+            setProductionsError(true);
+            toast("Sua conta abriu, mas a produção não pôde ser atualizada.");
+          } finally {
+            setProductionsLoading(false);
+          }
+        } else {
+          setProductions([]);
+        }
+      } catch (error) {
+        setGlobalError(friendlyError(error, "Não conseguimos carregar sua conta. Tente novamente."));
+        throw error;
+      } finally {
+        if (fetchingForRef.current === userId) fetchingForRef.current = null;
+        setMeLoading(false);
+      }
+    },
+    [toast]
+  );
+
   const reloadMe = useCallback(async () => {
     const { data } = await supabase().auth.getSession();
     if (!data.session) return;
+    setSession(data.session);
     try {
-      const profile = await api<MeResponse>("/me", data.session.access_token);
-      setMe(profile);
-      setGlobalError(null);
-      if (!profile.is_admin && profile.onboarding_completo) {
-        void loadProductions().catch(() => {
-          toast("Não conseguimos atualizar sua produção agora.");
-        });
-      } else {
-        setProductions([]);
-      }
+      await loadMeForSession(data.session, { force: true });
     } catch (error) {
-      setGlobalError(friendlyError(error, "Não conseguimos carregar sua conta. Tente novamente."));
+      // globalError já foi definido em loadMeForSession; propaga para o
+      // chamador (AccountLoadError) exibir o erro de retry.
       throw error;
     }
-  }, [loadProductions, toast]);
+  }, [loadMeForSession]);
 
   const signOut = useCallback(async () => {
     try {
@@ -116,6 +210,8 @@ export function PlatformProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setSession(null);
       setMe(null);
+      meRef.current = null;
+      fetchingForRef.current = null;
       try {
         window.localStorage.removeItem("temtrend_onboarding");
         if (session?.user.id) window.localStorage.removeItem(`temtrend_onboarding:${session.user.id}`);
@@ -140,32 +236,9 @@ export function PlatformProvider({ children }: { children: React.ReactNode }) {
         setSession(data.session);
         if (data.session) {
           try {
-            const profile = await withTimeout(
-              api<MeResponse>("/me", data.session.access_token),
-              10000
-            );
-            if (!mounted) return;
-            setMe(profile);
-            if (!profile.is_admin && profile.onboarding_completo) {
-              setProductionsLoading(true);
-              void fetchAllProductions(data.session.access_token)
-                .then((list) => {
-                  if (mounted) setProductions(list);
-                })
-                .catch(() => {
-                  if (mounted) setProductionsError(true);
-                  if (mounted) toast("Sua conta abriu, mas a produção não pôde ser atualizada.");
-                })
-                .finally(() => {
-                  if (mounted) setProductionsLoading(false);
-                });
-            }
-          } catch (error) {
-            if (mounted) {
-              setGlobalError(
-                friendlyError(error, "Não conseguimos carregar sua conta. Tente novamente.")
-              );
-            }
+            await loadMeForSession(data.session);
+          } catch {
+            // globalError já definido; a tela oferece "Tentar novamente".
           }
         }
       } catch (error) {
@@ -178,33 +251,68 @@ export function PlatformProvider({ children }: { children: React.ReactNode }) {
         if (mounted) setBooted(true);
       }
     })();
+    // Sessão que chega DEPOIS do boot (login recente, OAuth, refresh ou
+    // aba restaurada) precisa buscar o perfil — antes este listener só
+    // atualizava `session`, deixando `me === null` e caindo na tela
+    // "Não conseguimos carregar sua conta" mesmo logado.
     const { data: listener } = supabase().auth.onAuthStateChange((event, newSession) => {
       setSession(newSession);
-      if (event === "SIGNED_OUT") {
+      if (event === "SIGNED_OUT" || !newSession) {
         setMe(null);
+        meRef.current = null;
         setProductions([]);
+        fetchingForRef.current = null;
+        return;
+      }
+      if (
+        event === "SIGNED_IN" ||
+        event === "INITIAL_SESSION" ||
+        event === "TOKEN_REFRESHED" ||
+        event === "USER_UPDATED"
+      ) {
+        if (!meRef.current || meRef.current.user_id !== newSession.user.id) {
+          void loadMeForSession(newSession).catch(() => {
+            /* globalError já definido */
+          });
+        }
       }
     });
     return () => {
       mounted = false;
       listener.subscription.unsubscribe();
     };
-  }, [toast]);
+  }, [loadMeForSession, toast]);
 
   useEffect(() => {
     const onPageshow = async () => {
-      const { data } = await supabase().auth.getSession();
-      setSession(data.session);
-      if (!data.session) setMe(null);
+      try {
+        const { data } = await supabase().auth.getSession();
+        setSession(data.session);
+        if (!data.session) {
+          setMe(null);
+          meRef.current = null;
+          return;
+        }
+        // Aba restaurada do bfcache pode ter sessão válida mas perfil
+        // ausente/antigo: garante o carregamento em vez de mostrar erro.
+        if (!meRef.current || meRef.current.user_id !== data.session.user.id) {
+          void loadMeForSession(data.session).catch(() => {
+            /* globalError já definido */
+          });
+        }
+      } catch {
+        /* mantém estado atual; próximo retry cobre */
+      }
     };
     window.addEventListener("pageshow", onPageshow);
     return () => window.removeEventListener("pageshow", onPageshow);
-  }, []);
+  }, [loadMeForSession]);
 
   const value = useMemo<PlatformState>(
     () => ({
       session,
       me,
+      meLoading,
       booted,
       globalError,
       admin: me?.is_admin === true,
@@ -218,7 +326,7 @@ export function PlatformProvider({ children }: { children: React.ReactNode }) {
       loadProductions,
       signOut,
     }),
-    [session, me, booted, globalError, productions, productionsLoading, productionsError, toasts, toast, reloadMe, loadProductions, signOut]
+    [session, me, meLoading, booted, globalError, productions, productionsLoading, productionsError, toasts, toast, reloadMe, loadProductions, signOut]
   );
 
   return (

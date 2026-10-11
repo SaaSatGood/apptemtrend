@@ -52,15 +52,14 @@ export function friendlyError(error: unknown, fallback: string): string {
 
 export function humanAuthError(error: unknown): string {
   const message = String((error as { message?: unknown })?.message ?? "").toLowerCase();
-  if (message.includes("invalid login credentials")) return "Email ou senha incorretos.";
-  if (message.includes("email not confirmed")) return "Confirme seu email antes de entrar.";
-  if (message.includes("user already registered") || message.includes("already been registered"))
-    return "Este email já possui uma conta.";
-  if (message.includes("password should be")) return "A senha precisa ter pelo menos 6 caracteres.";
+  if (message.includes("provider is not enabled") || message.includes("provider not enabled"))
+    return "Este login social ainda não foi ativado. Tente outro provedor.";
+  if (message.includes("popup closed") || message.includes("cancelled") || message.includes("canceled"))
+    return "Login cancelado. Tente novamente quando quiser.";
   if (message.includes("rate limit") || message.includes("too many"))
     return "Muitas tentativas. Aguarde um pouco e tente novamente.";
   if (message.includes("expired") || message.includes("invalid token"))
-    return "Este link expirou. Solicite um novo.";
+    return "Esta sessão expirou. Tente entrar novamente.";
   if (message.includes("network") || message.includes("fetch"))
     return "Não foi possível conectar. Verifique sua internet.";
   return "Não foi possível concluir agora. Tente novamente.";

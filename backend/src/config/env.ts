@@ -15,6 +15,9 @@ const envSchema = z.object({
   FRONTEND_URL: z.string().url().default('http://localhost:5173'),
   GEMINI_API_KEY: z.string().min(1).optional(),
   GEMINI_MODEL: z.string().default('gemini-3.1-flash-lite'),
+  AI_PROVIDER: z.enum(['gemini', 'openrouter']).default('gemini'),
+  OPENROUTER_API_KEY: z.string().min(1).optional(),
+  OPENROUTER_MODEL: z.string().default('google/gemma-4-31b-it:free'),
   REDIS_URL: z.string().url().optional(),
   AI_QUOTA_STORE: z.enum(['database', 'memory']).default(
     process.env.NODE_ENV === 'production' ? 'database' : 'memory',

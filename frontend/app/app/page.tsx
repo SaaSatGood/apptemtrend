@@ -1,7 +1,7 @@
 "use client";
 
-import { Suspense, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense } from "react";
+import { useRouter } from "next/navigation";
 import { usePlatform } from "@/components/platform/store";
 import AuthPanel from "@/components/platform/Auth";
 import Onboarding from "@/components/platform/Onboarding";
@@ -10,35 +10,27 @@ import Topbar from "@/components/platform/Topbar";
 import { AccountLoadError, AppBoot } from "@/components/platform/PlatformState";
 
 function Discover() {
-  const { session, me, booted } = usePlatform();
-  const params = useSearchParams();
+  const { session, me, meLoading, globalError, booted } = usePlatform();
   const router = useRouter();
-  const [authPanel] = useState<"login" | "signup">(() =>
-    params.get("mode") === "signup" ? "signup" : "login"
-  );
-
-  const recovery =
-    typeof window !== "undefined" && window.location.hash.includes("type=recovery");
 
   if (!booted) {
     return <AppBoot />;
   }
 
-  if (!session || recovery) {
+  if (!session) {
     return (
       <AuthPanel
-        initialPanel={recovery ? "reset" : authPanel}
-        recoveryHint={
-          recovery && !session
-            ? "Se o link expirou, volte e solicite um novo link de recuperação."
-            : null
-        }
         onAuthenticated={() => window.location.reload()}
       />
     );
   }
 
   if (!me) {
+    // Sessão válida mas perfil ainda carregando (login recente, retry em
+    // voo): mostra boot em vez do erro "conta não encontrada".
+    if (meLoading || !globalError) {
+      return <AppBoot />;
+    }
     return <AccountLoadError />;
   }
 

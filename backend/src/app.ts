@@ -15,6 +15,7 @@ import accountRoutes from './modules/account/account.routes.js';
 import assistantRoutes from './modules/assistant/assistant.routes.js';
 import { UPLOAD } from './config/constants.js';
 import { supabaseAdmin } from './lib/supabase.js';
+import { aiStatus } from './modules/assistant/ai.service.js';
 
 export function buildApp() {
   const app = Fastify({
@@ -63,14 +64,17 @@ export function buildApp() {
       supabaseAdmin.from('products').select('id', { head: true, count: 'exact' }).limit(1),
       new Promise<never>((_, reject) => setTimeout(() => reject(new Error('Database readiness timeout')), 3_000)),
     ]).then((result) => !result.error).catch(() => false);
+    const ai = aiStatus();
     const status = database ? 'ok' : 'degraded';
     return reply.status(database ? 200 : 503).send({
       status,
       uptime_s: Math.round(process.uptime()),
-      ai_configured: Boolean(process.env.GEMINI_API_KEY),
+      ai_configured: ai.configured,
+      ai_provider: ai.provider,
+      ai_model: ai.model,
       dependencies: {
         database: database ? 'ok' : 'unavailable',
-        ai: process.env.GEMINI_API_KEY ? 'configured' : 'fallback',
+        ai: ai.configured ? 'configured' : 'fallback',
       },
     });
   });

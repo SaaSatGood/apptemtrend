@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { AI_LIMITS, RATE_LIMITS } from '../src/config/constants.js';
+import { env } from '../src/config/env.js';
 import { AI_QUOTA, checkAssistantQuota, checkForceNewCooldown, checkKitQuota, getAiMetrics } from '../src/lib/ai-metrics.js';
 import { CONTENT_STRATEGY_INSTRUCTIONS } from '../src/modules/assistant/gemini-generation.service.js';
 
@@ -32,6 +33,10 @@ describe('AI token cost', () => {
   it('rate-limit de IA protege custo', () => {
     expect(RATE_LIMITS.ASSISTANT_SEARCH.max).toBeLessThanOrEqual(10);
     expect(RATE_LIMITS.CONTENT_KIT_GENERATE.max).toBeLessThanOrEqual(5);
+  });
+
+  it('modelo padrão do OpenRouter é do tier gratuito', () => {
+    expect(env.OPENROUTER_MODEL).toMatch(/:free$/);
   });
 
   it('cota diária e cooldown existem', () => {

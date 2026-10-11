@@ -43,7 +43,7 @@ export type AssistantUsage = {
 export type GeminiCatalogDecision = Omit<z.infer<typeof geminiDecisionSchema>, 'motivos' | 'selected_product_ids'> & {
   selected_product_ids: string[];
   motivos: Record<string, string>;
-  provider: 'gemini';
+  provider: 'gemini' | 'openrouter';
   usage: AssistantUsage;
   latency_ms: number;
 };

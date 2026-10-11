@@ -18,7 +18,7 @@ export default function RequireAuth({
   children: React.ReactNode;
   allowOnboarding?: boolean;
 }) {
-  const { session, me, booted } = usePlatform();
+  const { session, me, meLoading, globalError, booted } = usePlatform();
 
   if (!booted) {
     return <AppBoot />;
@@ -27,24 +27,15 @@ export default function RequireAuth({
   if (!session) {
     return (
       <AuthPanel
-        initialPanel="login"
-        recoveryHint={null}
-        onAuthenticated={() => window.location.reload()}
-      />
-    );
-  }
-
-  if (typeof window !== "undefined" && window.location.hash.includes("type=recovery")) {
-    return (
-      <AuthPanel
-        initialPanel="reset"
-        recoveryHint="Se o link expirou, volte e solicite um novo link de recuperação."
         onAuthenticated={() => window.location.reload()}
       />
     );
   }
 
   if (!me) {
+    if (meLoading || !globalError) {
+      return <AppBoot />;
+    }
     return <AccountLoadError />;
   }
 

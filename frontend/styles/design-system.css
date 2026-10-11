@@ -160,8 +160,9 @@ a.ghost {
   cursor: default;
 }
 
-/* Google */
-.google-button {
+/* Social providers (Google, Facebook, Apple) */
+.google-button,
+.provider-button {
   border-radius: var(--tt-radius-btn);
   min-height: var(--tt-btn-h);
   font-size: 14px;

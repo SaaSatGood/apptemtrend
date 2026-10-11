@@ -11,7 +11,9 @@ test("landing apresenta a proposta e leva ao cadastro", async ({ page }) => {
 
 test("login, termos e privacidade estão acessíveis", async ({ page }) => {
   await page.goto("/app");
-  await expect(page.getByRole("button", { name: /entrar/i })).toBeVisible();
+  await expect(page.getByRole("button", { name: /continuar com google/i })).toBeVisible();
+  await expect(page.getByRole("button", { name: /continuar com facebook/i })).toBeVisible();
+  await expect(page.getByRole("button", { name: /continuar com apple/i })).toBeVisible();
   await page.goto("/termos");
   await expect(page.getByRole("heading", { name: /termos de uso/i })).toBeVisible();
   await page.goto("/privacidade");

@@ -350,7 +350,9 @@
   background: #fff;
 }
 #app-view .google-button,
-.auth-view .google-button {
+#app-view .provider-button,
+.auth-view .google-button,
+.auth-view .provider-button {
   border: 1px solid var(--tt-line);
   border-radius: 999px;
   background: #fff;
@@ -359,7 +361,9 @@
   font-weight: 750;
 }
 #app-view .google-button:hover,
-.auth-view .google-button:hover {
+#app-view .provider-button:hover,
+.auth-view .google-button:hover,
+.auth-view .provider-button:hover {
   border-color: var(--tt-ink);
   background: #fff;
   transform: translateY(-2px);
