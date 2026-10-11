@@ -54,7 +54,7 @@ export const AI_LIMITS = {
   MAX_DESCRIPTION_CHARS: 60,
   MAX_NAME_CHARS: 50,
   CLASSIFY_TIMEOUT_MS: 8_000,
-  CLASSIFY_MAX_OUTPUT_TOKENS: 150,
+  CLASSIFY_MAX_OUTPUT_TOKENS: 400,
   CLASSIFY_CACHE_TTL_MS: 30 * 60 * 1000,
   ASSISTANT_RESPONSE_CACHE_TTL_MS: 10 * 60 * 1000,
   // Geração de kit: 1 tentativa inicial + 2 retries (confiabilidade primeiro).

@@ -3,6 +3,7 @@ import { parseAndConstrainDecision } from '../src/modules/assistant/gemini.servi
 import {
   isContentKitNovel,
   isProductNovel,
+  missingStrategySections,
   parseGeneratedPackage,
 } from '../src/modules/assistant/gemini-generation.service.js';
 
@@ -47,6 +48,16 @@ describe('Gemini assistant guardrails', () => {
     expect(decision.motivos['catalog-product']).toBe('Barato e fácil de demonstrar em vídeo');
     expect(decision.motivos).not.toHaveProperty('invented-product');
     expect(decision.motivos['long-product'].length).toBeLessThanOrEqual(140);
+  });
+
+  it('detects which strategy sections are missing from a roteiro', () => {
+    expect(missingStrategySections('3 VARIAÇÕES DE HOOK, VERSÃO SEM SEGUIDORES, DICA DE PUBLICAÇÃO, VARIAÇÕES DE ROTEIRO')).toEqual([]);
+    expect(missingStrategySections('3 VARIAÇÕES DE HOOK e nada mais')).toEqual([
+      'versao sem seguidores',
+      'dica de publicacao',
+      'variacoes de roteiro',
+    ]);
+    expect(missingStrategySections(null)).toHaveLength(4);
   });
 
   it('accepts decisions without motivos', () => {

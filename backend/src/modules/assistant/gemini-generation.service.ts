@@ -184,13 +184,19 @@ export const CONTENT_STRATEGY_INSTRUCTIONS = [
 ].join(' ');
 
 function hasCompleteStrategy(kit: z.infer<typeof generatedPackageSchema>['content_kit']) {
-  const script = comparableText(kit.roteiro);
-  return [
-    '3 variacoes de hook',
-    'versao sem seguidores',
-    'dica de publicacao',
-    'variacoes de roteiro',
-  ].every((section) => script.includes(section));
+  return missingStrategySections(kit.roteiro).length === 0;
+}
+
+export const REQUIRED_STRATEGY_SECTIONS = [
+  '3 variacoes de hook',
+  'versao sem seguidores',
+  'dica de publicacao',
+  'variacoes de roteiro',
+];
+
+export function missingStrategySections(roteiro: unknown): string[] {
+  const script = comparableText(roteiro);
+  return REQUIRED_STRATEGY_SECTIONS.filter((section) => !script.includes(section));
 }
 
 export function isContentKitNovel(
@@ -313,6 +319,7 @@ export async function generateContentKit(
   }
   const startedAt = Date.now();
   const voice = truncateVoice(creatorVoice);
+  let missingSections: string[] = [];
 
   for (let attempt = 1; attempt <= MAX_GENERATION_ATTEMPTS; attempt += 1) try {
     const systemText = [
@@ -327,6 +334,7 @@ export async function generateContentKit(
       produto: productContext(product),
       orientacoes_do_creator: truncateBriefing(creatorBriefing) || 'Sem orientação adicional; crie uma abordagem clara e prática.',
       ...(voice ? { voz_do_creator: voice } : {}),
+      ...(missingSections.length ? { correcao_obrigatoria: `Na tentativa anterior faltaram estas seções do roteiro; inclua TODAS com estes títulos exatos: ${missingSections.join(' | ')}` } : {}),
       contexto_temporal: { data_iso: new Date().toISOString(), pais: 'Brasil' },
       kits_anteriores_a_evitar: previousKitsCompact(previousKits),
       tentativa: attempt,
@@ -363,7 +371,8 @@ export async function generateContentKit(
       content_kit: JSON.parse(text).content_kit,
     }));
     if (!hasCompleteStrategy(generated.content_kit)) {
-      logger.warn({ product_name: product.nome, attempt }, 'Generated content kit was incomplete; retrying');
+      missingSections = missingStrategySections(generated.content_kit.roteiro);
+      logger.warn({ product_name: product.nome, attempt, missing: missingSections }, 'Generated content kit was incomplete; retrying');
       continue;
     }
     if (!isContentKitNovel(generated.content_kit, previousKits)) {

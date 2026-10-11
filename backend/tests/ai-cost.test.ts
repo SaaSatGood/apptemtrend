@@ -7,7 +7,8 @@ describe('AI token cost', () => {
   it('usa catálogo enxuto na classificação', () => {
     expect(AI_LIMITS.MAX_CATALOG_ITEMS).toBeLessThanOrEqual(25);
     expect(AI_LIMITS.MAX_DESCRIPTION_CHARS).toBeLessThanOrEqual(60);
-    expect(AI_LIMITS.CLASSIFY_MAX_OUTPUT_TOKENS).toBeLessThanOrEqual(150);
+    // 400 cobre a decisão base (~100) + motivos curtos de até 5 produtos
+    expect(AI_LIMITS.CLASSIFY_MAX_OUTPUT_TOKENS).toBeLessThanOrEqual(400);
   });
 
   it('limita geração e reaproveitamento', () => {
