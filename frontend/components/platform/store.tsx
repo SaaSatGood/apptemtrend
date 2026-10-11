@@ -8,7 +8,7 @@ import {
   useMemo,
   useState,
 } from "react";
-import type { Session } from "@supabase/supabase-js";
+import type { Session } from "@/lib/supabase";
 import { supabase } from "@/lib/supabase";
 import { api, friendlyError } from "@/lib/api";
 import type { CreatorContent, MeResponse } from "@/lib/types";
