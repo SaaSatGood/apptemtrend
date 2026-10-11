@@ -98,11 +98,12 @@ export default function Onboarding({ editing, onDone }: { editing: boolean; onDo
       return;
     }
     if (step === 4) {
+      if (skip && !editing) setVoz("");
       const payload = {
         objetivo,
         estilos_conteudo: estilos,
         temas_interesse: temas,
-        voz_exemplo: voz.trim(),
+        voz_exemplo: skip && !editing ? "" : voz.trim(),
       };
       setSaving(true);
       try {

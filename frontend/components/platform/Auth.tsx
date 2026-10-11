@@ -37,7 +37,7 @@ function PasswordInput({
         name={id}
         type={show ? "text" : "password"}
         required={required}
-        minLength={8}
+        minLength={6}
         autoComplete={autoComplete}
         placeholder={placeholder}
       />
@@ -168,8 +168,8 @@ export default function AuthPanel({
     e.preventDefault();
     const form = new FormData(e.currentTarget);
     const password = String(form.get("new-password"));
-    if (password.length < 8) {
-      setError("A senha precisa ter pelo menos 8 caracteres.");
+    if (password.length < 6) {
+      setError("A senha precisa ter pelo menos 6 caracteres.");
       return;
     }
     if (password !== String(form.get("confirm-password"))) {
@@ -280,10 +280,10 @@ export default function AuthPanel({
             <label>
               Senha
               <div onChangeCapture={(event) => setSignupPassword((event.target as HTMLInputElement).value)}>
-                <PasswordInput id="signup-password" autoComplete="new-password" placeholder="Mínimo de 8 caracteres" />
+                <PasswordInput id="signup-password" autoComplete="new-password" placeholder="Mínimo de 6 caracteres" />
               </div>
-              <span className={`password-help${signupPassword.length >= 8 ? " is-valid" : ""}`}>
-                {signupPassword.length >= 8 ? "✓ Senha pronta para usar" : "Use pelo menos 8 caracteres"}
+              <span className={`password-help${signupPassword.length >= 6 ? " is-valid" : ""}`}>
+                {signupPassword.length >= 6 ? "✓ Senha pronta para usar" : "Use pelo menos 6 caracteres"}
               </span>
             </label>
             <button className="primary" type="submit" disabled={busy}>

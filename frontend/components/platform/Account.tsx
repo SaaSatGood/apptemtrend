@@ -114,8 +114,8 @@ export default function Account({ onEditPreferences }: { onEditPreferences: () =
     const formElement = e.currentTarget;
     const form = new FormData(formElement);
     const password = String(form.get("new-password"));
-    if (password.length < 8) {
-      toast("A senha precisa ter pelo menos 8 caracteres.");
+    if (password.length < 6) {
+      toast("A senha precisa ter pelo menos 6 caracteres.");
       return;
     }
     if (password !== String(form.get("confirm-password"))) {
@@ -210,11 +210,11 @@ export default function Account({ onEditPreferences }: { onEditPreferences: () =
             <div className="account-password-grid">
               <label>
                 Nova senha
-                <input name="new-password" type="password" autoComplete="new-password" required minLength={8} placeholder="Mínimo de 8 caracteres" />
+                <input name="new-password" type="password" autoComplete="new-password" required minLength={6} placeholder="Mínimo de 6 caracteres" />
               </label>
               <label>
                 Confirmar nova senha
-                <input name="confirm-password" type="password" autoComplete="new-password" required minLength={8} placeholder="Digite novamente" />
+                <input name="confirm-password" type="password" autoComplete="new-password" required minLength={6} placeholder="Digite novamente" />
               </label>
             </div>
             <button className="primary account-save" type="submit" disabled={savingPass}>
