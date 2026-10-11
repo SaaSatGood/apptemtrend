@@ -8,6 +8,7 @@ import { api, friendlyError } from "@/lib/api";
 import { FALLBACK_IMAGE, copyText, displayProductName, formatUpdated, normalizeScenes, type Scene } from "@/lib/format";
 import type { ContentKit, Product } from "@/lib/types";
 import { usePlatform } from "./store";
+import { kitContext } from "./kit-presentation";
 import { productionForProduct } from "./Assistant";
 
 function factsOf(p: Product): string {
@@ -166,7 +167,7 @@ export default function ProductDetail({ productId, onNeedKit }: { productId: str
                       ))}
                   </div>
                   <h3>{kit.titulo}</h3>
-                  <p>{kit.descricao || kit.hook || "Abra para ver o plano completo do vídeo."}</p>
+                  <p>{kitContext(kit, product).summary}</p>
                   <strong>Ver Content Kit →</strong>
                 </Link>
               ))

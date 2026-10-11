@@ -17,18 +17,20 @@ export default function ContentKitDialog({
   productId,
   mode,
   forceNew,
+  initialBriefing = "",
   onClose,
   onCreated,
 }: {
   productId: string;
   mode: "save" | "kit";
   forceNew: boolean;
+  initialBriefing?: string;
   onClose: () => void;
   onCreated: (kit: import("@/lib/types").ContentKit, fallback: boolean) => void;
 }) {
   const { toast, loadProductions } = usePlatform();
   const dialogRef = useRef<HTMLDialogElement>(null);
-  const [briefing, setBriefing] = useState("");
+  const [briefing, setBriefing] = useState(initialBriefing);
   const [selected, setSelected] = useState<string[]>([]);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);

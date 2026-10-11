@@ -110,7 +110,7 @@ describe('Gemini assistant guardrails', () => {
           { numero: 5, tempo: '25–30s', visual: 'Gaveta organizada', fala: 'Você usaria isso?', acao_edicao: 'Texto na tela' },
         ],
         copy: 'Uma mudança simples que deixa a rotina muito mais organizada.',
-        cta: 'Clique no link da bio para conferir.',
+        cta: 'Link no carrinho, corre que acaba.',
         hashtags: ['organizacao', '#Casa Organizada', '#achadinhos', '#publi', '#tiktokshop'],
         audio_sugerido: 'Áudio leve em tendência, volume baixo.',
         duracao_seg: 25,
@@ -118,7 +118,7 @@ describe('Gemini assistant guardrails', () => {
     }));
 
     expect(generated.content_kit.hashtags).toEqual(['#organizacao', '#CasaOrganizada', '#achadinhos', '#publi', '#tiktokshop']);
-    expect(generated.content_kit.cta).not.toMatch(/link|bio/i);
+    expect(generated.content_kit.cta).toBe('Confira o produto no TikTok Shop.');
     expect(generated.content_kit.cenas).toHaveLength(5);
   });
 

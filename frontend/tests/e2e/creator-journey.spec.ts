@@ -13,7 +13,17 @@ const comparisonProducts = [
   { ...product, id: "88888888-8888-4888-8888-888888888888", nome: "Luminária para vídeo", categoria: "Casa", preco_texto: "R$ 59,90", preco_min_brl: 59.9, comissao_percentual: 30, unidades_vendidas_periodo: 10 },
   { ...product, id: "99999999-9999-4999-8999-999999999999", nome: "Garrafa térmica", categoria: "Casa", preco_texto: "R$ 100,00", preco_min_brl: 100, comissao_percentual: 5, unidades_vendidas_periodo: 200 },
 ];
-const kit = { id: kitId, product_id: productId, titulo: "Uma bancada mais organizada", hook: "Sua cozinha pode ganhar espaço", cenas: [{ tempo: "0–5s", mostre: "Mostre a bancada", fale: "Olha esta ideia", acao_edicao: "Corte para o produto" }], copy: "Uma ideia para sua cozinha.", cta: "Confira o produto", hashtags: ["casa", "#organizacao"], duracao_seg: 15 };
+const kit = {
+  id: kitId, product_id: productId, titulo: "Uma bancada mais organizada",
+  descricao: "Produto: Organizador de cozinha. Classificação: RISING. Evidência: FORTE. Público: Pessoas que querem uma cozinha prática. Por que agora: Alta demanda com 125 unidades vendidas no período. Ângulo: Mais espaço na bancada com uma mudança simples. Formato: Antes e depois.",
+  hook: "Sua cozinha pode ganhar espaço",
+  roteiro: "ROTEIRO PRINCIPAL: mostre a bancada antes e depois da organização.\n3 VARIAÇÕES DE HOOK: 1) Sua bancada vive cheia? 2) Olha quanto espaço eu ganhei. 3) Um detalhe mudou minha cozinha.\nVERSÃO SEM SEGUIDORES: grave só as mãos e o produto.\nDICA DE PUBLICAÇÃO: mostre o resultado na capa.\n5 VARIAÇÕES DE ROTEIRO: A) Antes e depois da bancada B) Teste rápido de organização C) Tour pela cozinha organizada D) Organize a gaveta em três passos E) Demonstre o ganho de espaço.",
+  cenas: [
+    { tempo: "0–5s", mostre: "Mostre a bancada", fale: "Olha esta ideia", acao_edicao: "Corte para o produto" },
+    { tempo: "5–15s", mostre: "Mostre o resultado", fale: "Se quiser garantir o seu, confira se ainda tem disponível no carrinho aqui embaixo", acao_edicao: "Close no produto" },
+  ],
+  copy: "Uma ideia para sua cozinha.", cta: "Confira o produto no carrinho do vídeo, se ele estiver disponível para você.", hashtags: ["casa", "#organizacao"], duracao_seg: 15,
+};
 
 async function setup(page: Page, options: { saved?: boolean; onboarding?: boolean; failSearch?: boolean; comparison?: boolean } = {}) {
   const encode = (value: object) => Buffer.from(JSON.stringify(value)).toString("base64url");
@@ -74,22 +84,25 @@ test("descoberta, kit e produção até publicação manual", async ({ page }, t
   await dialog.getByRole("button", { name: "Criar Content Kit →" }).click();
   await expect(page.getByRole("heading", { name: kit.titulo })).toBeVisible();
   expect(fixture.getStatus()).toBe("");
-  await page.getByRole("button", { name: "Copiar CTA" }).click();
-  await expect(page.getByRole("button", { name: "Copiado ✓", exact: true })).toBeVisible();
-  await page.getByRole("button", { name: "Começar produção →" }).click();
-  await expect(page.getByRole("button", { name: "Marcar como gravado", exact: true })).toBeVisible();
+  const guide = page.locator(".recording-guide");
+  await expect(page.getByText("Classificação: RISING")).toHaveCount(0);
+  await expect(page.getByText("125 vendas no período")).toBeVisible();
+  await guide.getByRole("button", { name: /Fechamento/ }).click();
+  await expect(guide.getByText("Confira o produto no TikTok Shop.")).toBeVisible();
+  await guide.getByRole("button", { name: "Começar produção →" }).click();
+  await expect(guide.getByRole("button", { name: "Marcar como gravado →" })).toBeVisible();
   await page.screenshot({ path: testInfo.outputPath("kit-desktop.png"), fullPage: true });
-  await page.getByRole("button", { name: "Marcar como gravado", exact: true }).click();
-  await page.getByRole("button", { name: "Marcar como publicado →" }).click();
+  await guide.getByRole("button", { name: "Marcar como gravado →" }).click();
+  await guide.getByRole("button", { name: "Marcar como publicado →" }).click();
   await expect(dialog.getByText(/Publique fora da TemTrend/)).toBeVisible();
   await page.keyboard.press("Escape");
   await expect(dialog).toBeHidden();
-  await expect(page.getByRole("button", { name: "Marcar como publicado →" })).toBeFocused();
-  await page.getByRole("button", { name: "Marcar como publicado →" }).click();
+  await expect(guide.getByRole("button", { name: "Marcar como publicado →" })).toBeFocused();
+  await guide.getByRole("button", { name: "Marcar como publicado →" }).click();
   await dialog.getByRole("button", { name: "Salvar publicação →" }).click();
-  await expect(page.getByRole("heading", { name: "Conteúdo publicado" })).toBeVisible();
+  await expect(guide.getByText("Publicado", { exact: true })).toBeVisible();
   expect(fixture.getStatus()).toBe("publicado");
-  await page.getByRole("link", { name: "Ir para Minha produção" }).click();
+  await guide.getByRole("link", { name: "Minha produção →" }).click();
   await page.getByRole("button", { name: /^Publicados/ }).click();
   await expect(page.getByRole("heading", { name: product.nome })).toBeVisible();
 });
@@ -106,12 +119,15 @@ test("salvo não avança ao abrir o kit; retomada no celular", async ({ page }, 
   await expect(page.getByRole("heading", { name: "Nenhum conteúdo encontrado." })).toBeVisible();
   await page.getByRole("button", { name: /^Salvos/ }).click();
   await page.getByRole("link", { name: "Ver Content Kit →" }).click();
-  await expect(page.getByRole("button", { name: "Começar produção →" })).toBeVisible();
+  const guide = page.locator(".recording-guide");
+  await expect(guide.getByRole("heading", { name: "Grave uma etapa de cada vez." })).toBeVisible();
+  await expect(page.locator(".kit-document, .kit-actions")).toHaveCount(0);
   expect(fixture.mutations).toEqual([]);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await page.screenshot({ path: testInfo.outputPath("kit-mobile.png"), fullPage: true });
-  await page.getByRole("button", { name: "Começar produção →" }).click();
-  await expect(page.getByRole("button", { name: "Marcar como gravado" })).toBeVisible();
+  await guide.getByRole("button", { name: /Fechamento/ }).click();
+  await guide.getByRole("button", { name: "Começar produção →" }).click();
+  await expect(guide.getByRole("button", { name: "Marcar como gravado →" })).toBeVisible();
   expect(fixture.getStatus()).toBe("em_producao");
 });
 
@@ -190,32 +206,44 @@ test("resultados e ações cabem na largura do celular", async ({ page }, testIn
 
 test("guia do roteiro conduz a gravação por etapas no celular", async ({ page }, testInfo) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.addInitScript(() => {
-    class TestUtterance { constructor(public text: string) {} }
-    Object.defineProperty(window, "SpeechSynthesisUtterance", { configurable: true, value: TestUtterance });
-    Object.defineProperty(window, "speechSynthesis", { configurable: true, value: { speak() {}, cancel() {} } });
-  });
   await setup(page, { saved: true });
   await page.goto(`/app/produtos/${productId}/kits/${kitId}`);
   const guide = page.locator(".recording-guide");
   await expect(guide.getByRole("heading", { name: "Grave uma etapa de cada vez." })).toBeVisible();
   await expect(guide.getByRole("progressbar", { name: "Progresso do guia" })).toHaveAttribute("aria-valuenow", "1");
-  await guide.getByRole("button", { name: "Ouvir etapa" }).click();
-  await expect(guide.getByRole("button", { name: "Parar leitura da etapa" })).toBeVisible();
-  await guide.getByRole("button", { name: "Parar leitura da etapa" }).click();
+  await expect(guide.getByRole("button", { name: /Ouvir etapa|Parar leitura/ })).toHaveCount(0);
+  for (const item of ["Produto à mão", "Boa luz", "Fundo organizado", "Lente limpa"]) {
+    await expect(guide.getByRole("button", { name: item })).toBeVisible();
+  }
+  await guide.getByRole("button", { name: "Boa luz" }).click();
+  await expect(guide.getByRole("button", { name: "Boa luz" })).toHaveAttribute("aria-pressed", "true");
   await guide.getByRole("button", { name: "Estou pronto →" }).click();
   await expect(guide.getByRole("heading", { name: "Abra com o hook" })).toBeVisible();
+  await expect(guide.getByRole("button", { name: "Usar este hook" })).toHaveCount(3);
+  await guide.getByRole("button", { name: "Usar este hook" }).first().click();
+  await expect(guide.locator(".recording-guide-details").getByText("Sua bancada vive cheia?")).toBeVisible();
+  await expect(guide.getByRole("button", { name: "Em uso ✓" })).toBeVisible();
   await guide.getByRole("button", { name: /Mostre a bancada/ }).click();
   await expect(guide.getByText("Olha esta ideia")).toBeVisible();
   await expect(guide.getByRole("progressbar")).toHaveAttribute("aria-valuenow", "3");
   await guide.getByRole("button", { name: "Voltar" }).click();
   await expect(guide.getByRole("heading", { name: "Abra com o hook" })).toBeVisible();
   await guide.getByRole("button", { name: /Fechamento/ }).click();
-  await expect(guide.getByText("Confira o produto")).toBeVisible();
+  await expect(guide.getByText("Confira o produto no TikTok Shop.")).toBeVisible();
+  await expect(guide.getByText(/se ainda tem disponível/i)).toHaveCount(0);
+  const more = guide.locator(".recording-guide-more");
+  await expect(more).not.toHaveAttribute("open");
+  await more.locator("summary").click();
+  await expect(more.getByRole("button", { name: "Gerar com esta ideia →" })).toHaveCount(5);
+  await more.getByRole("button", { name: "Gerar com esta ideia →" }).first().click();
+  const dialog = page.getByRole("dialog");
+  await expect(dialog.getByLabel("Como você imagina o vídeo? (opcional)")).toHaveValue(/Antes e depois da bancada/);
+  await page.keyboard.press("Escape");
+  await expect(dialog).toBeHidden();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await page.screenshot({ path: testInfo.outputPath("guided-kit-mobile.png"), fullPage: true });
   await guide.getByRole("button", { name: "Começar produção →" }).click();
-  await expect(page.getByRole("button", { name: "Marcar como gravado" })).toBeVisible();
+  await expect(guide.getByRole("button", { name: "Marcar como gravado →" })).toBeVisible();
 });
 
 test("onboarding em cinco etapas e menu acessível", async ({ page }, testInfo) => {

@@ -112,8 +112,8 @@ function normalizeHashtags(tags: string[]) {
 }
 
 function normalizeCta(cta: string) {
-  return /(?:https?:\/\/|www\.|\blink\b|\bbio\b|\bdirect\b)/i.test(cta)
-    ? 'Confira o produto no carrinho do vídeo, se ele estiver disponível para você.'
+  return /(?:https?:\/\/|www\.|\blink\b|\bbio\b|\bdirect\b|se quiser garantir|se (?:ele|ainda|o produto).*dispon[ií]vel|corre que acaba|[úu]ltimas unidades|estoque acaba|acaba hoje|carrinho aqui embaixo)/i.test(cta)
+    ? 'Confira o produto no TikTok Shop.'
     : cta;
 }
 
@@ -174,11 +174,11 @@ function kitFingerprint(kit: Partial<ContentKit> | z.infer<typeof generatedPacka
 export const CONTENT_STRATEGY_INSTRUCTIONS = [
   'TEMTREND: radar e estrategista de conteúdo TikTok Shop Brasil. Crie roteiro 15-30s gravável sozinho.',
   'EVIDÊNCIA: use só fatos do produto. Nunca invente marca, preço, vendas, comissão, desconto ou tendência.',
-  'Sem evidência verificável, escreva "Sem evidência recente suficiente para classificar como tendência atual", classifique EXPERIMENTAL/INSUFICIENTE. Nunca prometa venda/viralização/cura.',
-  'descricao = BRIEFING RÁPIDO: Produto, Classificação (TRENDING/RISING/SEASONAL/EVERGREEN/EXPERIMENTAL), Evidência (FORTE/MODERADA/FRACA/INSUFICIENTE), Público, Por que agora, Ângulo, Formato.',
+  'Sem evidência recente suficiente para classificar como tendência atual: trate internamente como EXPERIMENTAL/INSUFICIENTE. Não exponha esses rótulos. Nunca prometa venda/viralização/cura.',
+  'descricao = 1 frase legível sobre o ângulo do vídeo. Sem campos Produto/Classificação/Evidência ou jargão interno. Cite público e vendas só quando sustentados pelo catálogo.',
   'titulo máx 8 palavras (capa). Cenas: 0-3s hook (dor/desejo/curiosidade, sem saudação/produto), 3-7s problema, 7-18s uso, 18-25s prova honesta, 25-30s CTA. Cada cena: tempo, visual, fala, ação/edição.',
-  'roteiro inclui: "3 VARIAÇÕES DE HOOK", "VERSÃO SEM SEGUIDORES" (demonstração/teste/comparação/faceless, sem fama), "DICA DE PUBLICAÇÃO" (horário sugestão, frequência, áudio, comentário fixado, sem garantia), "3-5 VARIAÇÕES DE ROTEIRO".',
-  'Prova só com demonstração visual do produto; nunca peça print de avaliação/vendas. copy máx 150 chars, 1 emoji, 1 pergunta. Exatas 5 hashtags (#publi/#tiktokshop se divulgação). CTA carrinho só condicional, nunca direct.',
+  'roteiro inclui: "3 VARIAÇÕES DE HOOK" com 3 frases numeradas; "VERSÃO SEM SEGUIDORES" (demonstração/teste/faceless); "DICA DE PUBLICAÇÃO" (horário, frequência, comentário fixado, sem garantia); "5 VARIAÇÕES DE ROTEIRO" com 5 ideias numeradas.',
+  'Prova só com demonstração visual do produto; nunca peça print de avaliação/vendas. copy máx 150 chars, 1 emoji, 1 pergunta. Exatas 5 hashtags (#publi/#tiktokshop se divulgação). CTA direto no TikTok Shop, sem escassez ou estoque não verificados; nunca direct.',
   'TikTok: nunca cite botão, sticker, carrinho, recurso, interface ou link específico salvo se estiver no contexto. Prefira "conforme os recursos disponíveis no TikTok Shop".',
   'PT-BR falado, direto, sem placeholders, só JSON.',
 ].join(' ');
@@ -292,20 +292,20 @@ export function buildFallbackKit(product: { nome: string; descricao?: string | n
     hook: `Você precisa ver o que ${short} faz.`,
     roteiro: [
       'ROTEIRO PRINCIPAL: mostre o problema, demonstre o produto em uso e finalize com o resultado.',
-      '3 VARIAÇÕES DE HOOK: curiosidade ("Você precisa ver isso"), identificação ("Se você sofre com isso") e resultado ("Olha essa transformação").',
+      '3 VARIAÇÕES DE HOOK: 1) Você precisa ver isso. 2) Se você sofre com isso, veja esta ideia. 3) Olha essa transformação.',
       'VERSÃO SEM SEGUIDORES: grave sem aparecer, mostrando só o produto e as mãos, com teste real.',
-      'DICA DE PUBLICAÇÃO: publique em horário de pico do seu público, use áudio em alta e fixe um comentário com pergunta.',
-      '3–5 VARIAÇÕES DE ROTEIRO: antes e depois, teste, comparação, tutorial e review sincero.',
+      'DICA DE PUBLICAÇÃO: teste horários diferentes e fixe um comentário com pergunta.',
+      '5 VARIAÇÕES DE ROTEIRO: 1) Antes e depois em uso real. 2) Teste rápido do produto. 3) Comparação visual do resultado. 4) Tutorial em três passos. 5) Review sincero após a demonstração.',
     ].join('\n'),
     cenas: [
       { numero: 1, tempo: '0–3s', visual: `Detalhe de ${short} em close`, fala: 'Você precisa ver isso.', acao_edicao: 'Corte rápido com zoom' },
       { numero: 2, tempo: '3–7s', visual: 'Problema do dia a dia que o produto resolve', fala: 'Quem passa por isso vai entender.', acao_edicao: 'Legenda na tela' },
       { numero: 3, tempo: '7–18s', visual: `Demonstração de ${short} em uso real`, fala: 'É só usar assim, olha como funciona.', acao_edicao: 'Timelapse da demonstração' },
       { numero: 4, tempo: '18–25s', visual: 'Resultado final após o uso', fala: 'Olha a diferença no resultado.', acao_edicao: 'Antes e depois lado a lado' },
-      { numero: 5, tempo: '25–30s', visual: `chamada final com ${short}`, fala: 'Você usaria isso? Comenta aqui.', acao_edicao: 'Texto com CTA na tela' },
+      { numero: 5, tempo: '25–30s', visual: `chamada final com ${short}`, fala: 'Confira o produto no TikTok Shop.', acao_edicao: 'Texto com CTA na tela' },
     ],
     copy: `Você já conhecia ${short.slice(0, 60)}? Comenta aqui 👇`,
-    cta: 'Confira o produto no carrinho do vídeo, se ele estiver disponível para você.',
+    cta: 'Confira o produto no TikTok Shop.',
     hashtags: ['#achadinhos', '#tiktokshop', '#publi', `#${tagBase}`, '#dica'],
     audio_sugerido: 'Áudio em alta no TikTok, volume baixo.',
     duracao_seg: 25,
