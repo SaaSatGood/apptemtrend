@@ -145,3 +145,12 @@ test("onboarding em cinco etapas e menu acessível", async ({ page }, testInfo) 
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await page.screenshot({ path: testInfo.outputPath("account-mobile.png"), fullPage: true });
 });
+
+test("onboarding inicial cabe no desktop sem rolagem lateral", async ({ page }, testInfo) => {
+  await setup(page, { onboarding: true });
+  await page.goto("/app");
+  await expect(page.getByRole("heading", { name: "O que você quer fazer no TikTok?" })).toBeVisible();
+  await expect(page.getByText("Vamos dar direção às suas ideias.")).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await page.screenshot({ path: testInfo.outputPath("onboarding-desktop.png"), fullPage: true });
+});

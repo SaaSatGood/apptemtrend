@@ -152,12 +152,32 @@ export default function Onboarding({ editing, onDone }: { editing: boolean; onDo
   const suggestedTheme = temas[0];
 
   return (
-    <section id="onboarding" className="onboarding" aria-labelledby="onboarding-title">
-      <Link className="auth-logo onboarding-logo" href="/">
-        <span aria-hidden="true">T</span><b>TemTrend</b>
-      </Link>
-      <div className="onboarding-shell">
-        {(
+    <section id="onboarding" className={`onboarding${editing ? " onboarding--editing" : ""}`} aria-label={editing ? "Editar preferências" : "Configurar seu perfil"}>
+      {!editing && (
+        <header className="onboarding-topbar">
+          <Link className="auth-logo onboarding-logo" href="/" aria-label="TemTrend, página inicial">
+            <span aria-hidden="true">T</span><b>TemTrend</b>
+          </Link>
+          <span>Seu espaço começa aqui</span>
+        </header>
+      )}
+      <div className="onboarding-layout">
+        <aside className="onboarding-aside" aria-label="Sobre a configuração">
+          <div>
+            <p className="eyebrow">{editing ? "Suas preferências" : "Boas-vindas à TemTrend"}</p>
+            <h2>{editing ? <>Seu conteúdo, <em>do seu jeito.</em></> : <>Vamos dar direção às <em>suas ideias.</em></>}</h2>
+            <p>{editing ? "Atualize o que você gosta de criar. As próximas sugestões acompanham suas escolhas." : "Conte um pouco sobre você para começar com sugestões de produtos e ideias de vídeo que fazem sentido."}</p>
+          </div>
+          <div className="onboarding-aside-note">
+            <span aria-hidden="true">✳</span>
+            <p><strong>Da descoberta à gravação.</strong> Escolha um produto, encontre um caminho e crie com confiança.</p>
+          </div>
+        </aside>
+        <div className="onboarding-shell">
+          <div className="onboarding-card-head">
+            <span>{editing ? "Ajustar perfil" : "Configuração inicial"}</span>
+            <span>{String(step).padStart(2, "0")} / 05</span>
+          </div>
           <ol className="onboarding-stepper" aria-label="Etapas da configuração">
             {STEP_LABELS.map((label, index) => {
               const number = index + 1;
@@ -168,7 +188,6 @@ export default function Onboarding({ editing, onDone }: { editing: boolean; onDo
               );
             })}
           </ol>
-        )}
         <div className="onboarding-progress" aria-label="Progresso do onboarding">
           <div id="onboarding-progress-bar" style={{ width: `${(Math.min(step, 5) / 5) * 100}%` }}></div>
         </div>
@@ -313,6 +332,7 @@ export default function Onboarding({ editing, onDone }: { editing: boolean; onDo
               {saving ? "Salvando preferências..." : done ? editing ? "Voltar à conta →" : "Ir para Descobrir →" : step === 4 ? "Concluir configuração →" : "Continuar →"}
             </button>
           </div>
+        </div>
         </div>
       </div>
     </section>

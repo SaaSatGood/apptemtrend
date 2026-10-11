@@ -53,7 +53,7 @@ function Discover() {
   return (
     <main id="app-view">
       {showNav && <Topbar />}
-      <section className="page-wrap">
+      <section className={`page-wrap${showNav ? "" : " page-wrap--onboarding"}`}>
         {!me.onboarding_completo && !me.is_admin ? (
           <Onboarding editing={false} onDone={() => window.location.reload()} />
         ) : me.is_admin ? (

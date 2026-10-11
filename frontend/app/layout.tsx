@@ -10,6 +10,7 @@ import "../styles/landing-polish.css";
 import "../styles/landing-experience.css";
 import "../styles/platform-theme.css";
 import "../styles/platform-journey.css";
+import "../styles/onboarding.css";
 
 const manrope = Manrope({
   subsets: ["latin"],

@@ -10,7 +10,8 @@ export async function api<T>(
 ): Promise<T> {
   const { requireApiUrl } = await import("./config");
   const headers: Record<string, string> = {};
-  if (!(options.body instanceof FormData)) headers["Content-Type"] = "application/json";
+  // Content-Type só com corpo: Fastify rejeita DELETE/GET com o header e sem body (400).
+  if (options.body != null && !(options.body instanceof FormData)) headers["Content-Type"] = "application/json";
   if (options.headers) {
     for (const [k, v] of Object.entries(options.headers as Record<string, string>)) {
       headers[k] = v;

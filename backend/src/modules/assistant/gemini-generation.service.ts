@@ -194,9 +194,20 @@ export const REQUIRED_STRATEGY_SECTIONS = [
   'variacoes de roteiro',
 ];
 
+// Validação tolerante: o modelo pode frasear os títulos de outro jeito
+// ("hooks alternativos", "faceless"...). Exige as 4 seções, aceita sinônimos.
+const STRATEGY_SECTION_ALIASES: Array<[string, string[]]> = [
+  ['3 variacoes de hook', ['3 variacoes de hook', 'variacoes de hook', 'variacao de hook', 'hooks alternativos', '3 hooks', 'ganchos alternativos']],
+  ['versao sem seguidores', ['versao sem seguidores', 'sem seguidores', 'faceless', 'sem aparecer', 'sem mostrar o rosto']],
+  ['dica de publicacao', ['dica de publicacao', 'dica para publicar', 'quando publicar', 'melhor horario', 'frequencia de publicacao']],
+  ['variacoes de roteiro', ['variacoes de roteiro', 'variacao de roteiro', 'roteiros alternativos', 'outras abordagens', 'outros roteiros']],
+];
+
 export function missingStrategySections(roteiro: unknown): string[] {
-  const script = comparableText(roteiro);
-  return REQUIRED_STRATEGY_SECTIONS.filter((section) => !script.includes(section));
+  const script = ` ${comparableText(roteiro)} `;
+  return STRATEGY_SECTION_ALIASES.filter(([, aliases]) =>
+    !aliases.some((alias) => script.includes(` ${alias} `))
+  ).map(([canonical]) => canonical);
 }
 
 export function isContentKitNovel(

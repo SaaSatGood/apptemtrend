@@ -60,6 +60,11 @@ describe('Gemini assistant guardrails', () => {
     expect(missingStrategySections(null)).toHaveLength(4);
   });
 
+  it('accepts natural phrasing of the required sections', () => {
+    expect(missingStrategySections('hooks alternativos, faceless, quando publicar, roteiros alternativos')).toEqual([]);
+    expect(missingStrategySections('um roteiro curto e direto')).toHaveLength(4);
+  });
+
   it('accepts decisions without motivos', () => {
     const decision = parseAndConstrainDecision(JSON.stringify({
       in_scope: true,

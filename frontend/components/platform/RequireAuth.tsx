@@ -51,7 +51,7 @@ export default function RequireAuth({
   if (!me.is_admin && !me.onboarding_completo && !allowOnboarding) {
     return (
       <main id="app-view">
-        <section className="page-wrap">
+        <section className="page-wrap page-wrap--onboarding">
           <Onboarding editing={false} onDone={() => window.location.reload()} />
         </section>
       </main>
