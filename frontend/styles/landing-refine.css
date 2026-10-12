@@ -1,0 +1,459 @@
+/* =============================================================================
+   Landing — camada de refinamento (abaixo da hero)
+   Mesmo design system (Manrope + Instrument Serif, tinta + lime), aplicado com
+   escala tipográfica, ritmo vertical, raios e contraste consistentes.
+   Importada por última: ganha a cascata por ordem com especificidade igual.
+   NÃO toca em .tt-hero-band, .tt-hero, .tt-discover-*, .tt-header, .tt-nav*.
+   ========================================================================== */
+
+.tt-home {
+  --tt-accent: #5f8800;        /* serif italic em fundo claro — 4.19:1 no branco */
+  --tt-accent-strong: #4f7300;
+  --tt-muted: #63665e;         /* corpo secundário — 5.85:1 no branco */
+  --tt-muted-soft: #6b6e66;    /* sobre --tt-soft — 4.71:1 */
+  --tt-line-soft: #e4e4de;
+  --tt-r-lg: 24px;
+  --tt-r-md: 16px;
+  --tt-r-sm: 10px;
+}
+
+/* ---------------------------------------------------------------------------
+   1. Escala tipográfica unificada
+   ------------------------------------------------------------------------ */
+.tt-home h2,
+.tt-home .tt-creator-reel h2,
+.tt-home .tt-numbers-head h2,
+.tt-home .tt-steps-head h2,
+.tt-home .tt-final-card h2,
+.tt-home .tt-kit-breakdown-head h2,
+.tt-home .tt-faq-intro h2 {
+  max-width: 16ch;
+  margin: 0;
+  font-size: clamp(42px, 4.8vw, 64px);
+  font-weight: 600;
+  line-height: 1.04;
+  letter-spacing: -.045em;
+  text-wrap: balance;
+}
+.tt-home .tt-intro > div > h2 { max-width: 18ch; margin-inline: auto; }
+.tt-home .tt-products > div > h2 { max-width: 15ch; }
+.tt-home .tt-dark-section h2 { max-width: 17ch; }
+
+/* A frase em itálico serifado é sempre o acento — exceção só no bloco escuro. */
+.tt-home h2 em {
+  color: var(--tt-accent);
+  font-weight: 400;
+  letter-spacing: -.03em;
+}
+.tt-home .tt-dark-section h2 em { color: var(--tt-lime); }
+.tt-home .tt-faq-intro h2 em { color: var(--tt-accent); }
+.tt-home .tt-final-card h2 em { color: var(--tt-ink); }
+
+.tt-home .tt-eyebrow {
+  margin-bottom: 20px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .16em;
+}
+.tt-home .tt-eyebrow::before { width: 7px; height: 7px; }
+
+.tt-home .tt-section-lead,
+.tt-home .tt-numbers-head p,
+.tt-home .tt-kit-breakdown-head > p,
+.tt-home .tt-faq-intro > p {
+  color: var(--tt-muted);
+  font-size: 16px;
+  line-height: 1.65;
+  letter-spacing: -.01em;
+}
+.tt-home .tt-section-lead { max-width: 62ch; margin: 16px 0 44px; }
+.tt-home .tt-kit-breakdown-head > p { max-width: 38ch; }
+
+/* Títulos de card: entrelinha coerente (o base herda 1.5 do body). */
+.tt-home .tt-kit-piece h3 { line-height: 1.15; }
+.tt-home .tt-product-grid h3 { line-height: 1.25; }
+.tt-home .tt-steps-list h3 { line-height: 1.2; }
+.tt-home .tt-audience-grid h3 { line-height: 1.25; }
+.tt-home .tt-feature-main h3 { line-height: 1.08; text-wrap: balance; }
+.tt-home .tt-feature-small h3 { line-height: 1.25; }
+.tt-home .tt-story-copy h3 { line-height: 1.1; text-wrap: balance; }
+
+/* Corpo dos cards — um único tom de apoio, todos legíveis. */
+.tt-home .tt-story-copy p,
+.tt-home .tt-kit-piece p,
+.tt-home .tt-numbers-head p,
+.tt-home .tt-section-lead,
+.tt-home .tt-product-grid small,
+.tt-home .tt-steps-list p,
+.tt-home .tt-faq-intro > p { color: var(--tt-muted); }
+
+/* ---------------------------------------------------------------------------
+   2. Ritmo vertical — uma única escala de respiro entre seções
+   ------------------------------------------------------------------------ */
+.tt-home .tt-section { padding: clamp(88px, 9.5vw, 136px) 0; }
+.tt-home .tt-creator-reel { padding-top: clamp(88px, 9.5vw, 136px); }
+.tt-home .tt-kit-breakdown { padding-top: clamp(88px, 9.5vw, 136px); }
+.tt-home .tt-numbers { padding-top: clamp(88px, 9.5vw, 136px); }
+.tt-home .tt-dark-section { padding: clamp(88px, 9.5vw, 136px) 0; }
+.tt-home .tt-final { padding: clamp(48px, 6vw, 88px) 0 clamp(88px, 9.5vw, 136px); }
+.tt-home .tt-footer { padding: clamp(56px, 6vw, 84px) 0 32px; }
+
+.tt-home .tt-intro > div > h2 { margin-bottom: clamp(40px, 5vw, 64px); }
+.tt-home .tt-creator-reel h2 { margin-bottom: 44px; }
+
+/* ---------------------------------------------------------------------------
+   3. Raio — três degraus em vez de sete valores soltos
+   ------------------------------------------------------------------------ */
+.tt-home .tt-story,
+.tt-home .tt-feature-main,
+.tt-home .tt-final-card,
+.tt-home .tt-dark-quote { border-radius: var(--tt-r-lg); }
+
+.tt-home .tt-kit-piece,
+.tt-home .tt-feature-small,
+.tt-home .tt-number-grid article,
+.tt-home .tt-product-grid article,
+.tt-home .tt-audience-grid article,
+.tt-home .tt-faq-list details { border-radius: var(--tt-r-md); }
+
+.tt-home .tt-kit-breakdown-cta { border-radius: 18px; }
+.tt-home .tt-story { padding: clamp(34px, 4vw, 58px); }
+.tt-home .tt-catalog-mockup,
+.tt-home .tt-kit-mockup { border-radius: 14px; }
+
+/* ---------------------------------------------------------------------------
+   4. Faixa de fluxo (trust) — ponte entre hero e conteúdo
+   ------------------------------------------------------------------------ */
+.tt-home .tt-trust {
+  padding: clamp(34px, 4vw, 54px) 0;
+  border-block: 1px solid var(--tt-line);
+}
+.tt-home .tt-trust .tt-shell {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: clamp(20px, 3vw, 40px);
+}
+.tt-home .tt-trust p {
+  margin: 0;
+  color: #2c3327;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -.02em;
+}
+.tt-home .tt-trust-flow {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: clamp(8px, 1vw, 14px);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: none;
+}
+.tt-home .tt-trust-flow span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 38px;
+  padding: 0 15px;
+  border: 1px solid var(--tt-line-soft);
+  border-radius: 999px;
+  background: #fff;
+  color: #2c3327;
+  white-space: nowrap;
+}
+.tt-home .tt-trust-flow i { color: var(--tt-accent); font-size: 14px; font-style: normal; }
+.tt-home .tt-trust-flow span:last-child {
+  border-color: var(--tt-ink);
+  background: var(--tt-ink);
+  color: #fff;
+}
+
+/* ---------------------------------------------------------------------------
+   5. Passos — remove o vazio da coluna escura e ancora a leitura
+   ------------------------------------------------------------------------ */
+.tt-home .tt-steps > .tt-shell { gap: clamp(48px, 6vw, 96px); }
+.tt-home .tt-steps-head { align-self: center; }
+.tt-home .tt-steps-note {
+  max-width: 34ch;
+  margin: 26px 0 0;
+  color: var(--tt-muted);
+  font-size: 16px;
+  line-height: 1.65;
+}
+.tt-home .tt-steps-list { border-top-color: #c9cdc2; }
+.tt-home .tt-steps-list article {
+  padding: clamp(24px, 3vw, 34px) 0;
+  border-bottom-color: #c9cdc2;
+  transition: padding-left .3s cubic-bezier(.2, .7, .2, 1);
+}
+.tt-home .tt-steps-list article:hover { padding-left: 10px; }
+.tt-home .tt-steps-list > article > span { color: var(--tt-accent); font-weight: 800; }
+.tt-home .tt-steps-list i { color: var(--tt-accent); }
+
+/* ---------------------------------------------------------------------------
+   6. Cards de recurso — base no topo, texto ancorado em linha de base
+   ------------------------------------------------------------------------ */
+.tt-home .tt-feature-small {
+  display: flex;
+  flex-direction: column;
+  min-height: 235px;
+}
+.tt-home .tt-feature-small h3 { margin: auto 0 10px; }
+.tt-home .tt-feature-small:hover { border-color: #c9d9a8; }
+
+/* ---------------------------------------------------------------------------
+   7. Produtos — CTA leve por card, com preenchimento no hover
+   ------------------------------------------------------------------------ */
+.tt-home .tt-product-grid { gap: 16px; }
+.tt-home .tt-product-grid article {
+  display: flex;
+  flex-direction: column;
+  transition: border-color .3s ease, box-shadow .3s ease, transform .3s ease;
+}
+.tt-home .tt-product-grid article:hover {
+  transform: translateY(-4px);
+  border-color: var(--tt-ink);
+  box-shadow: 0 18px 36px rgba(16, 17, 15, .09);
+}
+.tt-home .tt-product-grid h3 { margin-bottom: 18px; }
+.tt-home .tt-product-grid article > a {
+  width: auto;
+  min-height: 48px;
+  margin-top: auto;
+  border: 1px solid var(--tt-line);
+  background: transparent;
+  color: var(--tt-ink);
+}
+.tt-home .tt-product-grid article > a:hover {
+  border-color: var(--tt-ink);
+  background: var(--tt-ink);
+  color: #fff;
+}
+.tt-home .tt-product-grid article > a span { transition: transform .3s ease; }
+.tt-home .tt-product-grid article > a:hover span { transform: translate(3px, -3px); }
+
+/* ---------------------------------------------------------------------------
+   8. Bloco escuro — cartões e citação
+   ------------------------------------------------------------------------ */
+.tt-home .tt-audience-grid { gap: 16px; }
+.tt-home .tt-audience-grid article { transition: transform .35s cubic-bezier(.2, .7, .2, 1); }
+.tt-home .tt-audience-grid article:hover { transform: translateY(-5px); }
+.tt-home .tt-audience-grid article > div { padding: 24px; }
+.tt-home .tt-audience-grid h3 { margin-bottom: 10px; font-size: 20px; }
+.tt-home .tt-audience-grid p { color: #a9aca4; font-size: 15px; line-height: 1.6; }
+.tt-home .tt-audience-grid span { color: var(--tt-lime); font-weight: 800; }
+.tt-home .tt-dark-quote { margin-top: 16px; padding: clamp(56px, 7vw, 88px) clamp(24px, 4vw, 56px); }
+.tt-home .tt-dark-quote > span { font-size: 11px; }
+.tt-home .tt-dark-quote p { max-width: 20ch; margin: 26px auto 32px; }
+
+/* ---------------------------------------------------------------------------
+   9. Números — mesmo raio e mesma família de superfície
+   ------------------------------------------------------------------------ */
+.tt-home .tt-number-grid { gap: 16px; margin-top: clamp(40px, 5vw, 56px); }
+.tt-home .tt-number-grid article { padding: clamp(26px, 3vw, 34px); }
+.tt-home .tt-number-grid strong { font-weight: 600; letter-spacing: -.05em; }
+.tt-home .tt-number-grid article > span:not(.tt-number-icon) { max-width: 22ch; }
+
+/* ---------------------------------------------------------------------------
+   10. Kit breakdown — cabeçalho e grade
+   ------------------------------------------------------------------------ */
+.tt-home .tt-kit-breakdown-head { gap: clamp(40px, 5vw, 72px); margin-bottom: clamp(36px, 4vw, 52px); }
+.tt-home .tt-kit-breakdown-grid { gap: 14px; }
+.tt-home .tt-kit-piece { padding: clamp(22px, 2.4vw, 28px); }
+.tt-home .tt-kit-breakdown-cta { padding: clamp(24px, 3vw, 30px) clamp(24px, 3vw, 34px); }
+.tt-home .tt-kit-breakdown-cta p { font-size: clamp(18px, 2vw, 22px); }
+
+/* ---------------------------------------------------------------------------
+   11. FAQ e cartão final
+   ------------------------------------------------------------------------ */
+.tt-home .tt-faq-list { gap: 12px; }
+.tt-home .tt-faq-list details:hover { border-color: #b9d488; }
+.tt-home .tt-faq-invite { border-radius: var(--tt-r-lg); }
+.tt-home .tt-final-card { align-items: center; padding: clamp(40px, 5vw, 64px); }
+.tt-home .tt-final-card > div { max-width: 640px; }
+.tt-home .tt-final-card h2 { max-width: 14ch; margin: 22px 0 14px; }
+.tt-home .tt-final-card p { max-width: 44ch; color: #3d4437; font-size: 16px; }
+
+/* ---------------------------------------------------------------------------
+   12. Rodapé — rótulos tracked, links com micro-interação
+   ------------------------------------------------------------------------ */
+.tt-home .tt-footer-grid { gap: clamp(32px, 4vw, 64px); }
+.tt-home .tt-footer-grid > div:first-child p {
+  max-width: 32ch;
+  color: var(--tt-muted);
+  font-size: 15px;
+  line-height: 1.6;
+}
+.tt-home .tt-footer-grid strong {
+  margin-bottom: 14px;
+  color: #8a8d85;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+}
+.tt-home .tt-footer-grid > div:not(:first-child) a {
+  width: fit-content;
+  color: var(--tt-muted);
+  font-size: 15px;
+  transition: color .2s ease, transform .2s ease;
+}
+.tt-home .tt-footer-grid > div:not(:first-child) a:hover {
+  color: var(--tt-ink);
+  transform: translateX(4px);
+}
+.tt-home .tt-footer-bottom {
+  margin-top: clamp(40px, 5vw, 64px);
+  padding-top: 26px;
+  color: var(--tt-muted-soft);
+  font-size: 12px;
+}
+
+/* ---------------------------------------------------------------------------
+   12b. Correções de cascata — regras antigas com especificidade igual/maior
+   Empatavam com as acima e venciam por ordem de importação.
+   ------------------------------------------------------------------------ */
+
+/* 12b.1 Título do FAQ empatava com `.tt-faq-shell > div:first-child h2` (60px). */
+.tt-home .tt-faq-shell .tt-faq-intro h2 {
+  max-width: 16ch;
+  font-size: clamp(42px, 4.8vw, 64px);
+  line-height: 1.04;
+}
+.tt-home .tt-faq-shell .tt-faq-intro > p {
+  max-width: 42ch;
+  margin: 24px 0 0;
+  color: var(--tt-muted);
+  font-size: 16px;
+  line-height: 1.65;
+}
+
+/* 12b.2 Card escuro do kit (nth-child 4) — `landing-polish` usava #b9bbb4. */
+.tt-home .tt-kit-breakdown-grid .tt-kit-piece:nth-child(4) p { color: #b9bbb4; }
+.tt-home .tt-kit-breakdown-grid .tt-kit-piece:nth-child(4) h3 { color: #fff; }
+.tt-home .tt-kit-breakdown-grid .tt-kit-piece:nth-child(4) > span { color: var(--tt-lime); }
+
+/* 12b.3 Story escuro: o p genérico herdava o cinza de fundo claro. */
+.tt-home .tt-story-dark .tt-story-copy p { color: #b9bbb4; }
+.tt-home .tt-story-dark .tt-story-copy > span { color: var(--tt-lime); }
+
+/* 12b.4 Acento em texto pequeno precisa do tom forte (>= 4.5:1). */
+.tt-home .tt-steps-list > article > span,
+.tt-home .tt-steps-list i,
+.tt-home .tt-trust-flow i { color: var(--tt-accent-strong); }
+
+/* 12b.5 Número do FAQ: #8ca666 dava apenas 2.71:1. */
+.tt-home .tt-faq-list summary small { color: var(--tt-accent-strong); }
+
+/* 12b.6 Nota do carrossel e legenda do telefone. */
+.tt-home .tt-carousel-note,
+.tt-home .tt-carousel-note span { color: var(--tt-muted); }
+.tt-home .tt-phone > div > span { color: var(--tt-muted); }
+
+/* 12b.7 Texto de interface dentro dos mockups (ilustrativos, 7–16px). */
+.tt-home .tt-catalog-mockup small,
+.tt-home .tt-kit-top i,
+.tt-home .tt-kit-scenes span b,
+.tt-home .tt-kit-bottom > span,
+.tt-home .tt-mini-document i { color: var(--tt-muted); }
+
+/* ---------------------------------------------------------------------------
+   13. Foco visível único e visível em toda a landing
+   ------------------------------------------------------------------------ */
+.tt-home :is(a, button, input, summary):focus-visible {
+  outline: 3px solid var(--tt-accent-strong);
+  outline-offset: 3px;
+}
+
+/* ---------------------------------------------------------------------------
+   14. Responsivo
+   ------------------------------------------------------------------------ */
+@media (max-width: 980px) {
+  .tt-home h2,
+  .tt-home .tt-creator-reel h2,
+  .tt-home .tt-numbers-head h2,
+  .tt-home .tt-steps-head h2,
+  .tt-home .tt-final-card h2,
+  .tt-home .tt-kit-breakdown-head h2,
+  .tt-home .tt-faq-intro h2 { max-width: 20ch; }
+  .tt-home .tt-faq-shell .tt-faq-intro h2 { max-width: 20ch; }
+}
+
+@media (max-width: 720px) {
+  .tt-home .tt-section { padding: clamp(64px, 12vw, 90px) 0; }
+  .tt-home .tt-creator-reel,
+  .tt-home .tt-kit-breakdown,
+  .tt-home .tt-numbers { padding-top: clamp(64px, 12vw, 90px); }
+  .tt-home .tt-dark-section { padding: clamp(64px, 12vw, 90px) 0; }
+  .tt-home .tt-final { padding: clamp(32px, 7vw, 56px) 0 clamp(64px, 12vw, 90px); }
+
+  .tt-home h2,
+  .tt-home .tt-creator-reel h2,
+  .tt-home .tt-numbers-head h2,
+  .tt-home .tt-steps-head h2,
+  .tt-home .tt-final-card h2,
+  .tt-home .tt-kit-breakdown-head h2,
+  .tt-home .tt-faq-intro h2 {
+    max-width: none;
+    font-size: clamp(34px, 8.6vw, 46px);
+    line-height: 1.05;
+  }
+  .tt-home .tt-faq-shell .tt-faq-intro h2 {
+    max-width: none;
+    font-size: clamp(34px, 8.6vw, 46px);
+    line-height: 1.05;
+  }
+  .tt-home .tt-eyebrow { margin-bottom: 16px; font-size: 10px; }
+  .tt-home .tt-section-lead { margin: 14px 0 34px; font-size: 15px; }
+
+  .tt-home .tt-trust .tt-shell { flex-direction: column; align-items: flex-start; gap: 16px; }
+  .tt-home .tt-trust p { font-size: 14px; }
+  .tt-home .tt-trust-flow { width: 100%; justify-content: flex-start; gap: 8px; font-size: 11px; }
+  .tt-home .tt-trust-flow span { min-height: 34px; padding: 0 12px; }
+  .tt-home .tt-trust-flow i { font-size: 12px; }
+
+  .tt-home .tt-story { border-radius: 18px; }
+  .tt-home .tt-feature-main { border-radius: 18px; }
+  .tt-home .tt-final-card,
+  .tt-home .tt-dark-quote { border-radius: 18px; }
+  .tt-home .tt-kit-piece,
+  .tt-home .tt-feature-small,
+  .tt-home .tt-number-grid article,
+  .tt-home .tt-product-grid article,
+  .tt-home .tt-audience-grid article,
+  .tt-home .tt-faq-list details { border-radius: 14px; }
+
+  .tt-home .tt-steps > .tt-shell { gap: 36px; }
+  .tt-home .tt-steps-head { align-self: start; }
+  .tt-home .tt-steps-note { font-size: 15px; }
+  .tt-home .tt-steps-list article:hover { padding-left: 0; }
+
+  .tt-home .tt-feature-small { min-height: 190px; }
+  .tt-home .tt-product-grid { gap: 14px; }
+  .tt-home .tt-audience-grid { gap: 14px; }
+  .tt-home .tt-audience-grid article > div { padding: 20px; }
+  .tt-home .tt-audience-grid h3 { font-size: 18px; }
+  .tt-home .tt-dark-quote p { max-width: none; }
+  .tt-home .tt-number-grid { gap: 14px; }
+  .tt-home .tt-kit-breakdown-grid { gap: 12px; }
+  .tt-home .tt-final-card { padding: clamp(30px, 7vw, 44px); }
+  .tt-home .tt-final-card h2 { max-width: none; }
+  .tt-home .tt-footer-grid { gap: 30px; }
+  .tt-home .tt-footer-grid strong { font-size: 10px; margin-bottom: 10px; }
+  .tt-home .tt-footer-grid > div:not(:first-child) a,
+  .tt-home .tt-footer-grid > div:first-child p { font-size: 14px; }
+}
+
+@media (max-width: 410px) {
+  .tt-home .tt-trust-flow span:last-child { display: none; }
+  .tt-home .tt-trust-flow i:nth-last-child(2) { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tt-home .tt-product-grid article,
+  .tt-home .tt-audience-grid article,
+  .tt-home .tt-steps-list article,
+  .tt-home .tt-footer-grid a { transition: none !important; }
+  .tt-home .tt-product-grid article:hover,
+  .tt-home .tt-audience-grid article:hover { transform: none; }
+}

@@ -1,0 +1,242 @@
+/* A Hero preserva o desenho aprovado. Esta camada começa depois dela. */
+.tt-home .tt-rd-shell { width: min(1320px, calc(100% - 80px)); margin-inline: auto; }
+.tt-home :is(.tt-rd-opening, .tt-rd-kit, .tt-rd-products, .tt-rd-faq)[id] { scroll-margin-top: 130px; }
+.tt-home :is(.tt-rd-opening, .tt-rd-workflow, .tt-rd-kit, .tt-rd-products, .tt-rd-reel, .tt-rd-faq, .tt-rd-final) h2 {
+  max-width: none;
+  margin: 0;
+  font-size: clamp(46px, 5vw, 78px);
+  font-weight: 720;
+  line-height: 1.01;
+  letter-spacing: -.068em;
+  text-wrap: balance;
+}
+.tt-home :is(.tt-rd-opening, .tt-rd-workflow, .tt-rd-kit, .tt-rd-products, .tt-rd-reel, .tt-rd-faq, .tt-rd-final) h2 em {
+  color: #719c00;
+  font-family: var(--font-instrument-serif), Georgia, serif;
+  font-weight: 400;
+  letter-spacing: -.045em;
+}
+.tt-home .tt-rd-kicker { display: inline-flex; align-items: center; gap: 10px; margin-bottom: 24px; font-size: 12px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
+.tt-home .tt-rd-kicker::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: #9dce0b; }
+.tt-home .tt-rd-text-link { display: inline-flex; align-items: center; gap: 40px; width: fit-content; padding: 0 0 9px; border-bottom: 1px solid currentColor; color: #20271b; font-size: 16px; font-weight: 800; }
+.tt-home .tt-rd-text-link:hover { color: #527300; }
+.tt-home .tt-rd-text-link span { font-size: 23px; line-height: .8; transition: transform .25s ease; }
+.tt-home .tt-rd-text-link:hover span { transform: translate(9px, -3px); }
+.tt-home .tt-rd-button { display: inline-flex; align-items: center; justify-content: space-between; gap: 30px; min-width: 220px; min-height: 62px; padding: 0 25px; border-radius: 999px; font-size: 15px; font-weight: 800; white-space: nowrap; transition: transform .22s ease; }
+.tt-home .tt-rd-button:hover { transform: translateY(-3px); }
+.tt-home .tt-rd-button:active { transform: translateY(1px); }
+.tt-home .tt-rd-button span { font-size: 23px; font-weight: 400; }
+.tt-home .tt-rd-button-lime { background: #c8ff2e; color: #151a0e; }
+.tt-home .tt-rd-button-lime:hover { background: #ddff75; }
+.tt-home .tt-rd-button-dark { background: #141714; color: #fff; }
+.tt-home .tt-rd-button-dark:hover { background: #333b2a; }
+
+/* 01 — A pergunta que a ferramenta resolve. */
+.tt-home .tt-rd-opening { padding: clamp(112px, 10vw, 170px) 0 clamp(120px, 11vw, 185px); background: #fff; }
+.tt-home .tt-rd-opening-grid { display: grid; grid-template-columns: minmax(0, 1.08fr) minmax(0, .92fr); gap: clamp(48px, 7vw, 120px); align-items: center; }
+.tt-home .tt-rd-opening-copy h2 { max-width: 11.5ch; }
+.tt-home .tt-rd-opening-copy > p { max-width: 49ch; margin: 35px 0 39px; color: #586151; font-size: 19px; line-height: 1.58; }
+.tt-home .tt-rd-opening-art { position: relative; min-height: 610px; }
+.tt-home .tt-rd-question { position: absolute; top: 0; right: 9%; left: 0; min-height: 390px; padding: 42px 44px; overflow: hidden; border-radius: 26px; background: #171a16; color: #fff; transform: rotate(-3deg); }
+.tt-home .tt-rd-question::after { content: "?"; position: absolute; right: -25px; bottom: -120px; color: #ffffff0d; font-size: 410px; font-weight: 700; line-height: 1; }
+.tt-home .tt-rd-question > span, .tt-home .tt-rd-answer > span { font-size: 11px; font-weight: 800; letter-spacing: .17em; }
+.tt-home .tt-rd-question > span { color: #bde875; }
+.tt-home .tt-rd-question p { position: relative; z-index: 1; max-width: 14ch; margin: 58px 0 0; font-size: clamp(29px, 3vw, 45px); font-weight: 630; line-height: 1.13; letter-spacing: -.055em; }
+.tt-home .tt-rd-question p em { color: #c8ff2e; font-weight: 400; }
+.tt-home .tt-rd-question-line { position: absolute; right: 55px; bottom: 36px; width: 65px; height: 65px; border-right: 2px solid #c8ff2e; border-bottom: 2px solid #c8ff2e; transform: rotate(45deg); }
+.tt-home .tt-rd-answer { position: absolute; right: 0; bottom: 0; left: 11%; display: flex; flex-direction: column; min-height: 275px; padding: 35px 42px; border: 5px solid #fff; border-radius: 25px; background: #c8ff2e; color: #151a0d; box-shadow: 0 24px 60px #52682f26; transform: rotate(3deg); }
+.tt-home .tt-rd-answer strong { max-width: 16ch; margin-top: 38px; font-size: clamp(26px, 2.5vw, 39px); font-weight: 750; line-height: 1.1; letter-spacing: -.06em; }
+.tt-home .tt-rd-answer strong i { font-style: normal; font-weight: 400; }
+.tt-home .tt-rd-rec { align-self: flex-end; display: inline-flex; align-items: center; gap: 8px; margin-top: auto; font-size: 12px; font-weight: 800; letter-spacing: .1em; }
+.tt-home .tt-rd-rec b { width: 10px; height: 10px; border-radius: 50%; background: #141714; }
+
+/* 02 — Etapas como linhas editoriais, cada uma com uma forma visual própria. */
+.tt-home .tt-rd-workflow { padding: clamp(100px, 10vw, 160px) 0; background: #f5f7f1; }
+.tt-home .tt-rd-section-heading { margin-bottom: 70px; }
+.tt-home .tt-rd-section-heading h2 { max-width: 11ch; }
+.tt-home .tt-rd-workflow-list { border-top: 1px solid #cbd2c2; }
+.tt-home .tt-rd-workflow-step { display: grid; grid-template-columns: 150px minmax(0, 1fr) 335px; align-items: center; gap: clamp(25px, 3.8vw, 68px); min-height: 280px; padding: 35px 0; border-bottom: 1px solid #cbd2c2; }
+.tt-home .tt-rd-step-index { align-self: start; padding-top: 16px; color: #4f7300; font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; }
+.tt-home .tt-rd-workflow-step h3 { max-width: 13ch; margin: 0 0 14px; font-size: clamp(30px, 3.2vw, 46px); font-weight: 680; line-height: 1.09; letter-spacing: -.06em; }
+.tt-home .tt-rd-workflow-step p { max-width: 37ch; margin: 0; color: #596353; font-size: 16px; line-height: 1.55; }
+.tt-home .tt-rd-step-visual { position: relative; display: flex; flex-direction: column; justify-content: space-between; min-height: 200px; padding: 24px; border-radius: 17px; overflow: hidden; }
+.tt-home .tt-rd-step-visual > span { position: relative; z-index: 1; font-size: 10px; font-weight: 800; letter-spacing: .14em; }
+.tt-home .tt-rd-step-visual > b { position: relative; z-index: 1; max-width: 11ch; font-size: 26px; font-weight: 750; line-height: 1.08; letter-spacing: -.05em; }
+.tt-home .tt-rd-step-product { background: #e9f2ce; }
+.tt-home .tt-rd-step-product::before { content: ""; position: absolute; right: -18px; bottom: -85px; width: 190px; height: 225px; border: 14px solid #eeaab1; border-radius: 55px 55px 30px 30px; background: #f7bdc0; transform: rotate(-13deg); box-shadow: inset 0 8px 0 #f9d2d5; }
+.tt-home .tt-rd-step-product::after { content: ""; position: absolute; right: 122px; bottom: 28px; width: 50px; height: 78px; border: 11px solid #eeaab1; border-left: 0; border-radius: 0 35px 35px 0; transform: rotate(-13deg); }
+.tt-home .tt-rd-step-product > i { position: relative; z-index: 1; align-self: flex-start; font-size: 19px; font-style: normal; }
+.tt-home .tt-rd-step-script { background: #fff; box-shadow: 0 12px 25px #68775a12; }
+.tt-home .tt-rd-step-script::after { content: ""; position: absolute; right: -60px; bottom: -100px; width: 250px; height: 250px; border: 2px solid #c8ff2e; border-radius: 50%; }
+.tt-home .tt-rd-step-script > b { max-width: 15ch; font-size: 24px; }
+.tt-home .tt-rd-step-script > small { position: relative; z-index: 1; color: #607550; font-size: 10px; font-weight: 700; }
+.tt-home .tt-rd-step-video { background: #1c2219; color: #fff; }
+.tt-home .tt-rd-step-video::after { content: ""; position: absolute; top: 20px; right: 20px; width: 90px; height: 150px; border: 5px solid #c8ff2e; border-radius: 16px; transform: rotate(8deg); }
+.tt-home .tt-rd-step-video > span { color: #c8ff2e; }
+.tt-home .tt-rd-step-video > b { display: flex; align-items: center; gap: 9px; max-width: none; font-size: 22px; }
+.tt-home .tt-rd-step-video > b i { width: 10px; height: 10px; border-radius: 50%; background: #c8ff2e; }
+.tt-home .tt-rd-step-video > small { color: #ccd3c5; font-size: 11px; }
+
+/* 03 — O plano em detalhe. */
+.tt-home .tt-rd-kit { padding: clamp(110px, 10vw, 160px) 0; background: #141713; color: #fff; }
+.tt-home .tt-rd-kit .tt-rd-kicker { color: #c8ff2e; }
+.tt-home .tt-rd-kit .tt-rd-kicker::before { background: #c8ff2e; }
+.tt-home .tt-rd-kit h2 { max-width: 12ch; }
+.tt-home .tt-rd-kit h2 em { color: #c8ff2e; }
+.tt-home .tt-rd-kit-top { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(250px, .55fr); align-items: end; gap: 70px; margin-bottom: 65px; }
+.tt-home .tt-rd-kit-top > p { max-width: 36ch; margin: 0 0 8px; color: #bdc4b8; font-size: 17px; line-height: 1.6; }
+.tt-home .tt-rd-kit-layout { display: grid; grid-template-columns: minmax(0, 1.03fr) minmax(0, .97fr); gap: clamp(50px, 7vw, 110px); align-items: center; }
+.tt-home .tt-rd-kit-sheet { padding: 38px; border-radius: 23px; background: #f7f9f2; color: #151a12; transform: rotate(-2deg); box-shadow: 25px 28px 0 #c8ff2e; }
+.tt-home .tt-rd-kit-sheet-head { display: flex; justify-content: space-between; gap: 20px; padding-bottom: 23px; border-bottom: 1px solid #d6dfcf; font-size: 10px; font-weight: 800; letter-spacing: .12em; }
+.tt-home .tt-rd-kit-sheet h3 { margin: 32px 0; font-size: clamp(35px, 3.6vw, 55px); font-weight: 730; line-height: 1.02; letter-spacing: -.07em; }
+.tt-home .tt-rd-kit-sheet h3 em { color: #699500; font-weight: 400; }
+.tt-home .tt-rd-kit-hook { padding: 25px 28px; border-radius: 13px; background: #e4f8ae; }
+.tt-home .tt-rd-kit-hook small { font-size: 10px; font-weight: 800; letter-spacing: .13em; }
+.tt-home .tt-rd-kit-hook p { max-width: 27ch; margin: 14px 0 0; font-size: clamp(20px, 2vw, 29px); font-weight: 730; line-height: 1.17; letter-spacing: -.05em; }
+.tt-home .tt-rd-kit-scenes { display: grid; gap: 0; margin-top: 23px; }
+.tt-home .tt-rd-kit-scenes span { display: flex; align-items: center; gap: 18px; padding: 13px 0; border-bottom: 1px solid #d9e0d2; font-size: 14px; font-weight: 690; }
+.tt-home .tt-rd-kit-scenes span b { color: #4f7300; font-size: 11px; }
+.tt-home .tt-rd-kit-sheet-foot { display: flex; justify-content: space-between; gap: 12px; margin-top: 24px; font-size: 10px; font-weight: 780; letter-spacing: .06em; }
+.tt-home .tt-rd-kit-sheet-foot b { color: #577a00; }
+.tt-home .tt-rd-kit-parts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 30px; }
+.tt-home .tt-rd-kit-parts > div { display: grid; grid-template-columns: 30px 1fr; gap: 11px; min-height: 112px; padding: 17px 0; border-top: 1px solid #ffffff30; }
+.tt-home .tt-rd-kit-parts > div > span { padding-top: 3px; color: #c8ff2e; font-size: 11px; font-weight: 800; }
+.tt-home .tt-rd-kit-parts strong { font-size: 17px; font-weight: 720; }
+.tt-home .tt-rd-kit-parts p { margin: 7px 0 0; color: #bdc4b8; font-size: 13px; line-height: 1.45; }
+.tt-home .tt-rd-kit > .tt-rd-shell > .tt-rd-button { margin-top: 70px; }
+
+/* 04 — Produto como fotografia e lista, sem grade de cartões repetidos. */
+.tt-home .tt-rd-products { padding: clamp(112px, 10vw, 170px) 0; background: #fff; }
+.tt-home .tt-rd-products-head { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(240px, .55fr); gap: 60px; align-items: end; margin-bottom: 55px; }
+.tt-home .tt-rd-products-head h2 { max-width: 13ch; }
+.tt-home .tt-rd-products-head > p { max-width: 36ch; margin: 0 0 7px; color: #5b6556; font-size: 17px; line-height: 1.6; }
+.tt-home .tt-rd-product-photo { position: relative; width: 100%; height: clamp(420px, 47vw, 650px); margin: 0; overflow: hidden; border-radius: 26px; background: #f4f3e9; }
+.tt-home .tt-rd-product-photo img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: center; }
+.tt-home .tt-rd-product-photo figcaption { position: absolute; right: 22px; bottom: 22px; padding: 12px 16px; border-radius: 999px; background: #ffffffed; color: #242820; font-size: 12px; font-weight: 750; }
+.tt-home .tt-rd-example-list { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); margin: 36px 0 38px; border-top: 1px solid #d7dfcf; border-bottom: 1px solid #d7dfcf; }
+.tt-home .tt-rd-example-list article { display: grid; grid-template-columns: 32px 1fr; gap: 12px; align-items: start; min-height: 178px; padding: 27px 18px 24px 0; }
+.tt-home .tt-rd-example-list article + article { padding-left: 23px; border-left: 1px solid #d7dfcf; }
+.tt-home .tt-rd-example-list article > span:first-child { padding-top: 3px; color: #4f7300; font-size: 11px; font-weight: 800; }
+.tt-home .tt-rd-example-list article small { color: #667260; font-size: 12px; font-weight: 700; }
+.tt-home .tt-rd-example-list h3 { margin: 8px 0 14px; font-size: 26px; font-weight: 720; line-height: 1.1; letter-spacing: -.05em; }
+.tt-home .tt-rd-example-list p { grid-column: 2 / 3; margin: -10px 0 0; color: #5e6859; font-size: 14px; line-height: 1.5; }
+
+/* 05 — Pessoas reais com carrossel controlável. */
+.tt-home .tt-rd-reel { padding: clamp(110px, 10vw, 165px) 0; background: #eef4e1; text-align: left; }
+.tt-home .tt-rd-reel-head { display: flex; flex-direction: column; align-items: flex-start; margin-bottom: 38px; }
+.tt-home .tt-rd-reel h2 { max-width: 14ch; margin: 0; text-align: left; }
+.tt-home .tt-rd-reel-head > p { max-width: 55ch; margin: 25px 0 0; color: #566250; font-size: 17px; line-height: 1.58; }
+.tt-home .tt-rd-reel .tt-carousel-toolbar { margin-bottom: 18px; }
+.tt-home .tt-rd-reel .tt-reel-grid .tt-reel-card { border-radius: 18px; }
+
+/* 06 — Perguntas em linhas abertas. */
+.tt-home .tt-rd-faq { padding: clamp(112px, 10vw, 170px) 0; background: #fcfdf9; }
+.tt-home .tt-rd-faq-grid { display: grid; grid-template-columns: minmax(0, .75fr) minmax(0, 1.25fr); gap: clamp(60px, 8vw, 130px); align-items: start; }
+.tt-home .tt-rd-faq-intro { position: sticky; top: 150px; }
+.tt-home .tt-rd-faq h2 { max-width: 11ch; }
+.tt-home .tt-rd-faq-intro p { max-width: 36ch; margin: 25px 0 0; color: #5b6656; font-size: 17px; line-height: 1.6; }
+.tt-home .tt-rd-faq-list { border-top: 1px solid #cdd8c4; }
+.tt-home .tt-rd-faq-list details { border-bottom: 1px solid #cdd8c4; }
+.tt-home .tt-rd-faq-list summary { display: grid; grid-template-columns: 36px minmax(0, 1fr) 33px; align-items: center; gap: 20px; min-height: 94px; padding: 18px 0; list-style: none; cursor: pointer; }
+.tt-home .tt-rd-faq-list summary::-webkit-details-marker { display: none; }
+.tt-home .tt-rd-faq-list summary > span { color: #4f7300; font-size: 11px; font-weight: 800; }
+.tt-home .tt-rd-faq-list summary strong { font-size: 17px; font-weight: 690; line-height: 1.35; }
+.tt-home .tt-rd-faq-list summary i { display: grid; place-items: center; width: 33px; height: 33px; border-radius: 50%; background: #ecf2e6; font-size: 21px; font-style: normal; font-weight: 400; transition: transform .2s ease; }
+.tt-home .tt-rd-faq-list details[open] summary i { transform: rotate(45deg); background: #c8ff2e; }
+.tt-home .tt-rd-faq-list details > p { max-width: 61ch; margin: -4px 40px 25px 56px; color: #5b6656; font-size: 15px; line-height: 1.65; }
+
+/* 07 — Um fechamento direto e rodapé compacto. */
+.tt-home .tt-rd-final { position: relative; padding: clamp(110px, 11vw, 175px) 0; overflow: hidden; background: #c8ff2e; }
+.tt-home .tt-rd-final::after { content: ""; position: absolute; top: -240px; right: -180px; width: 650px; height: 650px; border: 2px solid #14171480; border-radius: 50%; transform: rotate(-20deg) scaleX(1.45); pointer-events: none; }
+.tt-home .tt-rd-final-inner { position: relative; z-index: 1; }
+.tt-home .tt-rd-final .tt-rd-kicker::before { background: #161a12; }
+.tt-home .tt-rd-final h2 { max-width: 14ch; font-size: clamp(52px, 6.4vw, 100px); }
+.tt-home .tt-rd-final h2 em { color: #24330d; }
+.tt-home .tt-rd-final p { margin: 28px 0 40px; font-size: 18px; line-height: 1.5; }
+.tt-home .tt-rd-footer { padding: 70px 0 27px; background: #151913; color: #fff; }
+.tt-home .tt-rd-footer-main { display: grid; grid-template-columns: 1.5fr 1fr .7fr; gap: 50px; }
+.tt-home .tt-rd-footer-logo { display: inline-flex; align-items: center; gap: 11px; font-size: 24px; font-weight: 800; letter-spacing: -.06em; }
+.tt-home .tt-rd-footer-logo > span { display: grid; place-items: center; width: 43px; height: 43px; border-radius: 10px; background: #c8ff2e; color: #111; font-size: 25px; }
+.tt-home .tt-rd-footer-main > div:first-child > p { margin: 24px 0 0; color: #aab5a3; font-size: 15px; line-height: 1.55; }
+.tt-home .tt-rd-footer nav, .tt-home .tt-rd-footer-legal { display: grid; align-content: start; gap: 14px; }
+.tt-home .tt-rd-footer :is(nav, .tt-rd-footer-legal) a { width: fit-content; color: #dce7d5; font-size: 14px; }
+.tt-home .tt-rd-footer :is(nav, .tt-rd-footer-legal) a:hover { color: #c8ff2e; }
+.tt-home .tt-rd-footer-bottom { display: flex; justify-content: space-between; gap: 20px; margin-top: 80px; padding-top: 22px; border-top: 1px solid #ffffff2a; color: #aab5a3; font-size: 12px; }
+.tt-home :is(.tt-rd-button, .tt-rd-text-link, .tt-rd-faq-list summary, .tt-rd-footer a):focus-visible { outline: 3px solid #486800; outline-offset: 4px; }
+.tt-home .tt-rd-kit :is(.tt-rd-button, .tt-rd-text-link):focus-visible, .tt-home .tt-rd-footer a:focus-visible { outline-color: #c8ff2e; }
+
+@media (max-width: 1050px) {
+  .tt-home .tt-rd-opening-grid { grid-template-columns: 1fr .9fr; gap: 45px; }
+  .tt-home .tt-rd-opening-art { min-height: 530px; }
+  .tt-home .tt-rd-question { min-height: 350px; }
+  .tt-home .tt-rd-answer { min-height: 240px; }
+  .tt-home .tt-rd-workflow-step { grid-template-columns: 115px minmax(0, 1fr) 270px; gap: 25px; }
+  .tt-home .tt-rd-kit-layout { gap: 55px; }
+  .tt-home .tt-rd-kit-sheet { padding: 29px; }
+}
+@media (max-width: 760px) {
+  .tt-home .tt-rd-shell { width: calc(100% - 40px); }
+  .tt-home :is(.tt-rd-opening, .tt-rd-workflow, .tt-rd-kit, .tt-rd-products, .tt-rd-reel, .tt-rd-faq, .tt-rd-final) h2 { font-size: clamp(42px, 10vw, 60px); }
+  .tt-home :is(.tt-rd-opening, .tt-rd-workflow, .tt-rd-kit, .tt-rd-products, .tt-rd-reel, .tt-rd-faq) { padding-block: 95px; }
+  .tt-home .tt-rd-opening-grid, .tt-home .tt-rd-kit-top, .tt-home .tt-rd-kit-layout, .tt-home .tt-rd-products-head, .tt-home .tt-rd-faq-grid { grid-template-columns: 1fr; }
+  .tt-home .tt-rd-opening-grid { gap: 55px; }
+  .tt-home .tt-rd-opening-copy h2 { max-width: 13ch; }
+  .tt-home .tt-rd-opening-copy > p { margin: 25px 0 30px; font-size: 16px; }
+  .tt-home .tt-rd-opening-art { min-height: 500px; }
+  .tt-home .tt-rd-question { right: 8%; min-height: 345px; padding: 29px; }
+  .tt-home .tt-rd-question p { margin-top: 54px; font-size: 34px; }
+  .tt-home .tt-rd-answer { left: 7%; min-height: 225px; padding: 25px; }
+  .tt-home .tt-rd-answer strong { font-size: 29px; }
+  .tt-home .tt-rd-section-heading { margin-bottom: 35px; }
+  .tt-home .tt-rd-workflow-step { grid-template-columns: 74px 1fr; min-height: 0; gap: 10px 15px; padding: 28px 0; }
+  .tt-home .tt-rd-step-index { padding-top: 7px; font-size: 11px; }
+  .tt-home .tt-rd-workflow-step h3 { font-size: 28px; }
+  .tt-home .tt-rd-workflow-step p { font-size: 15px; }
+  .tt-home .tt-rd-step-visual { grid-column: 2 / -1; width: 100%; min-height: 185px; margin-top: 20px; }
+  .tt-home .tt-rd-step-video::after { top: 25px; right: 15px; width: 48px; height: 120px; border-width: 4px; }
+  .tt-home .tt-rd-step-video > b { max-width: 170px; }
+  .tt-home .tt-rd-kit-top { gap: 25px; margin-bottom: 45px; }
+  .tt-home .tt-rd-kit-top > p, .tt-home .tt-rd-products-head > p { font-size: 16px; }
+  .tt-home .tt-rd-kit-layout { gap: 58px; }
+  .tt-home .tt-rd-kit-sheet { width: calc(100% - 18px); margin-left: 3px; box-shadow: 15px 17px 0 #c8ff2e; }
+  .tt-home .tt-rd-kit > .tt-rd-shell > .tt-rd-button { margin-top: 45px; }
+  .tt-home .tt-rd-products-head { gap: 22px; margin-bottom: 30px; }
+  .tt-home .tt-rd-product-photo { height: 390px; border-radius: 18px; }
+  .tt-home .tt-rd-product-photo img { object-position: 52% center; }
+  .tt-home .tt-rd-product-photo figcaption { right: 10px; bottom: 10px; padding: 8px 10px; font-size: 10px; }
+  .tt-home .tt-rd-example-list { grid-template-columns: 1fr; margin: 25px 0 30px; }
+  .tt-home .tt-rd-example-list article { min-height: 120px; padding: 22px 4px; }
+  .tt-home .tt-rd-example-list article + article { padding-left: 4px; border-top: 1px solid #d7dfcf; border-left: 0; }
+  .tt-home .tt-rd-example-list h3 { margin-bottom: 10px; font-size: 23px; }
+  .tt-home .tt-rd-reel h2 { margin: 0; }
+  .tt-home .tt-rd-reel-head > p { font-size: 16px; }
+  .tt-home .tt-rd-faq-grid { gap: 40px; }
+  .tt-home .tt-rd-faq-intro { position: static; }
+  .tt-home .tt-rd-final { padding-block: 105px; }
+  .tt-home .tt-rd-final h2 { font-size: clamp(48px, 11vw, 68px); }
+  .tt-home .tt-rd-final::after { right: -300px; opacity: .5; }
+  .tt-home .tt-rd-footer-main { grid-template-columns: 1fr 1fr; gap: 40px 25px; }
+  .tt-home .tt-rd-footer-main > div:first-child { grid-column: 1 / -1; }
+  .tt-home .tt-rd-footer-bottom { margin-top: 55px; }
+}
+@media (max-width: 390px) {
+  .tt-home .tt-rd-shell { width: calc(100% - 34px); }
+  .tt-home .tt-rd-opening-art { min-height: 460px; }
+  .tt-home .tt-rd-question { min-height: 320px; }
+  .tt-home .tt-rd-answer { min-height: 205px; }
+  .tt-home .tt-rd-answer strong { font-size: 24px; }
+  .tt-home .tt-rd-kit-parts { grid-template-columns: 1fr; }
+  .tt-home .tt-rd-kit-parts > div { min-height: 78px; }
+  .tt-home .tt-rd-kit-sheet { padding: 20px; }
+  .tt-home .tt-rd-kit-sheet-head { font-size: 8px; }
+  .tt-home .tt-rd-kit-sheet-foot { font-size: 8px; }
+  .tt-home .tt-rd-product-photo { height: 330px; }
+  .tt-home .tt-rd-faq-list summary { grid-template-columns: 23px minmax(0, 1fr) 31px; gap: 11px; min-height: 82px; }
+  .tt-home .tt-rd-faq-list summary strong { font-size: 15px; }
+  .tt-home .tt-rd-faq-list details > p { margin-left: 34px; }
+  .tt-home .tt-rd-footer-main { grid-template-columns: 1fr; }
+  .tt-home .tt-rd-footer-main > div:first-child { grid-column: auto; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tt-home :is(.tt-rd-button, .tt-rd-text-link span, .tt-rd-faq-list summary i) { transition: none; }
+}

@@ -114,7 +114,7 @@ export default function CreatorCarousel({ videos }: { videos: ReelVideo[] }) {
       }}
     >
       <div className="tt-carousel-toolbar">
-        <p>Gente real gravando. Sem estúdio, sem equipe, sem desculpa.</p>
+        <p>Referências de gravação com celular para adaptar ao seu jeito.</p>
         <div className="tt-carousel-controls" aria-label="Controles do carrossel">
           <button type="button" onClick={() => { markInteraction(); move(-1); }} disabled={!canPrev} aria-label="Ver vídeos anteriores">←</button>
           <button type="button" onClick={() => { markInteraction(); move(1); }} disabled={!canNext} aria-label="Ver próximos vídeos">→</button>

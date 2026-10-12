@@ -17,6 +17,8 @@ import "../styles/guided-kit.css";
 import "../styles/ux-overhaul.css";
 import "../styles/document-pages.css";
 import "../styles/landing-reference.css";
+import "../styles/landing-refine.css";
+import "../styles/landing-rebuild.css";
 
 const manrope = Manrope({
   subsets: ["latin"],
