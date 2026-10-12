@@ -10,6 +10,10 @@ export function displayProductName(product: { nome?: string | null } | null): st
   return short.slice(0, 67).trim() + "…";
 }
 
+export function fullProductName(product: { nome?: string | null } | null): string {
+  return String(product?.nome ?? "Produto").trim() || "Produto";
+}
+
 export function formatUpdated(value: string | null | undefined): string {
   if (!value) return "";
   return new Intl.DateTimeFormat("pt-BR", {

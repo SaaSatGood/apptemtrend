@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { parseAndConstrainDecision } from '../src/modules/assistant/gemini.service.js';
 import {
+  buildFallbackKit,
   isContentKitNovel,
   isProductNovel,
   missingStrategySections,
@@ -9,6 +10,22 @@ import {
 } from '../src/modules/assistant/gemini-generation.service.js';
 
 describe('Gemini assistant guardrails', () => {
+  it('builds concrete fallback scenes for the main product categories', () => {
+    for (const [categoria, nome, expected] of ([
+      ['Joias e acessórios', 'Kit 4 Pulseiras folheadas em em prata', /luz natural/],
+      ['Beleza', 'Creme de cabelo', /embalagem/],
+      ['Casa', 'Organizador de cozinha', /espaço/],
+      ['Academia', 'Faixa de treino', /treino/],
+      ['Eletrônicos', 'Luminária portátil', /mesa/],
+    ] as Array<[string, string, RegExp]>)) {
+      const kit = buildFallbackKit({ categoria, nome });
+      expect(kit.cenas).toHaveLength(5);
+      expect(kit.cenas[0].visual).toMatch(expected);
+      expect(kit.cenas.map((scene) => scene.visual).join(' ')).not.toMatch(/Problema do dia a dia|em em/i);
+      expect(kit.roteiro).toMatch(/5 VARIAÇÕES DE ROTEIRO/);
+      expect(kit.cenas[4].fala).toMatch(/^Confira .+ no TikTok Shop\.$/);
+    }
+  });
   it('keeps only product IDs present in the server catalog', () => {
     const decision = parseAndConstrainDecision(JSON.stringify({
       in_scope: true,
@@ -105,7 +122,7 @@ describe('Gemini assistant guardrails', () => {
         cenas: [
           { numero: 1, tempo: '0–3s', visual: 'Gaveta bagunçada', fala: 'Olha como estava antes.', acao_edicao: 'Corte rápido' },
           { numero: 2, tempo: '3–7s', visual: 'Detalhe da bagunça', fala: 'Nada ficava no lugar.', acao_edicao: 'Zoom suave' },
-          { numero: 3, tempo: '7–18s', visual: 'Instalação dos divisores', fala: 'É só ajustar e encaixar.', acao_edicao: 'Timelapse' },
+          { numero: 3, tempo: '7–18s', visual: 'Divisores em em uso', fala: 'É só ajustar e encaixar.', acao_edicao: 'Timelapse' },
           { numero: 4, tempo: '18–25s', visual: 'Resultado final', fala: 'Agora cada item tem seu lugar.', acao_edicao: 'Antes e depois' },
           { numero: 5, tempo: '25–30s', visual: 'Gaveta organizada', fala: 'Você usaria isso?', acao_edicao: 'Texto na tela' },
         ],
@@ -120,6 +137,7 @@ describe('Gemini assistant guardrails', () => {
     expect(generated.content_kit.hashtags).toEqual(['#organizacao', '#CasaOrganizada', '#achadinhos', '#publi', '#tiktokshop']);
     expect(generated.content_kit.cta).toBe('Confira o produto no TikTok Shop.');
     expect(generated.content_kit.cenas).toHaveLength(5);
+    expect(generated.content_kit.cenas[2].visual).toBe('Divisores em uso');
   });
 
   it('rejects products and content kits that repeat previous work', () => {

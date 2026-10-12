@@ -1,0 +1,145 @@
+/* Product journey refinements. All accents use the existing TemTrend lime. */
+#app-view .product-image-fallback { display: grid; place-items: center; width: 100%; height: 100%; min-height: 64px; background: #eaf5cc; color: #23340f; border-radius: inherit; }
+#app-view .product-image-fallback span { display: grid; place-items: center; width: 64px; height: 64px; border-radius: 18px; background: var(--tt-lime); color: #18200e; font-size: 35px; font-weight: 900; }
+#app-view .opportunity-card .product-image-fallback { aspect-ratio: 1.2; }
+#app-view .opportunity-card .product-image-fallback span { width: 72px; height: 72px; }
+#app-view .assistant-response { scroll-margin-top: 90px; }
+#app-view .discovery-workspace.is-compact .discovery-hero { padding: 20px 0 25px; }
+#app-view .discovery-workspace.is-compact .discover-intro { margin-bottom: 16px; }
+#app-view .discovery-workspace.is-compact .discover-intro h1 { font-size: clamp(32px, 4vw, 48px); margin-bottom: 7px; }
+#app-view .discovery-workspace.is-compact .discover-intro > p:last-child { font-size: 13px; line-height: 1.5; }
+#app-view .discovery-workspace.is-compact .assistant-form { max-width: 960px; }
+#app-view .assistant-input-row { grid-template-columns: minmax(0, 1fr) auto auto; }
+#app-view .assistant-input-row .discovery-surprise { display: inline-flex; align-items: center; justify-content: center; margin: 0; padding: 10px 17px; border-radius: 999px; white-space: nowrap; font-size: 12px; }
+#app-view .assistant-shortcut-groups { display: flex; justify-content: center; align-items: center; flex-wrap: wrap; gap: 10px 24px; margin-top: 13px; }
+#app-view .assistant-shortcut-groups :is(.assistant-interest-shortcuts,.assistant-examples) { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 7px; width: auto; max-width: 100%; margin: 0; overflow: visible; }
+#app-view .assistant-shortcut-groups :is(.assistant-interest-shortcuts,.assistant-examples) > span { display: inline; color: #4c5546; font-size: 11px; font-weight: 800; }
+#app-view .assistant-shortcut-groups button { min-height: 44px; padding: 9px 12px; }
+#app-view .search-shortcut { cursor: help; }
+#app-view .discovery-note, #app-view .discover-intro > p:last-child, #app-view .discover-results-heading small { color: #4d5548; }
+#app-view :is(.muted,.detail-breadcrumb,.detail-breadcrumb a,.product-detail-metrics span,.kit-card p,.production-kit-name,.product-category) { color: #4b5547; }
+#app-view .resume-section { margin: 18px 0 0; }
+#app-view .resume-section .section-heading { margin-bottom: 13px; }
+#app-view .resume-section .section-heading { flex-direction: row; align-items: center; }
+#app-view .resume-section .section-heading h2 { font-size: clamp(23px, 2.4vw, 30px); }
+#app-view .resume-card { display: grid; grid-template-columns: 72px minmax(0, 1fr); gap: 12px; padding: 13px; align-items: center; }
+#app-view .resume-image { width: 72px; height: 72px; border-radius: 12px; overflow: hidden; }
+#app-view .resume-image img { width: 100%; height: 100%; object-fit: cover; }
+#app-view .resume-image .product-image-fallback span { width: 42px; height: 42px; font-size: 24px; border-radius: 12px; }
+#app-view .resume-content { display: grid; min-width: 0; gap: 5px; }
+#app-view .resume-content strong { display: -webkit-box; overflow: hidden; -webkit-line-clamp: 2; -webkit-box-orient: vertical; font-size: 12px; line-height: 1.35; }
+#app-view .resume-content small { color: #39482f; font-size: 11px; font-weight: 800; }
+#app-view .resume-progress { height: 4px; border-radius: 99px; background: #e3e8da; overflow: hidden; }
+#app-view .resume-progress span { display: block; height: 100%; background: #8bb91d; }
+#app-view .opportunity-metrics { grid-template-columns: repeat(3, minmax(0, 1fr)); row-gap: 13px; }
+#app-view .assistant-response .product-grid { display: flex; flex-wrap: wrap; justify-content: center; gap: 14px; }
+#app-view .assistant-response .product-grid > .opportunity-card { flex: 0 1 calc((100% - 28px) / 3); min-width: 0; }
+#app-view .assistant-response .product-grid > .skeleton-card { flex: 0 1 calc((100% - 28px) / 3); }
+#app-view .opportunity-metrics dt, #app-view .opportunity-metrics dd small { color: #4e5849; }
+#app-view .opportunity-sensitive { margin: 2px 0 12px; color: #4b3d20; font-size: 11px; font-weight: 700; line-height: 1.4; }
+#app-view .sensitive-filter { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; margin: 0 0 12px; color: #3c4538; font-size: 12px; font-weight: 750; cursor: pointer; }
+#app-view .sensitive-filter input { width: 18px; height: 18px; accent-color: #679000; }
+#app-view .opportunity-card.is-featured .open-product, #app-view .opportunity-card.is-featured:hover .open-product { background: #fff; border-color: #cbd7bf; }
+#app-view .opportunity-secondary-actions { grid-template-columns: .75fr 1.25fr; }
+#app-view .opportunity-secondary-actions button { min-height: 44px; color: #34422b; }
+#app-view .opportunity-secondary-actions .generate-script { border-color: #111; background: #111; color: #fff; }
+#app-view .opportunity-secondary-actions .generate-script:hover { background: #31382a; color: #fff; }
+#app-view .opportunity-card .open-product, #app-view .opportunity-card.is-featured .open-product { min-height: 44px; padding: 6px 0; border: 0; background: transparent; color: #34472b; justify-content: flex-start; }
+#app-view .opportunity-card .open-product:hover, #app-view .opportunity-card:hover .open-product { border: 0; background: transparent; color: #182715; text-decoration: underline; }
+#app-view .product-detail-hero > .product-image-fallback { min-height: 360px; border-radius: 16px; }
+#app-view .product-detail-copy h1 { display: block; overflow: visible; max-width: 100%; white-space: normal; text-overflow: clip; overflow-wrap: anywhere; font-size: clamp(26px, 3vw, 40px); line-height: 1.12; }
+#app-view .product-detail-copy h1.is-long-title { font-size: clamp(23px, 2.35vw, 31px); }
+#app-view .product-saved-badge { background: #f1fbdc; color: #30480e; }
+#app-view .product-detail-primary { display: flex; gap: 8px; }
+#app-view .product-detail-primary > * { width: auto; flex: 1 1 auto; }
+#app-view .product-detail-primary > :last-child:nth-child(3) { grid-column: auto; }
+#app-view .kits-section { margin-top: 36px; padding-top: 26px; }
+#app-view .kits-section-heading h2 { font-size: clamp(24px, 2.7vw, 34px); }
+#app-view .kits-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+#app-view .kits-grid:has(> :only-child) { grid-template-columns: 1fr; }
+#app-view .kit-card { min-width: 0; }
+#app-view .kit-card h3 { overflow-wrap: anywhere; }
+#app-view .kit-card-status { width: fit-content; padding: 5px 9px; border-radius: 999px; background: #f1fbdc; color: #30480e; font-size: 11px; font-weight: 800; }
+#app-view .kit-empty-preview { grid-column: 1 / -1; display: flex; align-items: center; flex-wrap: wrap; gap: 10px; padding: 17px 20px; border: 1px solid #e0e5d7; border-radius: 16px; background: #fff; }
+#app-view .kit-empty-preview strong { margin-right: 5px; font-size: 13px; }
+#app-view .kit-empty-preview div { display: flex; flex-wrap: wrap; gap: 6px; }
+#app-view .kit-empty-preview span { padding: 7px 10px; border-radius: 999px; background: #f3f8e9; color: #334626; font-size: 11px; font-weight: 750; }
+#app-view .kit-focus-view .journey-steps { margin: 0 0 18px; padding: 10px 0; }
+#app-view .kit-focus-view .content-kit-header { margin-bottom: 12px; }
+#app-view .kit-focus-view .content-kit-header h1 { overflow-wrap: anywhere; }
+#app-view .recording-guide-stage { min-height: 0; }
+#app-view .recording-guide-grid { align-items: start; }
+#app-view .recording-guide-stage-top > div:first-child { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+#app-view .recording-guide-image { width: 64px; height: 64px; flex: 0 0 64px; border-radius: 12px; }
+#app-view .recording-guide-image .product-image-fallback span { width: 38px; height: 38px; border-radius: 9px; font-size: 22px; }
+#app-view .recording-guide-choices, #app-view .recording-guide-steps { max-height: none; overflow: visible; }
+#app-view .recording-guide-choices button { min-height: 44px; }
+#app-view .recording-guide-steps button { min-height: 49px; }
+#app-view .recording-guide-step-copy strong { white-space: normal; text-overflow: clip; overflow: visible; font-size: 11px; line-height: 1.35; }
+#app-view .recording-guide-step-copy small, #app-view .recording-guide-progress-heading span { color: #4e5849; }
+#app-view .recording-guide-controls { margin-top: 8px; padding-top: 9px; }
+#app-view .recording-guide-copy { display: inline-flex; align-items: center; min-height: 44px; margin-top: 10px; color: #365509; }
+#app-view .recording-guide-scene-check { display: flex; align-items: center; gap: 10px; min-height: 48px; margin-top: 16px; padding: 10px 12px; border: 1px solid #d3e1bf; border-radius: 11px; background: #f5faed; color: #2d401d; font-size: 12px; font-weight: 800; cursor: pointer; }
+#app-view .recording-guide-scene-check input { width: 20px; height: 20px; accent-color: #6b9900; }
+#app-view .recording-guide-field-copy { min-height: 44px; padding: 5px 0; border: 0; background: none; color: #365509; font-size: 11px; font-weight: 800; cursor: pointer; }
+#app-view .recording-guide-mobile-select { display: none; }
+#app-view .recording-guide-support { position: sticky; bottom: 10px; z-index: 5; padding: 10px; border: 1px solid #e2e8d8; border-radius: 16px; background: #ffffffee; backdrop-filter: blur(12px); }
+#app-view .recording-guide-support > * { min-height: 44px; color: #34432a; }
+#app-view .recording-guide-more-content p, #app-view .recording-guide-instruction > p, #app-view .recording-guide-heading p:last-child { color: #465141; }
+#app-view .recording-guide-counter small, #app-view .recording-guide-product span, #app-view .recording-guide-step-copy small { color: #485342; }
+#app-view .recording-guide-variants span { color: #405d1f; }
+#app-view .production-toolbar { align-items: start; flex-direction: column; gap: 12px; }
+#app-view .production-controls { width: 100%; align-items: center; }
+#app-view .production-sort { display: block; }
+#app-view .production-sort select { min-width: 210px; text-transform: none; }
+#app-view .production-filters { display: flex; flex-wrap: wrap; width: 100%; margin: 0; padding: 0; overflow: visible; }
+#app-view .production-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+#app-view .production-grid > .production-card:last-child:nth-child(odd) { grid-column: 1 / -1; }
+#app-view .production-loading-status { grid-column: 1 / -1; color: #455140; font-size: 13px; }
+#app-view .production-image-wrap .product-image-fallback { min-height: 210px; }
+#app-view .production-card .production-image-wrap img { object-fit: contain; }
+#app-view .production-info h3 { overflow: hidden; white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; text-overflow: clip; overflow-wrap: anywhere; }
+#app-view .production-next-hint, #app-view .production-card-topline > small { color: #4b5547; }
+#app-view .production-card-actions .production-copy-hook { flex: 0 0 44px; min-width: 44px; border: 1px solid #d9e0cf; background: #fff; font-size: 20px; }
+#app-view .production-card-actions .continue-production { border: 1px solid #111; background: #111; color: #fff; text-decoration: none; }
+#app-view .production-card-actions .continue-production:hover { background: #30382a; color: #fff; }
+@media (max-width: 900px) {
+  #app-view .assistant-response .product-grid > .opportunity-card { flex-basis: calc((100% - 14px) / 2); }
+  #app-view .assistant-response .product-grid > .skeleton-card { flex-basis: calc((100% - 14px) / 2); }
+  #app-view .production-grid { grid-template-columns: 1fr; }
+  #app-view .production-grid > .production-card:last-child:nth-child(odd) { grid-column: auto; }
+}
+@media (max-width: 760px) {
+  #app-view .assistant-response .product-grid > .opportunity-card { flex-basis: 100%; }
+  #app-view .assistant-response .product-grid > .skeleton-card { flex-basis: 100%; }
+  #app-view .assistant-input-row { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  #app-view .assistant-input-row input { grid-column: 1 / -1; }
+  #app-view .assistant-input-row .primary, #app-view .assistant-input-row .discovery-surprise { width: 100%; padding-inline: 9px; white-space: normal; }
+  #app-view .assistant-shortcut-groups { align-items: start; flex-direction: column; }
+  #app-view .assistant-shortcut-groups :is(.assistant-interest-shortcuts,.assistant-examples) { justify-content: start; }
+  #app-view .recording-guide-grid { display: block; }
+  #app-view .recording-guide-mobile-select { display: grid; gap: 5px; margin: 0 0 12px; color: #394832; font-size: 12px; font-weight: 800; }
+  #app-view .recording-guide-mobile-select select { width: 100%; min-height: 44px; padding: 9px 14px; border: 1px solid #d6dfcb; border-radius: 12px; background: #fff; color: #192218; }
+  #app-view .recording-guide-navigation { padding: 0; border: 0; background: transparent; }
+  #app-view .recording-guide-navigation :is(.recording-guide-progress-heading,.recording-guide-progress,.recording-guide-steps) { display: none; }
+  #app-view .recording-guide-controls { padding: 0; }
+  #app-view .recording-guide-choices > div { display: flex; align-items: center; }
+  #app-view .recording-guide-support { position: static; }
+  #app-view .product-detail-hero > .product-image-fallback { min-height: 240px; }
+  #app-view .product-detail-primary > * { width: 100%; }
+  #app-view .kits-grid { grid-template-columns: 1fr; }
+  #app-view .production-controls { flex-direction: row; }
+  #app-view .production-search { min-width: 0; }
+  #app-view .production-sort select { min-width: 0; width: 100%; }
+  #app-view .production-card-actions { flex-direction: row; }
+  #app-view .production-next-hint { display: block; }
+}
+@media (max-width: 500px) {
+  #app-view .product-detail-copy h1.is-long-title { font-size: 17px; line-height: 1.2; letter-spacing: -.045em; }
+  #app-view .production-controls { flex-direction: column; }
+  #app-view .production-search { width: 100%; max-width: none; }
+  #app-view .production-sort, #app-view .production-sort select { width: 100%; }
+  #app-view .recording-guide-support { gap: 4px; }
+  #app-view .recording-guide-support > * { padding-inline: 10px; }
+  #app-view .recording-guide-choices > div { display: block; }
+}

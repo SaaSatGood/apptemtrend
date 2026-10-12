@@ -117,14 +117,33 @@ function normalizeCta(cta: string) {
     : cta;
 }
 
+function cleanRepeatedWords(value: string) {
+  return value.replace(/\b([\p{L}\p{N}]+)(?:\s+\1\b)+/giu, '$1').replace(/\s+/g, ' ').trim();
+}
+
 export function parseGeneratedPackage(text: string) {
   const generated = generatedPackageSchema.parse(JSON.parse(text));
+  const vagueVisual = /^(?:problema do dia a dia(?: que o produto resolve)?|resultado final(?: após o uso)?|antes e depois|demonstração do produto|produto em close)$/i;
+  const vagueSpeech = /^(?:quem passa por isso vai entender|olha a diferença no resultado|você usaria(?: isso)?\??)$/i;
+  const needsSceneRepair = generated.content_kit.cenas.some((scene) => vagueVisual.test(scene.visual.trim()) || vagueSpeech.test(scene.fala.trim()));
+  const fallbackScenes = needsSceneRepair ? buildFallbackKit(generated.product).cenas : null;
   return {
     ...generated,
     content_kit: {
       ...generated.content_kit,
+      titulo: cleanRepeatedWords(generated.content_kit.titulo),
+      descricao: cleanRepeatedWords(generated.content_kit.descricao),
+      hook: cleanRepeatedWords(generated.content_kit.hook),
+      roteiro: cleanRepeatedWords(generated.content_kit.roteiro),
+      cenas: generated.content_kit.cenas.map((scene, index) => ({
+        ...scene,
+        visual: cleanRepeatedWords(vagueVisual.test(scene.visual.trim()) ? fallbackScenes?.[index % fallbackScenes.length]?.visual || scene.visual : scene.visual),
+        fala: cleanRepeatedWords(vagueSpeech.test(scene.fala.trim()) ? fallbackScenes?.[index % fallbackScenes.length]?.fala || scene.fala : index === generated.content_kit.cenas.length - 1 ? normalizeCta(scene.fala) : scene.fala),
+        acao_edicao: cleanRepeatedWords(scene.acao_edicao),
+      })),
+      copy: cleanRepeatedWords(generated.content_kit.copy),
       hashtags: normalizeHashtags(generated.content_kit.hashtags),
-      cta: normalizeCta(generated.content_kit.cta),
+      cta: normalizeCta(cleanRepeatedWords(generated.content_kit.cta)),
     },
   };
 }
@@ -176,7 +195,7 @@ export const CONTENT_STRATEGY_INSTRUCTIONS = [
   'EVIDÊNCIA: use só fatos do produto. Nunca invente marca, preço, vendas, comissão, desconto ou tendência.',
   'Sem evidência recente suficiente para classificar como tendência atual: trate internamente como EXPERIMENTAL/INSUFICIENTE. Não exponha esses rótulos. Nunca prometa venda/viralização/cura.',
   'descricao = 1 frase legível sobre o ângulo do vídeo. Sem campos Produto/Classificação/Evidência ou jargão interno. Cite público e vendas só quando sustentados pelo catálogo.',
-  'titulo máx 8 palavras (capa). Cenas: 0-3s hook (dor/desejo/curiosidade, sem saudação/produto), 3-7s problema, 7-18s uso, 18-25s prova honesta, 25-30s CTA. Cada cena: tempo, visual, fala, ação/edição.',
+  'titulo máx 8 palavras (capa). Cenas: joias close/luz/look/presente; beleza uso; casa organização; academia rotina; eletrônicos teste. Sem placeholders ou repetição. 0-3s hook, 3-7s contexto, 7-18s uso, 18-25s prova visual, 25-30s CTA. Cada cena: tempo, visual, fala, ação/edição.',
   'roteiro inclui: "3 VARIAÇÕES DE HOOK" com 3 frases numeradas; "VERSÃO SEM SEGUIDORES" (demonstração/teste/faceless); "DICA DE PUBLICAÇÃO" (horário, frequência, comentário fixado, sem garantia); "5 VARIAÇÕES DE ROTEIRO" com 5 ideias numeradas.',
   'Prova só com demonstração visual do produto; nunca peça print de avaliação/vendas. copy máx 150 chars, 1 emoji, 1 pergunta. Exatas 5 hashtags (#publi/#tiktokshop se divulgação). CTA direto no TikTok Shop, sem escassez ou estoque não verificados; nunca direct.',
   'TikTok: nunca cite botão, sticker, carrinho, recurso, interface ou link específico salvo se estiver no contexto. Prefira "conforme os recursos disponíveis no TikTok Shop".',
@@ -203,7 +222,7 @@ export const ROTEIRO_SKELETON_INSTRUCTIONS = [
   '3 VARIAÇÕES DE HOOK: 1) <curiosidade> 2) <identificação> 3) <resultado>.',
   'VERSÃO SEM SEGUIDORES: <como gravar sem audiência, ex. faceless/demonstração>.',
   'DICA DE PUBLICAÇÃO: <horário, frequência, áudio e comentário fixado, sem garantias>.',
-  '3 VARIAÇÕES DE ROTEIRO: A) <abordagem 1> B) <abordagem 2> C) <abordagem 3>.',
+  '5 VARIAÇÕES DE ROTEIRO: A) <abordagem 1> B) <abordagem 2> C) <abordagem 3> D) <abordagem 4> E) <abordagem 5>.',
 ].join(' ');
 
 // Validação tolerante: o modelo pode frasear os títulos de outro jeito
@@ -280,30 +299,76 @@ function previousKitsCompact(previousKits: Partial<ContentKit>[]) {
  * mesmo com a IA fora do ar; o creator pode gerar a versão IA depois.
  */
 export function buildFallbackKit(product: { nome: string; descricao?: string | null; categoria?: string | null }) {
-  const words = String(product.nome || '').trim().split(/\s+/).filter(Boolean).slice(0, 5);
+  const words = cleanRepeatedWords(String(product.nome || '')).split(/\s+/).filter(Boolean).slice(0, 4);
+  while (words.length && /^(de|do|da|dos|das|em|com|para)$/i.test(words.at(-1)!)) words.pop();
   const short = words.join(' ') || 'este produto';
+  const category = comparableText(`${product.categoria || ''} ${product.nome || ''}`);
+  const kind = /joia|colar|pulseira|brinco|anel|acessorio/.test(category) ? 'joias'
+    : /beleza|cosmet|maquiagem|skincare|cabelo|perfume/.test(category) ? 'beleza'
+      : /casa|cozinha|organiz|decor/.test(category) ? 'casa'
+        : /academia|fitness|esporte|treino/.test(category) ? 'academia'
+          : /eletron|tecnolog|gadget|fone|luminaria|carregador/.test(category) ? 'eletronicos' : 'geral';
+  const templates = {
+    joias: {
+      angle: 'Mostre os detalhes da peça e como ela aparece no look.',
+      hook: 'Olha como este detalhe muda o look.',
+      visuals: [`Aproxime ${short} da luz natural`, `Mostre ${short} ao lado de uma roupa básica`, `Coloque ${short} e mostre o caimento`, `Faça um close do acabamento de ${short}`, `Mostre o look completo com ${short}`],
+      lines: ['O detalhe aparece melhor assim.', 'Vamos ver como combina com uma peça básica.', 'Agora olha no corpo.', 'Aqui dá para ver o acabamento de perto.', 'Confira a peça no TikTok Shop.'],
+      angles: ['Close do acabamento sob luz natural', 'Uma peça com dois looks básicos', 'Ideia de presente com a peça em destaque', 'Como a peça aparece em movimento', 'Detalhes antes de escolher o acessório'],
+    },
+    beleza: {
+      angle: 'Mostre a embalagem, o uso e o resultado visível sem prometer efeito.',
+      hook: 'Quer ver este produto de perto?',
+      visuals: [`Mostre a embalagem de ${short}`, `Aproxime o rótulo de ${short} da câmera`, `Demonstre o modo de usar de ${short}`, `Mostre o aspecto após a demonstração`, `Enquadre ${short} ao lado do resultado`],
+      lines: ['Vou mostrar os detalhes.', 'Veja o que está na embalagem.', 'Olha como eu uso.', 'Este é o aspecto depois da demonstração.', 'Confira o produto no TikTok Shop.'],
+      angles: ['Demonstração do modo de usar', 'Detalhes da embalagem', 'Rotina curta com o produto', 'Close da textura quando aplicável', 'Primeiras impressões sem promessas'],
+    },
+    casa: {
+      angle: 'Mostre o produto no ambiente e demonstre o uso real.',
+      hook: 'Olha esta ideia para usar em casa.',
+      visuals: [`Mostre o espaço antes de colocar ${short}`, `Aproxime ${short} do local de uso`, `Demonstre ${short} em uso`, `Mostre o espaço com ${short} instalado`, `Enquadre o resultado e ${short}`],
+      lines: ['Este é o espaço antes.', 'Agora vou colocar o produto aqui.', 'Veja como fica durante o uso.', 'Assim ficou no ambiente.', 'Confira o produto no TikTok Shop.'],
+      angles: ['Antes e depois do espaço', 'Teste rápido de uso em casa', 'Detalhes do tamanho no ambiente', 'Um canto da casa em foco', 'Demonstração sem aparecer'],
+    },
+    academia: {
+      angle: 'Mostre o produto durante um uso real de treino, sem prometer resultados.',
+      hook: 'Olha este detalhe para a rotina de treino.',
+      visuals: [`Mostre ${short} antes do treino`, `Faça um close de ${short} nas mãos`, `Demonstre como preparar ${short} para uso`, `Mostre ${short} durante a rotina`, `Enquadre ${short} após a demonstração`],
+      lines: ['Vou mostrar o que trouxe para o treino.', 'Veja o produto de perto.', 'Assim eu preparo para usar.', 'Aqui está durante a rotina.', 'Confira o produto no TikTok Shop.'],
+      angles: ['O que levo para treinar', 'Preparação antes do treino', 'Detalhes do produto em close', 'Uso real em uma rotina curta', 'Demonstração sem mostrar o rosto'],
+    },
+    eletronicos: {
+      angle: 'Mostre os detalhes físicos e um teste simples do produto.',
+      hook: 'Olha este produto funcionando de perto.',
+      visuals: [`Mostre ${short} sobre uma mesa`, `Aproxime a câmera dos detalhes de ${short}`, `Mostre como ${short} é preparado para uso`, `Demonstre uma função visível de ${short}`, `Enquadre ${short} após o teste`],
+      lines: ['Vou mostrar o produto de perto.', 'Veja os detalhes do acabamento.', 'Assim fica pronto para usar.', 'Agora um teste simples.', 'Confira o produto no TikTok Shop.'],
+      angles: ['Teste de uma função visível', 'Detalhes do acabamento', 'Produto na mão para mostrar escala', 'Preparação para o primeiro uso', 'Demonstração em mesa'],
+    },
+    geral: {
+      angle: 'Mostre o produto de perto e demonstre seu uso sem inventar benefícios.',
+      hook: 'Olha este produto de perto.',
+      visuals: [`Mostre ${short} sobre uma superfície limpa`, `Aproxime a câmera de ${short}`, `Demonstre ${short} em uso`, `Mostre o detalhe mais visível de ${short}`, `Enquadre ${short} ao final da demonstração`],
+      lines: ['Vou mostrar o produto.', 'Veja os detalhes de perto.', 'Aqui está em uso.', 'Este é o resultado visual.', 'Confira o produto no TikTok Shop.'],
+      angles: ['Close do produto', 'Demonstração simples de uso', 'Produto em contexto real', 'Detalhes do acabamento', 'Vídeo só com as mãos'],
+    },
+  } as const;
+  const template = templates[kind];
   const tagBase = (product.categoria?.trim() || 'Geral').slice(0, 60).normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-zA-Z0-9]/g, '') || 'produto';
   const fallback = {
     titulo: short,
-    descricao: 'Roteiro base montado com os dados do produto. Gere a versão com IA para um ângulo exclusivo.',
+    descricao: template.angle,
     formato: 'Demonstração',
     plataforma: 'TikTok',
     nivel_dificuldade: 'Fácil',
-    hook: `Você precisa ver o que ${short} faz.`,
+    hook: template.hook,
     roteiro: [
-      'ROTEIRO PRINCIPAL: mostre o problema, demonstre o produto em uso e finalize com o resultado.',
-      '3 VARIAÇÕES DE HOOK: 1) Você precisa ver isso. 2) Se você sofre com isso, veja esta ideia. 3) Olha essa transformação.',
-      'VERSÃO SEM SEGUIDORES: grave sem aparecer, mostrando só o produto e as mãos, com teste real.',
+      `ROTEIRO PRINCIPAL: ${template.visuals.join('; ')}.`,
+      `3 VARIAÇÕES DE HOOK: 1) ${template.hook} 2) Veja os detalhes deste produto. 3) Vou mostrar como fica em uso.`,
+      'VERSÃO SEM SEGUIDORES: grave apenas as mãos e o produto durante a demonstração.',
       'DICA DE PUBLICAÇÃO: teste horários diferentes e fixe um comentário com pergunta.',
-      '5 VARIAÇÕES DE ROTEIRO: 1) Antes e depois em uso real. 2) Teste rápido do produto. 3) Comparação visual do resultado. 4) Tutorial em três passos. 5) Review sincero após a demonstração.',
+      `5 VARIAÇÕES DE ROTEIRO: ${template.angles.map((angle, index) => `${index + 1}) ${angle}`).join(' ')}`,
     ].join('\n'),
-    cenas: [
-      { numero: 1, tempo: '0–3s', visual: `Detalhe de ${short} em close`, fala: 'Você precisa ver isso.', acao_edicao: 'Corte rápido com zoom' },
-      { numero: 2, tempo: '3–7s', visual: 'Problema do dia a dia que o produto resolve', fala: 'Quem passa por isso vai entender.', acao_edicao: 'Legenda na tela' },
-      { numero: 3, tempo: '7–18s', visual: `Demonstração de ${short} em uso real`, fala: 'É só usar assim, olha como funciona.', acao_edicao: 'Timelapse da demonstração' },
-      { numero: 4, tempo: '18–25s', visual: 'Resultado final após o uso', fala: 'Olha a diferença no resultado.', acao_edicao: 'Antes e depois lado a lado' },
-      { numero: 5, tempo: '25–30s', visual: `chamada final com ${short}`, fala: 'Confira o produto no TikTok Shop.', acao_edicao: 'Texto com CTA na tela' },
-    ],
+    cenas: template.visuals.map((visual, index) => ({ numero: index + 1, tempo: ['0–3s', '3–7s', '7–18s', '18–25s', '25–30s'][index], visual, fala: template.lines[index], acao_edicao: ['Corte rápido', 'Close estável', 'Demonstração contínua', 'Detalhe em close', 'Texto com CTA na tela'][index] })),
     copy: `Você já conhecia ${short.slice(0, 60)}? Comenta aqui 👇`,
     cta: 'Confira o produto no TikTok Shop.',
     hashtags: ['#achadinhos', '#tiktokshop', '#publi', `#${tagBase}`, '#dica'],

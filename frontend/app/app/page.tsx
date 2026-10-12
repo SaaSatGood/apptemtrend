@@ -47,12 +47,6 @@ function Discover() {
     return <AccountLoadError />;
   }
 
-  const meta = (session.user.user_metadata ?? {}) as { full_name?: string; name?: string };
-  const firstName =
-    meta.full_name?.split(" ")[0] ||
-    meta.name?.split(" ")[0] ||
-    session.user.email?.split("@")[0] ||
-    "";
   const showNav = me.onboarding_completo || me.is_admin;
 
   return (
@@ -65,7 +59,6 @@ function Discover() {
           <Admin />
         ) : (
           <section id="creator-content-view">
-            {firstName && <p className="greeting">Olá, {firstName}.</p>}
             <Assistant
               onOpen={(id) => router.push(`/app/produtos/${id}`)}
             />

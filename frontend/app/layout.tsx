@@ -14,6 +14,7 @@ import "../styles/onboarding.css";
 import "../styles/signup-fit.css";
 import "../styles/discovery-results.css";
 import "../styles/guided-kit.css";
+import "../styles/ux-overhaul.css";
 
 const manrope = Manrope({
   subsets: ["latin"],

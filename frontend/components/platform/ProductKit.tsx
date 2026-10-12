@@ -1,15 +1,16 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Image from "next/image";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { api, friendlyError } from "@/lib/api";
-import { FALLBACK_IMAGE, copyText, displayProductName, formatUpdated, normalizeScenes, type Scene } from "@/lib/format";
+import { copyText, fullProductName, formatUpdated, normalizeScenes, type Scene } from "@/lib/format";
 import type { ContentKit, Product } from "@/lib/types";
 import { usePlatform } from "./store";
 import { kitContext } from "./kit-presentation";
 import { productionForProduct } from "./Assistant";
+import ProductImage from "./ProductImage";
+import EmphasizedTitle from "./EmphasizedTitle";
 
 function factsOf(p: Product): string {
   const sold = p.unidades_vendidas_total ?? p.unidades_vendidas_periodo;
@@ -83,18 +84,20 @@ export default function ProductDetail({ productId, onNeedKit }: { productId: str
   if (!detail) {
     return (
       <section className="detail-view" aria-live="polite">
+        <p role="status">Carregando dados do produto e seus roteiros…</p>
         <div id="product-detail"><Skeletons /></div>
       </section>
     );
   }
 
   const { product, content_kits: kits } = detail;
+  const productName = fullProductName(product);
   const production = productionForProduct(productions, product.id);
-  const saved = Boolean(production?.content_kit_id);
+  const saved = Boolean(production);
   const sold = product.unidades_vendidas_total ?? product.unidades_vendidas_periodo;
 
   function quickSave() {
-    if (production?.content_kit_id) return;
+    if (production) return;
     onNeedKit(product.id, "save", false);
   }
 
@@ -107,26 +110,17 @@ export default function ProductDetail({ productId, onNeedKit }: { productId: str
       <nav className="detail-breadcrumb" aria-label="Navegação estrutural"><Link href="/app">Descobrir</Link><span>›</span><strong>Produto</strong></nav>
       <div id="product-detail">
         <div className="product-detail-hero">
-          <Image
-            src={product.imagem_url || FALLBACK_IMAGE}
-            alt={product.nome}
-            width={800}
-            height={600}
-            unoptimized
-            onError={(e) => {
-              (e.target as HTMLImageElement).src = FALLBACK_IMAGE;
-            }}
-          />
+          <ProductImage product={product} width={800} height={600} />
           <div className="product-detail-copy">
-            {saved && <span className="product-saved-badge">✓ Na sua produção</span>}
+            {production && <span className="product-saved-badge">✓ Na sua produção · {({ salvo: "Salvo", em_producao: "Em produção", gravado: "Gravado", publicado: "Publicado" })[production.status]} · {({ salvo: 1, em_producao: 2, gravado: 3, publicado: 4 })[production.status]} de 4</span>}
             <span className="product-category">{product.categoria || "Produto"}</span>
-            <h1>{displayProductName(product)}</h1>
+            <h1 className={productName.length > 64 ? "is-long-title" : ""} title={productName}><EmphasizedTitle text={productName} /></h1>
             <div className="product-detail-metrics" aria-label={factsOf(product)}>
               <div><span>Preço</span><strong>{product.preco_texto || "Não informado"}</strong></div>
               {sold != null && <div><span>Vendidos {product.unidades_vendidas_total == null ? "no período" : "no total"}</span><strong>{sold.toLocaleString("pt-BR")}</strong></div>}
               {product.comissao_percentual != null && <div><span>Comissão</span><strong>{product.comissao_percentual}%</strong></div>}
             </div>
-            <p>{product.descricao || "Use os dados confirmados do produto para gerar seu roteiro."}</p>
+            {product.descricao && <p>{product.descricao}</p>}
             {product.atualizado_em && (
               <p className="muted">
                 <small>Dados do catálogo atualizados em {formatUpdated(product.atualizado_em)}.</small>
@@ -139,14 +133,13 @@ export default function ProductDetail({ productId, onNeedKit }: { productId: str
             )}
             <div className="product-detail-primary">
               {kits.length ? <Link className="primary" href={`/app/produtos/${product.id}/kits/${kits.find((kit) => kit.id === production?.content_kit_id)?.id || kits[0].id}`}>Ver Content Kit →</Link> : <button className="primary" type="button" onClick={primaryAction}>Criar Content Kit →</button>}
-              <button className="ghost save-product" type="button" disabled={saved} onClick={quickSave}>{saved ? "Salvo ✓" : "Salvar produto"}</button>
+              {!saved && <button className="ghost save-product" type="button" onClick={quickSave}>Salvar produto</button>}
               {kits.length > 0 && (
                 <button className="ghost" type="button" onClick={() => onNeedKit(product.id, "kit", true)}>
                   Gerar outro Content Kit →
                 </button>
               )}
             </div>
-            <p className="muted"><small>O Content Kit reúne hook, cenas, legenda e CTA. Ao salvar, também preparamos seu kit para depois.</small></p>
           </div>
         </div>
         <section className="kits-section">
@@ -154,7 +147,7 @@ export default function ProductDetail({ productId, onNeedKit }: { productId: str
             <div><p className="eyebrow">Da ideia à gravação</p><h2>Seus Content Kits</h2></div>
             <span>{kits.length} {kits.length === 1 ? "roteiro disponível" : "roteiros disponíveis"}</span>
           </div>
-          <p>Use um roteiro existente ou gere outra abordagem quando quiser testar uma nova ideia.</p>
+          {kits.length > 0 && <p>Use um roteiro existente ou gere outra abordagem quando quiser testar uma nova ideia.</p>}
           <div className="kits-grid">
             {kits.length ? (
               kits.map((kit) => (
@@ -168,14 +161,14 @@ export default function ProductDetail({ productId, onNeedKit }: { productId: str
                   </div>
                   <h3>{kit.titulo}</h3>
                   <p>{kitContext(kit, product).summary}</p>
-                  <strong>Ver Content Kit →</strong>
+                  {production?.content_kit_id === kit.id && <span className="kit-card-status">{({ salvo: "Salvo", em_producao: "Em produção", gravado: "Gravado", publicado: "Publicado" })[production.status]}</span>}
+                  <strong>Abrir kit →</strong>
                 </Link>
               ))
             ) : (
-              <div className="empty-state">
-                <h3>Sua próxima ideia começa aqui.</h3>
-                <p>A IA usará apenas as informações cadastradas para montar hook, roteiro, cenas, copy e CTA.</p>
-                <p>Use “Criar Content Kit” acima para preparar seu roteiro.</p>
+              <div className="kit-empty-preview">
+                <strong>Seu kit vai trazer</strong>
+                <div>{["Hook", "5 cenas", "Legenda", "Hashtags", "CTA"].map((item) => <span key={item}>{item}</span>)}</div>
               </div>
             )}
           </div>

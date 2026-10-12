@@ -1,16 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { copyText, formatUpdated, displayProductName, FALLBACK_IMAGE, validTikTokUrl } from "@/lib/format";
+import { copyText, formatUpdated, fullProductName, normalizeScenes, validTikTokUrl } from "@/lib/format";
 import { supabase } from "@/lib/supabase";
 import { api } from "@/lib/api";
 import type { CreatorContent } from "@/lib/types";
 import { usePlatform } from "./store";
-import Image from "next/image";
 import Modal from "./Modal";
-import ProductionSteps from "./ProductionSteps";
+import ProductImage from "./ProductImage";
+import { readGuideProgress } from "./guide-progress";
 
 const FILTERS = [
   ["todos", "Todos"],
@@ -21,7 +21,7 @@ const FILTERS = [
 ] as const;
 
 type Filter = (typeof FILTERS)[number][0];
-type Sort = "recentes" | "antigos" | "progresso";
+type Sort = "prioridade" | "recentes" | "antigos";
 
 const STATUS_LABEL: Record<string, string> = {
   salvo: "Salvo",
@@ -30,18 +30,17 @@ const STATUS_LABEL: Record<string, string> = {
   publicado: "Publicado ✓",
 };
 
-const NEXT_LABEL: Record<string, string> = {
-  salvo: "Ver Content Kit →",
-  em_producao: "Continuar produção →",
-  publicado: "Ver produção →",
-};
+const PRIORITY: Record<string, number> = { em_producao: 0, salvo: 1, gravado: 2, publicado: 3 };
 
-const NEXT_HINT: Record<string, string> = {
-  salvo: "Escolha um roteiro para começar a gravação.",
-  em_producao: "Seu roteiro está pronto. Agora é hora de gravar.",
-  gravado: "Vídeo pronto: publique e registre o link.",
-  publicado: "Conteúdo concluído e registrado.",
-};
+function nextHint(content: CreatorContent, scenesDone: number[]) {
+  if (content.status === "salvo") return content.content_kits ? "Revisar roteiro" : "Criar Content Kit";
+  if (content.status === "gravado") return "Publicar o vídeo";
+  if (content.status === "publicado") return content.published_url ? "Vídeo publicado" : "Publicação registrada";
+  const total = normalizeScenes(content.content_kits?.cenas).length;
+  if (!total) return "Revisar roteiro";
+  const next = Array.from({ length: total }, (_, index) => index).find((index) => !scenesDone.includes(index));
+  return next == null ? "Concluir gravação" : `Gravar cena ${next + 1} de ${total}`;
+}
 
 function progressIndex(status: string): number {
   return ({ salvo: 1, em_producao: 2, gravado: 3, publicado: 4 } as Record<string, number>)[status] || 1;
@@ -56,7 +55,13 @@ export default function Production() {
   const router = useRouter();
   const [filter, setFilter] = useState<Filter>("todos");
   const [query, setQuery] = useState("");
-  const [sort, setSort] = useState<Sort>("recentes");
+  const [sort, setSort] = useState<Sort>("prioridade");
+  const [recorded, setRecorded] = useState<Record<string, number[]>>({});
+  useEffect(() => {
+    const progress: Record<string, number[]> = {};
+    productions.forEach((item) => { if (item.content_kit_id) progress[item.content_kit_id] = readGuideProgress(item.content_kit_id).scenes; });
+    queueMicrotask(() => setRecorded(progress));
+  }, [productions]);
 
   function count(f: Filter): number {
     if (f === "todos") return productions.length;
@@ -77,9 +82,7 @@ export default function Production() {
     });
 
     return filtered.sort((a, b) => {
-      if (sort === "progresso") {
-        return progressIndex(effectiveStatus(b)) - progressIndex(effectiveStatus(a));
-      }
+      if (sort === "prioridade") return PRIORITY[a.status] - PRIORITY[b.status] || new Date(b.atualizado_em || 0).getTime() - new Date(a.atualizado_em || 0).getTime();
       const aTime = new Date(a.atualizado_em || 0).getTime();
       const bTime = new Date(b.atualizado_em || 0).getTime();
       return sort === "antigos" ? aTime - bTime : bTime - aTime;
@@ -107,7 +110,6 @@ export default function Production() {
           + Novo conteúdo
         </button>
       </div>
-      <ProductionSteps current={0} />
       <div className="production-toolbar">
         <div className="production-controls">
           <label className="production-search">
@@ -123,11 +125,11 @@ export default function Production() {
             )}
           </label>
           <label className="production-sort">
-            <span>Ordenar</span>
+            <span className="sr-only">Ordenação</span>
             <select value={sort} onChange={(event) => setSort(event.target.value as Sort)}>
-              <option value="recentes">Mais recentes</option>
-              <option value="antigos">Mais antigos</option>
-              <option value="progresso">Mais avançados</option>
+              <option value="prioridade">Ordenar: próxima ação</option>
+              <option value="recentes">Ordenar: mais recentes</option>
+              <option value="antigos">Ordenar: mais antigos</option>
             </select>
           </label>
         </div>
@@ -162,12 +164,12 @@ export default function Production() {
       )}
       <div id="my-content" className="production-grid">
         {productionsError ? <div className="empty-state" role="alert"><h3>Não conseguimos atualizar sua produção.</h3><p>Seus conteúdos continuam salvos. Tente carregar novamente.</p><button className="ghost" type="button" disabled={productionsLoading} onClick={() => void loadProductions().catch(() => {})}>{productionsLoading ? "Carregando…" : "Tentar novamente"}</button></div> : productionsLoading && !productions.length ? (
-          [0, 1, 2].map((item) => (
+          <><p className="production-loading-status" role="status">Carregando seus conteúdos e próximas ações…</p>{[0, 1, 2].map((item) => (
             <div key={item} className="production-card production-skeleton" aria-hidden="true">
               <div className="skeleton production-skeleton-image" />
               <div className="skeleton-lines"><span className="skeleton" /><span className="skeleton" /><span className="skeleton" /></div>
             </div>
-          ))
+          ))}</>
         ) : !productions.length ? (
           <div className="empty-state">
             <h3>Você ainda não começou nenhuma produção.</h3>
@@ -179,10 +181,8 @@ export default function Production() {
         ) : !visible.length ? (
           <div className="empty-state">
             <h3>Nenhum conteúdo encontrado.</h3>
-            <p>Limpe a busca ou escolha outro filtro para ver sua produção.</p>
-            <button className="ghost" type="button" onClick={() => { setQuery(""); setFilter("todos"); }}>
-              Limpar filtros
-            </button>
+            <p>{filter === "gravado" ? "Quando você marcar todas as cenas como gravadas, o conteúdo aparece aqui." : filter === "publicado" ? "Depois de publicar um vídeo, ele aparece aqui." : filter === "em_producao" ? "Escolha um roteiro para começar uma produção." : filter === "salvo" ? "Salve um produto para encontrá-lo aqui." : "Limpe a busca ou escolha outro filtro para ver sua produção."}</p>
+            {productions.some((item) => item.status === "em_producao") ? <button className="ghost" type="button" onClick={() => { setQuery(""); setFilter("em_producao"); }}>Continuar item em produção</button> : <button className="ghost" type="button" onClick={() => { setQuery(""); setFilter("todos"); }}>Ver todos</button>}
           </div>
         ) : (
           visible.map((c) => {
@@ -193,16 +193,7 @@ export default function Production() {
             return (
               <article key={c.id} className="production-card">
                 <div className="production-image-wrap">
-                  <Image
-                    src={c.products?.imagem_url || FALLBACK_IMAGE}
-                    alt={displayProductName(product)}
-                    width={180}
-                    height={180}
-                    unoptimized
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).src = FALLBACK_IMAGE;
-                    }}
-                  />
+                  <ProductImage product={product} width={180} height={180} />
                   <span className={`production-step step-${current}`}>{current}/4</span>
                 </div>
                 <div className="production-info">
@@ -212,14 +203,14 @@ export default function Production() {
                     </span>
                     <small>Atualizado em {formatUpdated(c.atualizado_em)}</small>
                   </div>
-                  <h3>{displayProductName(product)}</h3>
-                  <p className="production-kit-name">{kit?.titulo || "Escolha um plano de gravação para este produto"}</p>
+                  <h3 title={fullProductName(product)}>{fullProductName(product)}</h3>
+                  {kit?.titulo && kit.titulo.trim().toLocaleLowerCase("pt-BR") !== fullProductName(product).toLocaleLowerCase("pt-BR") && <p className="production-kit-name">{kit.titulo}</p>}
                   <div className="production-progress-compact" aria-label={`Etapa ${current} de 4`}>
                     {[1, 2, 3, 4].map((step) => (
                       <span key={step} className={step <= current ? "done" : ""} />
                     ))}
                   </div>
-                  <p className="production-next-hint">{NEXT_HINT[status]}</p>
+                  <p className="production-next-hint">{nextHint(c, recorded[c.content_kit_id || ""] || [])}</p>
                   <div className="production-card-actions">
                     {status === "publicado" && c.published_url ? (
                       <a
@@ -241,12 +232,12 @@ export default function Production() {
                             : `/app/produtos/${c.product_id}`
                         }
                       >
-                        {NEXT_LABEL[status] || "Ver produção →"}
+                        {status === "salvo" ? kit ? "Ver Content Kit →" : "Criar Content Kit →" : status === "publicado" ? "Ver roteiro →" : "Continuar produção →"}
                       </Link>
                     )}
                     {kit?.hook && (
-                      <button className="production-action" type="button" onClick={() => copyHook(c)}>
-                        Copiar hook
+                      <button className="production-action production-copy-hook" type="button" title="Copiar hook" aria-label="Copiar hook" onClick={() => copyHook(c)}>
+                        ⧉
                       </button>
                     )}
                     {status === "publicado" && c.published_url && (
@@ -273,7 +264,7 @@ function ProductionPublishButton({ content }: { content: CreatorContent }) {
   return (
     <>
       <button className="production-action" type="button" onClick={() => setOpen(true)}>
-        Marcar como publicado →
+        Publicar →
       </button>
       {open && <PublicationDialog content={content} onClose={() => setOpen(false)} />}
     </>

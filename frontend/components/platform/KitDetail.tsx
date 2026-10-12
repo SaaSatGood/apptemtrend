@@ -13,6 +13,8 @@ import { PublicationDialog } from "./Production";
 import { productionForProduct } from "./Assistant";
 import { kitContext } from "./kit-presentation";
 import GuidedKit from "./GuidedKit";
+import ProductionSteps from "./ProductionSteps";
+import EmphasizedTitle from "./EmphasizedTitle";
 
 export default function KitDetail({ productId, kitId }: { productId: string; kitId: string }) {
   const router = useRouter();
@@ -55,28 +57,17 @@ export default function KitDetail({ productId, kitId }: { productId: string; kit
   const otherKitInProgress = productProduction && productProduction.status !== "salvo" && productProduction.content_kit_id !== currentKit.id;
   const production = productions.find((item) => item.content_kit_id === currentKit.id || item.content_kits?.id === currentKit.id || (!item.content_kit_id && item.product_id === currentProduct.id));
   const statusLabel = productionsError ? "Progresso indisponível" : productionsLoading ? "Conferindo progresso" : otherKitInProgress ? "Outro roteiro em produção" : production ? ({ salvo: "Roteiro salvo", em_producao: "Em produção", gravado: "Vídeo gravado", publicado: "Publicado" } as Record<string, string>)[production.status] || "Roteiro pronto" : "Roteiro pronto";
-  const readyLabel = productionsError ? "Tentar novamente" : productionsLoading ? "Conferindo…" : otherKitInProgress ? "Continuar produção →" : !production || production.status === "salvo" ? "Começar produção →" : production.status === "em_producao" ? "Marcar como gravado →" : production.status === "gravado" ? "Marcar como publicado →" : production.published_url ? "Ir para Minha produção →" : "Adicionar link da publicação →";
-
-  async function choose() {
-    if (busy) return;
-    setBusy(true);
-    try {
-      const { data } = await supabase().auth.getSession();
-      const existing = productionForProduct(productions, currentProduct.id);
-      if (!existing) await api("/creator-content", data.session?.access_token, { method: "POST", body: JSON.stringify({ content_kit_id: currentKit.id }) });
-      else if (!existing.content_kit_id || existing.status === "salvo") await api(`/creator-content/${existing.id}/content-kit`, data.session?.access_token, { method: "POST", body: JSON.stringify({ content_kit_id: currentKit.id }) });
-      await loadProductions().catch(() => {});
-      toast("Produção iniciada ✓ Agora siga as cenas para gravar seu vídeo.");
-    } catch (error) { toast(friendlyError(error, "Não conseguimos preparar este conteúdo. Tente novamente.")); }
-    finally { setBusy(false); }
-  }
+  const readyLabel = productionsError ? "Tentar novamente" : productionsLoading ? "Conferindo…" : otherKitInProgress ? "Continuar produção →" : production?.status === "gravado" ? "Marcar como publicado →" : production?.status === "publicado" ? "Minha produção →" : "Marcar como gravado →";
 
   async function markRecorded() {
-    if (!production || busy) return;
+    if (busy || productionsLoading || productionsError) return;
     setBusy(true);
     try {
       const { data } = await supabase().auth.getSession();
-      await api(`/creator-content/${production.id}`, data.session?.access_token, { method: "PATCH", body: JSON.stringify({ status: "gravado" }) });
+      let active = production;
+      if (!active) active = await api<CreatorContent>("/creator-content", data.session?.access_token, { method: "POST", body: JSON.stringify({ content_kit_id: currentKit.id }) });
+      else if (active.status === "salvo") active = await api<CreatorContent>(`/creator-content/${active.id}/content-kit`, data.session?.access_token, { method: "POST", body: JSON.stringify({ content_kit_id: currentKit.id }) });
+      if (active.status === "em_producao") await api(`/creator-content/${active.id}`, data.session?.access_token, { method: "PATCH", body: JSON.stringify({ status: "gravado" }) });
       await loadProductions().catch(() => {});
       toast("Vídeo marcado como gravado ✓ Próximo passo: publicar.");
     } catch (error) { toast(friendlyError(error, "Não conseguimos atualizar sua produção. Tente novamente.")); }
@@ -87,8 +78,7 @@ export default function KitDetail({ productId, kitId }: { productId: string; kit
     if (productionsError) { void loadProductions().catch(() => {}); return; }
     if (productionsLoading || busy) return;
     if (otherKitInProgress && productProduction.content_kit_id) { router.push(`/app/produtos/${productId}/kits/${productProduction.content_kit_id}`); return; }
-    if (!production || production.status === "salvo") { void choose(); return; }
-    if (production.status === "em_producao") { void markRecorded(); return; }
+    if (!production || production.status === "salvo" || production.status === "em_producao") { void markRecorded(); return; }
     if (production.status === "gravado" || !production.published_url) { setPublishing(production); return; }
     router.push("/app/producao");
   }
@@ -98,18 +88,21 @@ export default function KitDetail({ productId, kitId }: { productId: string; kit
       <nav className="detail-breadcrumb" aria-label="Navegação estrutural"><Link href="/app">Descobrir</Link><span>›</span><Link href={`/app/produtos/${currentProduct.id}`}>Produto</Link><span>›</span><strong>Content Kit</strong></nav>
       <header className="content-kit-header">
         <p className="eyebrow">Seu Content Kit</p>
-        <h1>{currentKit.titulo}</h1>
+        <h1><EmphasizedTitle text={currentKit.titulo} /></h1>
         <p className="kit-summary">{context.summary}</p>
-        {(context.audience || context.sales) && <div className="kit-context">{context.audience && <p><strong>Para quem</strong><span>{context.audience}</span></p>}{context.sales && <p><strong>Dados do catálogo</strong><span>{context.sales}</span></p>}</div>}
+        {(context.audience || context.sales) && <div className="kit-context">{context.audience && <p><strong>Para quem</strong><span>{context.audience}</span></p>}{context.sales && <p><strong>Por que agora</strong><span>{context.sales}</span></p>}</div>}
         <div className="kit-meta">{[currentKit.formato, currentKit.nivel_dificuldade, currentKit.duracao_seg ? `${currentKit.duracao_seg}s` : null].filter(Boolean).map((value) => <span key={String(value)}>{value}</span>)}{currentKit.usou_voz && <span>No seu jeito ✓</span>}</div>
       </header>
+      <ProductionSteps current={production ? ({ salvo: 1, em_producao: 2, gravado: 3, publicado: 4 })[production.status] : 1} />
       <GuidedKit
         kit={currentKit}
         product={currentProduct}
         readyLabel={readyLabel}
         readyDisabled={busy || productionsLoading}
+        status={production?.status || "salvo"}
         statusLabel={statusLabel}
         onReady={continueProduction}
+        onAllScenesRecorded={() => { if (!otherKitInProgress && production?.status !== "gravado" && production?.status !== "publicado") void markRecorded(); }}
         onGenerateVariant={(idea) => setGeneratingBriefing(`Crie uma nova versão do roteiro usando esta abordagem: ${idea}`)}
         onGenerateAnother={() => setGeneratingBriefing("")}
       />

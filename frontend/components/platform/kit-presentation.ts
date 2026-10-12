@@ -27,7 +27,7 @@ export function kitContext(kit: ContentKit, product: Product) {
   const plainDescription = !fields.size ? clean(description) : "";
   const summary = angle
     ? `${angle[0].toLocaleUpperCase("pt-BR")}${angle.slice(1)}.`
-    : plainDescription && !/\b(classifica[çc][ãa]o|evid[êe]ncia)\s*:/i.test(plainDescription)
+    : plainDescription && !/\b(classifica[çc][ãa]o|evid[êe]ncia)\b/i.test(plainDescription) && !/\b(RISING|TRENDING|FORTE|EXPERIMENTAL)\b/.test(plainDescription)
       ? `${plainDescription.slice(0, 155)}${plainDescription.length > 155 ? "…" : "."}`
       : `Um plano curto para mostrar ${displayProductName(product)} em uso.`;
   const audience = fields.get("publico") || null;

@@ -1,26 +1,23 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { api, friendlyError } from "@/lib/api";
-import { FALLBACK_IMAGE, displayProductName } from "@/lib/format";
+import { displayProductName } from "@/lib/format";
 import type { AssistantResponse, CreatorContent, Product } from "@/lib/types";
 import { usePlatform } from "./store";
 import Opportunities from "./Opportunities";
 import ContentKitDialog from "./ContentKitDialog";
+import ProductImage from "./ProductImage";
 
 const EXAMPLES = [
-  ["Produto para academia", "Quero vender produtos para academia"],
-  ["Achadinho para casa", "Quero vender achadinhos úteis para a casa"],
-  ["Produto de beleza", "Quero vender produtos de beleza"],
-  ["Fácil de demonstrar", "Quero um produto fácil de demonstrar em vídeo"],
-  ["Até R$ 50", "Quero produtos com preço de até 50 reais"],
-  ["Para presentear", "Quero um produto para dar de presente"],
-  ["Para iniciantes", "Quero encontrar meu primeiro produto para vender"],
-  ["Para o TikTok", "Quero produtos para demonstrar em vídeos curtos no TikTok"],
-];
+  ["Até R$ 50", "Quero produtos com preço de até 50 reais", "Preço"],
+  ["Casa", "Quero vender produtos para casa", "Nicho"],
+  ["Beleza", "Quero vender produtos de beleza", "Nicho"],
+  ["Fácil de demonstrar", "Quero um produto fácil de demonstrar em vídeo", "Nível"],
+  ["Para iniciantes", "Quero encontrar meu primeiro produto para vender", "Nível"],
+] as const;
 
 const DISCOVERY_STATE_KEY = "temtrend_discovery_state";
 const DISCOVERY_STATE_TTL = 2 * 60 * 60 * 1000;
@@ -57,6 +54,10 @@ function highlightFor(products: Product[]): { id: string; label: string } | null
   return null;
 }
 
+function isSensitive(product: Product): boolean {
+  return /lingerie|camisola|moda íntima|moda intima|roupa íntima|roupa intima|adulto/i.test(`${product.categoria || ""} ${product.nome}`);
+}
+
 export function ProductCard({
   product,
   saved,
@@ -80,18 +81,7 @@ export function ProductCard({
   return (
     <article className={`product-card opportunity-card${highlightLabel ? " is-featured" : ""}`}>
       <div className="product-image-wrap">
-        <Image
-          className="product-image"
-          src={product.imagem_url || FALLBACK_IMAGE}
-          alt={name}
-          width={400}
-          height={300}
-          loading="lazy"
-          unoptimized
-          onError={(e) => {
-            (e.target as HTMLImageElement).src = FALLBACK_IMAGE;
-          }}
-        />
+        <ProductImage product={product} className="product-image" />
         {highlightLabel && <span className="opportunity-highlight">{highlightLabel}</span>}
         {saved && <span className="catalog-saved">Salvo ✓</span>}
       </div>
@@ -99,19 +89,18 @@ export function ProductCard({
         <span className="product-category">{product.categoria || "Produto"}</span>
         <h3 title={product.nome}>{name}</h3>
         {product.motivo && <p className="opportunity-motivo"><strong>Por que este:</strong> {product.motivo}</p>}
+        {isSensitive(product) && <p className="opportunity-sensitive">Pode ter restrição de anúncio ou criativo no TikTok.</p>}
         <dl className="opportunity-metrics">
           <div><dt>Preço</dt><dd>{product.preco_texto || (product.preco_min_brl != null ? BRL.format(product.preco_min_brl) : "Não informado")}</dd></div>
-          <div><dt>Comissão / venda</dt><dd>{commission != null ? BRL.format(commission) : "Não informado"}{commission != null && <small>{product.comissao_percentual}% do menor preço</small>}</dd></div>
+          <div><dt>Comissão / venda</dt><dd>{commission != null ? BRL.format(commission) : "Não informado"}{product.comissao_percentual != null && <small>{product.comissao_percentual}%{commission != null ? " do menor preço" : ""}</small>}</dd></div>
           <div><dt>Vendas</dt><dd>{sold >= 0 ? sold.toLocaleString("pt-BR") : "Não informado"}{sold >= 0 && <small>{product.unidades_vendidas_total != null ? "no total" : "no período"}</small>}</dd></div>
         </dl>
         <div className="product-actions">
-          <button className="ghost open-product" type="button" aria-label={`Ver produto ${name}`} onClick={() => onOpen(product.id)}>
-            Ver produto →
-          </button>
           <div className="opportunity-secondary-actions">
             <button type="button" disabled={saved || saving} aria-label={`Salvar ${name}`} onClick={() => onSave(product.id)}>{saving ? "Salvando…" : saved ? "Salvo ✓" : "Salvar"}</button>
-            <button type="button" aria-label={`Gerar roteiro para ${name}`} onClick={() => onGenerate(product.id)}>Gerar roteiro ↗</button>
+            <button className="generate-script" type="button" aria-label={`Gerar roteiro para ${name}`} onClick={() => onGenerate(product.id)}>Gerar roteiro ↗</button>
           </div>
+          <button className="ghost open-product" type="button" aria-label={`Ver produto ${name}`} onClick={() => onOpen(product.id)}>Ver produto →</button>
         </div>
       </div>
     </article>
@@ -120,7 +109,7 @@ export function ProductCard({
 
 export default function Assistant({ onOpen }: { onOpen: (id: string) => void }) {
   const router = useRouter();
-  const { toast, productions, me, loadProductions } = usePlatform();
+  const { toast, productions, me, session, loadProductions } = usePlatform();
   const [query, setQuery] = useState("");
   const [searching, setSearching] = useState(false);
   const [searched, setSearched] = useState(false);
@@ -131,11 +120,28 @@ export default function Assistant({ onOpen }: { onOpen: (id: string) => void }) 
   const [savingProductId, setSavingProductId] = useState<string | null>(null);
   const [kitProductId, setKitProductId] = useState<string | null>(null);
   const [contextIds, setContextIds] = useState<string[]>([]);
+  const [hideSensitive, setHideSensitive] = useState(false);
   const inFlight = useRef(false);
+  const scrollAfterSearch = useRef(false);
+  const responseRef = useRef<HTMLDivElement>(null);
   const storageKey = `${DISCOVERY_STATE_KEY}:${me?.user_id}`;
-  const interestShortcuts = [...new Set(me?.creator?.temas_interesse || [])]
-    .filter((theme) => theme !== "Outros")
-    .slice(0, 3);
+  const interestShortcuts = [...new Set([...(me?.creator?.temas_interesse || []), ...productions.map((item) => item.products?.categoria || "")])]
+    .filter((theme) => theme && theme !== "Outros")
+    .slice(0, 2);
+  const recurring = productions.length > 0;
+  const inProgress = productions.filter((item) => item.status === "em_producao").length;
+  const firstName = String((session?.user?.user_metadata?.full_name as string | undefined) || session?.user?.email?.split("@")[0] || "creator").trim().split(/\s+/)[0];
+
+  useEffect(() => {
+    try { const saved = localStorage.getItem("temtrend-hide-sensitive") === "true"; queueMicrotask(() => setHideSensitive(saved)); } catch { /* optional preference */ }
+  }, []);
+
+  useEffect(() => {
+    if (!searching && searched && scrollAfterSearch.current) {
+      scrollAfterSearch.current = false;
+      responseRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, [searching, searched, results]);
 
   useEffect(() => {
     let active = true;
@@ -178,7 +184,7 @@ export default function Assistant({ onOpen }: { onOpen: (id: string) => void }) 
     };
   }, [storageKey]);
 
-  const topResults = useMemo(() => results.slice(0, TOP_RESULTS), [results]);
+  const topResults = useMemo(() => results.filter((product) => !hideSensitive || !isSensitive(product)).slice(0, TOP_RESULTS), [results, hideSensitive]);
   const highlight = useMemo(() => highlightFor(topResults), [topResults]);
   const clarificationChoices = /(?:facil|faceis|facilidade) de (?:gravar|demonstrar|mostrar)/.test(query.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase())
     ? CLARIFICATION_CHOICES.filter(([label]) => label !== "Fáceis de gravar")
@@ -219,6 +225,7 @@ export default function Assistant({ onOpen }: { onOpen: (id: string) => void }) 
     setSearching(true);
     setQuery(trimmed);
     setSearched(true);
+    scrollAfterSearch.current = true;
     setError(false);
     setNeedsClarification(false);
     setMessage("A IA está procurando no catálogo...");
@@ -270,12 +277,12 @@ export default function Assistant({ onOpen }: { onOpen: (id: string) => void }) 
   }
 
   return (
-    <section id="assistant-section" className="dashboard-hero assistant-hero discovery-workspace" aria-labelledby="dashboard-title">
+    <section id="assistant-section" className={`dashboard-hero assistant-hero discovery-workspace${recurring || searched ? " is-compact" : ""}`} aria-labelledby="dashboard-title">
+      {recurring && !searched && <Opportunities />}
       <div className="discovery-hero">
       <div className="discover-intro">
         <p className="eyebrow">Da ideia ao seu próximo vídeo</p>
-        <h1 id="dashboard-title">Descubra o que vale<br />a pena <em>vender.</em></h1>
-        <p>Diga o que você procura ou deixe a TemTrend encontrar uma oportunidade para você.</p>
+        {recurring ? <><h1 id="dashboard-title">Olá, <em>{firstName || "creator"}.</em></h1><p>Você tem {inProgress} {inProgress === 1 ? "conteúdo em produção" : "conteúdos em produção"}. Encontre a próxima ideia quando quiser.</p></> : <><h1 id="dashboard-title">Descubra o que vale<br />a pena <em>vender.</em></h1><p>Diga o que você procura ou deixe a TemTrend encontrar uma oportunidade para você.</p></>}
       </div>
       <form
         className="assistant-form"
@@ -286,7 +293,7 @@ export default function Assistant({ onOpen }: { onOpen: (id: string) => void }) 
       >
         <label htmlFor="assistant-input">
           O que você quer vender?
-          <span className="search-shortcut" aria-label="Atalho: barra">/</span>
+          <span className="search-shortcut" aria-label="Pressione barra para buscar" title="Pressione / para buscar">/</span>
         </label>
         <div className="assistant-input-row">
           <input
@@ -303,12 +310,11 @@ export default function Assistant({ onOpen }: { onOpen: (id: string) => void }) 
           <button id="assistant-submit" className="primary" type="submit" disabled={searching}>
             {searching ? "Encontrando produtos…" : "Encontrar produtos →"}
           </button>
+          <button className="ghost discovery-surprise" type="button" disabled={searching} onClick={() => void search("Não sei o que vender. Sugira oportunidades do catálogo para começar a criar conteúdo.", true)}>{recurring ? "Me surpreenda" : "Não sei o que vender"}</button>
         </div>
       </form>
-      {interestShortcuts.length > 0 && (
-        <div className="assistant-interest-shortcuts" role="group" aria-label="Buscas dos seus interesses">
-          <span>Para você:</span>
-          {interestShortcuts.map((theme) => (
+      <div className="assistant-shortcut-groups">
+      {interestShortcuts.length > 0 && <div className="assistant-interest-shortcuts" role="group" aria-label="Buscas dos seus interesses"><span>Para você</span>{interestShortcuts.map((theme) => (
             <button
               key={theme}
               type="button"
@@ -322,12 +328,10 @@ export default function Assistant({ onOpen }: { onOpen: (id: string) => void }) 
             >
               {theme} <span aria-hidden="true">↗</span>
             </button>
-          ))}
-        </div>
-      )}
+          ))}</div>}
       <div className="assistant-examples" role="group" aria-label="Exemplos de busca">
-        <span>Experimente:</span>
-        {EXAMPLES.map(([label, text]) => (
+        <span>Preço · Nicho · Nível</span>
+        {EXAMPLES.slice(0, interestShortcuts.length ? 4 : 5).map(([label, text]) => (
           <button
             key={label}
             type="button"
@@ -342,15 +346,15 @@ export default function Assistant({ onOpen }: { onOpen: (id: string) => void }) 
           </button>
         ))}
       </div>
-      <button className="text-button discovery-surprise" type="button" disabled={searching} onClick={() => void search("Não sei o que vender. Sugira oportunidades do catálogo para começar a criar conteúdo.", true)}>Não sei o que vender →</button>
+      </div>
       <p className="discovery-note">Produtos reais. Você escolhe a oportunidade, a TemTrend ajuda com o roteiro.</p>
       </div>
-      {!searched && <Opportunities />}
+      {!searched && !recurring && <Opportunities />}
       {searched && (
-        <div className="assistant-response" aria-live="polite" aria-busy={searching}>
+        <div className="assistant-response" ref={responseRef} aria-live="polite" aria-busy={searching}>
           <div className="assistant-message">
             <span className="assistant-mark" aria-hidden="true">T</span>
-            <p>{message}</p>
+            <p>{hideSensitive && topResults.length < Math.min(results.length, TOP_RESULTS) ? `${message} ${topResults.length} de ${Math.min(results.length, TOP_RESULTS)} visíveis com seu filtro.` : message}</p>
             <button className="text-button" type="button" disabled={searching} onClick={reset}>
               Voltar a explorar
             </button>
@@ -371,6 +375,7 @@ export default function Assistant({ onOpen }: { onOpen: (id: string) => void }) 
               <small>Dados do catálogo TemTrend</small>
             </div>
           )}
+          {!searching && results.some(isSensitive) && <label className="sensitive-filter"><input type="checkbox" checked={hideSensitive} onChange={(event) => { setHideSensitive(event.target.checked); try { localStorage.setItem("temtrend-hide-sensitive", String(event.target.checked)); } catch {} }} /> Ocultar categorias sensíveis</label>}
           <div className="product-grid">
             {searching ? (
               [0, 1, 2].map((i) => (
