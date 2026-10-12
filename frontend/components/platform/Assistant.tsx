@@ -350,7 +350,7 @@ export default function Assistant({ onOpen }: { onOpen: (id: string) => void }) 
             </button>
           ))}</div>}
       <div className="assistant-examples" role="group" aria-label="Exemplos de busca">
-        <span>Preço · Nicho · Nível</span>
+        <span>Preço, nicho ou nível</span>
         {EXAMPLES.slice(0, interestShortcuts.length ? 4 : 5).map(([label, text]) => (
           <button
             key={label}

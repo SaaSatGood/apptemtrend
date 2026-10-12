@@ -272,7 +272,7 @@ export default function Onboarding({ editing, onDone }: { editing: boolean; onDo
             <div className="onboarding-heading">
               <p className="eyebrow">Sua voz</p>
               <h1>Como você fala nos vídeos?</h1>
-              <p>Escreva 2 ou 3 frases do seu jeito. Usamos isso para o roteiro parecer seu — ou pule, sem problema.</p>
+              <p>Escreva 2 ou 3 frases do seu jeito. Usamos isso para o roteiro parecer seu. Você também pode pular.</p>
             </div>
             <label className="voice-field">
               <span className="sr-only">Exemplo do seu jeito de falar</span>
@@ -284,7 +284,7 @@ export default function Onboarding({ editing, onDone }: { editing: boolean; onDo
                 onChange={(e) => setVoz(e.target.value)}
               />
             </label>
-            <p className="selection-feedback" aria-live="polite">{voz.trim() ? `${voz.trim().length} de ${VOZ_MAX} caracteres` : "Opcional — roteiros funcionam sem isso"}</p>
+            <p className="selection-feedback" aria-live="polite">{voz.trim() ? `${voz.trim().length} de ${VOZ_MAX} caracteres` : "Opcional. Os roteiros funcionam sem isso"}</p>
             <p className="onboarding-tip">Vale gíria, vale bordão. Evite contar sua vida: o que importa é o tom.</p>
           </div>
 

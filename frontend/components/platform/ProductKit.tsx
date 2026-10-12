@@ -22,7 +22,7 @@ function factsOf(p: Product): string {
     p.loja_nome,
   ]
     .filter(Boolean)
-    .join(" · ");
+    .join(", ");
 }
 
 export function Skeletons() {
@@ -112,7 +112,7 @@ export default function ProductDetail({ productId, onNeedKit }: { productId: str
         <div className="product-detail-hero">
           <ProductImage product={product} width={800} height={600} />
           <div className="product-detail-copy">
-            {production && <span className="product-saved-badge">✓ Na sua produção · {({ salvo: "Salvo", em_producao: "Em produção", gravado: "Gravado", publicado: "Publicado" })[production.status]} · {({ salvo: 1, em_producao: 2, gravado: 3, publicado: 4 })[production.status]} de 4</span>}
+            {production && <span className="product-saved-badge">✓ Na sua produção: {({ salvo: "salvo", em_producao: "em produção", gravado: "gravado", publicado: "publicado" })[production.status]}, etapa {({ salvo: 1, em_producao: 2, gravado: 3, publicado: 4 })[production.status]} de 4</span>}
             <span className="product-category">{product.categoria || "Produto"}</span>
             <h1 className={productName.length > 64 ? "is-long-title" : ""} title={productName}><EmphasizedTitle text={productName} /></h1>
             <div className="product-detail-metrics" aria-label={factsOf(product)}>
@@ -191,7 +191,7 @@ function sceneParts(scene: Scene | string): { show: string; say: string; time: s
   const values = Object.values(s)
     .filter((v) => ["string", "number"].includes(typeof v))
     .map(String);
-  return { show: values.join(" · "), say: "", time: "", edit: "" };
+  return { show: values.join(", "), say: "", time: "", edit: "" };
 }
 
 export function KitDocument({ kit }: { kit: ContentKit }) {
@@ -224,7 +224,7 @@ export function KitDocument({ kit }: { kit: ContentKit }) {
       )}
       {scenes.length > 0 && (
         <section id="kit-cenas" className="kit-block">
-          <div className="block-heading"><small>ROTEIRO POR CENAS</small><CopyButton id="copy-scenes" text={scenes.map((scene, index) => { const p = sceneParts(scene); return [`Cena ${index + 1} · ${p.time}`, p.show && `Mostre: ${p.show}`, p.say && `Fale: ${p.say}`, p.edit && `Ação / edição: ${p.edit}`].filter(Boolean).join("\n"); }).join("\n\n")} doneText="Copiado ✓">Copiar cenas</CopyButton></div>
+          <div className="block-heading"><small>ROTEIRO POR CENAS</small><CopyButton id="copy-scenes" text={scenes.map((scene, index) => { const p = sceneParts(scene); return [`Cena ${index + 1}${p.time ? `: ${p.time}` : ""}`, p.show && `Mostre: ${p.show}`, p.say && `Fale: ${p.say}`, p.edit && `Ação / edição: ${p.edit}`].filter(Boolean).join("\n"); }).join("\n\n")} doneText="Copiado ✓">Copiar cenas</CopyButton></div>
           <div className="scene-list">
             {scenes.map((scene, index) => {
               const parts = sceneParts(scene);
@@ -232,7 +232,7 @@ export function KitDocument({ kit }: { kit: ContentKit }) {
                 <article key={index} className="scene-card">
                   <strong>
                     CENA {String(index + 1).padStart(2, "0")}
-                    {parts.time ? ` · ${parts.time}` : ""}
+                    {parts.time ? `: ${parts.time}` : ""}
                   </strong>
                   {parts.show && (
                     <div>
@@ -282,7 +282,7 @@ export function KitDocument({ kit }: { kit: ContentKit }) {
       )}
       {kit.cta && (
         <section className="kit-block">
-          <div className="block-heading"><small>CTA · CHAMADA PARA AÇÃO</small><CopyButton id="copy-cta" text={kit.cta} doneText="Copiado ✓">Copiar CTA</CopyButton></div>
+          <div className="block-heading"><small>CTA: CHAMADA PARA AÇÃO</small><CopyButton id="copy-cta" text={kit.cta} doneText="Copiado ✓">Copiar CTA</CopyButton></div>
           <p>{kit.cta}</p>
         </section>
       )}

@@ -87,7 +87,7 @@ export default function ContentKitDialog({
         }
         toast(
           result?.fallback
-            ? "IA indisponível — salvamos um roteiro base. Gere outra versão depois."
+            ? "IA indisponível. Salvamos um roteiro base para você gerar outra versão depois."
             : result?.created
               ? "Conteúdo criado ✓ Agora você pode começar a produção."
               : "Seu conteúdo está pronto ✓"

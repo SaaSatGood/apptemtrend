@@ -15,7 +15,7 @@ const PREPARE = ["Produto à mão", "Boa luz", "Fundo organizado", "Lente limpa"
 
 function shortSceneLabel(value: string, index: number) {
   const clause = value.split(/[,.;:]/)[0].trim();
-  return clause.length > 0 && clause.length <= 27 ? `Cena ${index + 1} · ${clause}` : `Cena ${index + 1}`;
+  return clause.length > 0 && clause.length <= 27 ? `Cena ${index + 1}: ${clause}` : `Cena ${index + 1}`;
 }
 
 function pillLabel(step: GuideStep): string {
