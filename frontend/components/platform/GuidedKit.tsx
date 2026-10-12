@@ -5,7 +5,7 @@ import Link from "next/link";
 import { copyText, fullProductName, normalizeScenes } from "@/lib/format";
 import type { ContentKit, CreatorContent, Product } from "@/lib/types";
 import { sceneParts } from "./kit-text";
-import { directCta, finalSceneLine, strategyFrom } from "./kit-presentation";
+import { directCta, displayKitTitle, finalSceneLine, strategyFrom } from "./kit-presentation";
 import { readGuideProgress, saveGuideProgress } from "./guide-progress";
 import { usePlatform } from "./store";
 
@@ -81,7 +81,7 @@ export default function GuidedKit({ kit, product, status, readyLabel, readyDisab
   }
   function selectStep(index: number) { setActiveIndex(index); setCopied(false); }
   async function copyStep() { const value = active.details.map((item) => `${item.label}: ${item.text}`).join("\n\n") || active.description; if (!(await copyText(value))) { toast("Não conseguimos copiar esta etapa. Tente novamente."); return; } setCopied(true); window.setTimeout(() => setCopied(false), 2200); }
-  async function copyPlan() { const lines = steps.filter((step) => step.id !== "prepare").map((step) => [step.title, ...step.details.map((item) => `${item.label}: ${item.text}`)].join("\n")); if (!(await copyText([kit.titulo, ...lines].join("\n\n")))) { toast("Não conseguimos copiar o plano. Tente novamente."); return; } setAllCopied(true); window.setTimeout(() => setAllCopied(false), 2200); }
+  async function copyPlan() { const lines = steps.filter((step) => step.id !== "prepare").map((step) => [step.title, ...step.details.map((item) => `${item.label}: ${item.text}`)].join("\n")); if (!(await copyText([displayKitTitle(kit, product), ...lines].join("\n\n")))) { toast("Não conseguimos copiar o plano. Tente novamente."); return; } setAllCopied(true); window.setTimeout(() => setAllCopied(false), 2200); }
   async function copyField(item: Detail) { toast(await copyText(item.text) ? `${item.label} copiado ✓` : "Não conseguimos copiar. Tente novamente."); }
 
   const primaryLabel = active.id === "prepare" ? "Marcar como concluída →" : atEnd ? readyLabel : "Próxima etapa →";

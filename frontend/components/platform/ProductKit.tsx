@@ -7,7 +7,7 @@ import { api, friendlyError } from "@/lib/api";
 import { copyText, fullProductName, formatUpdated, normalizeScenes, type Scene } from "@/lib/format";
 import type { ContentKit, Product } from "@/lib/types";
 import { usePlatform } from "./store";
-import { kitContext } from "./kit-presentation";
+import { displayKitTitle, kitContext } from "./kit-presentation";
 import { productionForProduct } from "./Assistant";
 import ProductImage from "./ProductImage";
 import EmphasizedTitle from "./EmphasizedTitle";
@@ -159,7 +159,7 @@ export default function ProductDetail({ productId, onNeedKit }: { productId: str
                         <span key={String(v)}>{v}</span>
                       ))}
                   </div>
-                  <h3>{kit.titulo}</h3>
+                  <h3>{displayKitTitle(kit, product)}</h3>
                   <p>{kitContext(kit, product).summary}</p>
                   {production?.content_kit_id === kit.id && <span className="kit-card-status">{({ salvo: "Salvo", em_producao: "Em produção", gravado: "Gravado", publicado: "Publicado" })[production.status]}</span>}
                   <strong>Abrir conteúdo →</strong>

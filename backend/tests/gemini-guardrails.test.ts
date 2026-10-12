@@ -26,6 +26,10 @@ describe('Gemini assistant guardrails', () => {
       expect(kit.cenas[4].fala).toMatch(/^Confira .+ no TikTok Shop\.$/);
     }
   });
+  it('keeps a complete product name in fallback titles', () => {
+    const kit = buildFallbackKit({ nome: 'KIT 2 PCS Faca de Açougue Profissional Inox' });
+    expect(kit.titulo).toBe('KIT 2 PCS Faca de Açougue Profissional Inox');
+  });
   it('keeps only product IDs present in the server catalog', () => {
     const decision = parseAndConstrainDecision(JSON.stringify({
       in_scope: true,
@@ -138,6 +142,17 @@ describe('Gemini assistant guardrails', () => {
     expect(generated.content_kit.cta).toBe('Confira o produto no TikTok Shop.');
     expect(generated.content_kit.cenas).toHaveLength(5);
     expect(generated.content_kit.cenas[2].visual).toBe('Divisores em uso');
+  });
+
+  it('repairs an AI title cut off at a connector', () => {
+    const product = {
+      nome: 'KIT 2 PCS Faca de Açougue Profissional Inox',
+      descricao: 'Conjunto de duas facas de aço inox para preparar alimentos na cozinha.',
+      categoria: 'Casa e cozinha',
+    };
+    const contentKit = buildFallbackKit(product);
+    const generated = parseGeneratedPackage(JSON.stringify({ product, content_kit: { ...contentKit, titulo: 'KIT 2 PCS Faca de' } }));
+    expect(generated.content_kit.titulo).toBe(product.nome);
   });
 
   it('rejects products and content kits that repeat previous work', () => {

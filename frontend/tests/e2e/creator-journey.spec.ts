@@ -25,7 +25,7 @@ const kit = {
   copy: "Uma ideia para sua cozinha.", cta: "Confira o produto no carrinho do vídeo, se ele estiver disponível para você.", hashtags: ["casa", "#organizacao"], audio_sugerido: "Áudio discreto para acompanhar a demonstração.", duracao_seg: 15,
 };
 
-async function setup(page: Page, options: { saved?: boolean; onboarding?: boolean; failSearch?: boolean; comparison?: boolean; sensitive?: boolean; productOverride?: Partial<typeof product> } = {}) {
+async function setup(page: Page, options: { saved?: boolean; onboarding?: boolean; failSearch?: boolean; comparison?: boolean; sensitive?: boolean; productOverride?: Partial<typeof product>; kitOverride?: Partial<typeof kit> } = {}) {
   const encode = (value: object) => Buffer.from(JSON.stringify(value)).toString("base64url");
   const token = `${encode({ alg: "HS256", typ: "JWT" })}.${encode({ sub: userId, role: "authenticated", exp: Math.floor(Date.now() / 1000) + 3600 })}.signature`;
   await page.addInitScript(({ token, userId }) => {
@@ -34,12 +34,13 @@ async function setup(page: Page, options: { saved?: boolean; onboarding?: boolea
   await page.route("**/auth/v1/**", (route) => route.fulfill({ json: { id: userId, email: "creator@temtrend.test", user_metadata: { full_name: "Rafa" } } }));
   let status = options.saved ? "salvo" : "";
   const fixtureProduct = { ...product, ...options.productOverride };
+  const fixtureKit = { ...kit, ...options.kitOverride };
   let hasKit = Boolean(options.saved);
   let onboarded = !options.onboarding;
   let searchCalls = 0;
   let kitInstructions = "";
   const mutations: string[] = [];
-  const production = () => ({ id: productionId, creator_id: userId, product_id: productId, content_kit_id: kitId, status, products: fixtureProduct, content_kits: kit, atualizado_em: "2026-10-09T12:00:00Z" });
+  const production = () => ({ id: productionId, creator_id: userId, product_id: productId, content_kit_id: kitId, status, products: fixtureProduct, content_kits: fixtureKit, atualizado_em: "2026-10-09T12:00:00Z" });
   await page.route("http://localhost:3333/**", async (route) => {
     const req = route.request();
     const path = new URL(req.url()).pathname;
@@ -47,8 +48,8 @@ async function setup(page: Page, options: { saved?: boolean; onboarding?: boolea
     if (method !== "GET") mutations.push(`${method} ${path}`);
     if (path === "/me") return route.fulfill({ json: { user_id: userId, creator: { id: userId, estilos_conteudo: [], temas_interesse: [] }, onboarding_completo: onboarded, is_admin: false } });
     if (path === "/products") return route.fulfill({ json: [fixtureProduct, { ...product, id: "66666666-6666-4666-8666-666666666666", nome: "Kit de cuidados para cabelo", categoria: "Beleza", preco_min_brl: 79.9, preco_texto: "R$ 79,90" }] });
-    if (path === `/products/${productId}`) return route.fulfill({ json: { product: fixtureProduct, content_kits: hasKit ? [kit] : [] } });
-    if (path === `/products/${productId}/content-kit`) { kitInstructions = req.postDataJSON().instructions || ""; hasKit = true; return route.fulfill({ json: { content_kit: kit, created: true } }); }
+    if (path === `/products/${productId}`) return route.fulfill({ json: { product: fixtureProduct, content_kits: hasKit ? [fixtureKit] : [] } });
+    if (path === `/products/${productId}/content-kit`) { kitInstructions = req.postDataJSON().instructions || ""; hasKit = true; return route.fulfill({ json: { content_kit: fixtureKit, created: true } }); }
     if (path === "/creator-content" && method === "GET") return route.fulfill({ json: status ? [production()] : [] });
     if (path === "/creator-content" && method === "POST") { hasKit = true; status = req.postDataJSON().product_id ? "salvo" : "em_producao"; return route.fulfill({ json: production() }); }
     if (path === `/creator-content/${productionId}/content-kit`) { status = "em_producao"; return route.fulfill({ json: production() }); }
@@ -306,6 +307,18 @@ test("detalhes, guia e produção mantêm o nome completo e a largura em três t
     if (width === 390) await page.screenshot({ path: testInfo.outputPath("production-mobile.png"), fullPage: true });
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   }
+});
+
+test("roteiro antigo com título cortado mostra o nome completo do produto", async ({ page }) => {
+  const completeName = "KIT 2 PCS Faca de Açougue Profissional Inox";
+  await setup(page, { saved: true, productOverride: { nome: completeName }, kitOverride: { titulo: "KIT 2 PCS Faca de" } });
+  await page.goto(`/app/produtos/${productId}`);
+  await expect(page.locator(".kit-card h3")).toHaveText(completeName);
+  await page.goto(`/app/produtos/${productId}/kits/${kitId}`);
+  await expect(page.locator(".content-kit-header h1")).toHaveText(completeName);
+  await expect(page.locator(".content-kit-header h1 em")).toHaveText("Inox");
+  await page.goto("/app/producao");
+  await expect(page.locator(".production-kit-name")).toHaveCount(0);
 });
 
 test("conta mostra ações secundárias e estado de erro recuperável", async ({ page }, testInfo) => {

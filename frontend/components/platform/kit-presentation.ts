@@ -1,10 +1,22 @@
-import { displayProductName } from "@/lib/format";
+import { displayProductName, fullProductName } from "@/lib/format";
 import type { ContentKit, Product } from "@/lib/types";
 
 const DIRECT_CTA = "Confira o produto no TikTok Shop.";
 
 function clean(value: string) {
   return value.replace(/\s+/g, " ").replace(/[.;\s]+$/g, "").trim();
+}
+
+const DANGLING_WORD = /\s+(?:de|do|da|dos|das|em|com|para|por|e)$/i;
+
+export function displayKitTitle(kit: Pick<ContentKit, "titulo">, product: Pick<Product, "nome">) {
+  const title = clean(kit.titulo || "");
+  const productName = clean(fullProductName(product));
+  const completeProductName = productName.replace(DANGLING_WORD, "").trim();
+  const isProductPrefix = title.length > 0 && completeProductName.length > title.length
+    && completeProductName.toLocaleLowerCase("pt-BR").startsWith(`${title.toLocaleLowerCase("pt-BR")} `);
+  if (isProductPrefix || DANGLING_WORD.test(title)) return completeProductName || title.replace(DANGLING_WORD, "").trim() || "Seu plano de gravação";
+  return title || completeProductName || "Seu plano de gravação";
 }
 
 function fieldsFrom(description: string) {

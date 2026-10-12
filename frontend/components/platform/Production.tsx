@@ -11,6 +11,7 @@ import { usePlatform } from "./store";
 import Modal from "./Modal";
 import ProductImage from "./ProductImage";
 import { readGuideProgress } from "./guide-progress";
+import { displayKitTitle } from "./kit-presentation";
 
 const FILTERS = [
   ["todos", "Todos"],
@@ -204,7 +205,7 @@ export default function Production() {
                     <small>Atualizado em {formatUpdated(c.atualizado_em)}</small>
                   </div>
                   <h3 title={fullProductName(product)}>{fullProductName(product)}</h3>
-                  {kit?.titulo && kit.titulo.trim().toLocaleLowerCase("pt-BR") !== fullProductName(product).toLocaleLowerCase("pt-BR") && <p className="production-kit-name">{kit.titulo}</p>}
+                  {kit?.titulo && displayKitTitle(kit, product).toLocaleLowerCase("pt-BR") !== fullProductName(product).toLocaleLowerCase("pt-BR") && <p className="production-kit-name">{displayKitTitle(kit, product)}</p>}
                   <div className="production-progress-compact" aria-label={`Etapa ${current} de 4`}>
                     {[1, 2, 3, 4].map((step) => (
                       <span key={step} className={step <= current ? "done" : ""} />

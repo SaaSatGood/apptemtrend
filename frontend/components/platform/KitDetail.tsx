@@ -11,7 +11,7 @@ import { Skeletons } from "./ProductKit";
 import ContentKitDialog from "./ContentKitDialog";
 import { PublicationDialog } from "./Production";
 import { productionForProduct } from "./Assistant";
-import { kitContext } from "./kit-presentation";
+import { displayKitTitle, kitContext } from "./kit-presentation";
 import GuidedKit from "./GuidedKit";
 import ProductionSteps from "./ProductionSteps";
 import EmphasizedTitle from "./EmphasizedTitle";
@@ -88,7 +88,7 @@ export default function KitDetail({ productId, kitId }: { productId: string; kit
       <nav className="detail-breadcrumb" aria-label="Navegação estrutural"><Link href="/app">Descobrir</Link><span>›</span><Link href={`/app/produtos/${currentProduct.id}`}>Produto</Link><span>›</span><strong>Criar conteúdo</strong></nav>
       <header className="content-kit-header">
         <p className="eyebrow">Seu conteúdo</p>
-        <h1><EmphasizedTitle text={currentKit.titulo} /></h1>
+        <h1><EmphasizedTitle text={displayKitTitle(currentKit, currentProduct)} /></h1>
         <p className="kit-summary">{context.summary}</p>
         {(context.audience || context.sales) && <div className="kit-context">{context.audience && <p><strong>Para quem</strong><span>{context.audience}</span></p>}{context.sales && <p><strong>Por que agora</strong><span>{context.sales}</span></p>}</div>}
         <div className="kit-meta">{[currentKit.formato, currentKit.nivel_dificuldade, currentKit.duracao_seg ? `${currentKit.duracao_seg}s` : null].filter(Boolean).map((value) => <span key={String(value)}>{value}</span>)}{currentKit.usou_voz && <span>No seu jeito ✓</span>}</div>

@@ -121,6 +121,20 @@ function cleanRepeatedWords(value: string) {
   return value.replace(/\b([\p{L}\p{N}]+)(?:\s+\1\b)+/giu, '$1').replace(/\s+/g, ' ').trim();
 }
 
+function completeKitTitle(title: string, productName: string) {
+  const cleanedTitle = cleanRepeatedWords(title).replace(/[.;\s]+$/g, '');
+  const name = cleanRepeatedWords(productName).replace(/[.;\s]+$/g, '');
+  const danglingWord = /^(?:de|do|da|dos|das|em|com|para|por|e)$/i;
+  const titleWords = cleanedTitle.split(/\s+/).filter(Boolean);
+  const isPrefix = name.length > cleanedTitle.length
+    && name.toLocaleLowerCase('pt-BR').startsWith(`${cleanedTitle.toLocaleLowerCase('pt-BR')} `);
+  if (!isPrefix && !danglingWord.test(titleWords.at(-1) || '')) return cleanedTitle;
+  const candidate = name || cleanedTitle;
+  const words = candidate.split(/\s+/).filter(Boolean).slice(0, 8);
+  while (words.length && danglingWord.test(words.at(-1)!)) words.pop();
+  return words.join(' ') || cleanedTitle;
+}
+
 export function parseGeneratedPackage(text: string) {
   const generated = generatedPackageSchema.parse(JSON.parse(text));
   const vagueVisual = /^(?:problema do dia a dia(?: que o produto resolve)?|resultado final(?: após o uso)?|antes e depois|demonstração do produto|produto em close)$/i;
@@ -131,7 +145,7 @@ export function parseGeneratedPackage(text: string) {
     ...generated,
     content_kit: {
       ...generated.content_kit,
-      titulo: cleanRepeatedWords(generated.content_kit.titulo),
+      titulo: completeKitTitle(generated.content_kit.titulo, generated.product.nome),
       descricao: cleanRepeatedWords(generated.content_kit.descricao),
       hook: cleanRepeatedWords(generated.content_kit.hook),
       roteiro: cleanRepeatedWords(generated.content_kit.roteiro),
@@ -299,7 +313,8 @@ function previousKitsCompact(previousKits: Partial<ContentKit>[]) {
  * mesmo com a IA fora do ar; o creator pode gerar a versão IA depois.
  */
 export function buildFallbackKit(product: { nome: string; descricao?: string | null; categoria?: string | null }) {
-  const words = cleanRepeatedWords(String(product.nome || '')).split(/\s+/).filter(Boolean).slice(0, 4);
+  const productName = cleanRepeatedWords(String(product.nome || ''));
+  const words = productName.split(/\s+/).filter(Boolean).slice(0, 4);
   while (words.length && /^(de|do|da|dos|das|em|com|para)$/i.test(words.at(-1)!)) words.pop();
   const short = words.join(' ') || 'este produto';
   const category = comparableText(`${product.categoria || ''} ${product.nome || ''}`);
@@ -355,7 +370,7 @@ export function buildFallbackKit(product: { nome: string; descricao?: string | n
   const template = templates[kind];
   const tagBase = (product.categoria?.trim() || 'Geral').slice(0, 60).normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-zA-Z0-9]/g, '') || 'produto';
   const fallback = {
-    titulo: short,
+    titulo: completeKitTitle(productName.split(/\s+/).slice(0, 8).join(' '), productName),
     descricao: template.angle,
     formato: 'Demonstração',
     plataforma: 'TikTok',
