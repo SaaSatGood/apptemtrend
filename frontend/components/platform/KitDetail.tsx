@@ -15,6 +15,7 @@ import { displayKitTitle, kitContext } from "./kit-presentation";
 import GuidedKit from "./GuidedKit";
 import ProductionSteps from "./ProductionSteps";
 import EmphasizedTitle from "./EmphasizedTitle";
+import ProductImage from "./ProductImage";
 
 export default function KitDetail({ productId, kitId }: { productId: string; kitId: string }) {
   const router = useRouter();
@@ -87,11 +88,17 @@ export default function KitDetail({ productId, kitId }: { productId: string; kit
     <section className="detail-view kit-focus-view" aria-live="polite">
       <nav className="detail-breadcrumb" aria-label="Navegação estrutural"><Link href="/app">Descobrir</Link><span>›</span><Link href={`/app/produtos/${currentProduct.id}`}>Produto</Link><span>›</span><strong>Criar conteúdo</strong></nav>
       <header className="content-kit-header">
-        <p className="eyebrow">Seu conteúdo</p>
-        <h1><EmphasizedTitle text={displayKitTitle(currentKit, currentProduct)} /></h1>
-        <p className="kit-summary">{context.summary}</p>
-        {(context.audience || context.sales) && <div className="kit-context">{context.audience && <p><strong>Para quem</strong><span>{context.audience}</span></p>}{context.sales && <p><strong>Por que agora</strong><span>{context.sales}</span></p>}</div>}
-        <div className="kit-meta">{[currentKit.formato, currentKit.nivel_dificuldade, currentKit.duracao_seg ? `${currentKit.duracao_seg}s` : null].filter(Boolean).map((value) => <span key={String(value)}>{value}</span>)}{currentKit.usou_voz && <span>No seu jeito ✓</span>}</div>
+        <div className="content-kit-heading-copy">
+          <p className="eyebrow">Seu plano de gravação</p>
+          <h1><EmphasizedTitle text={displayKitTitle(currentKit, currentProduct)} /></h1>
+          <p className="kit-summary">{context.summary}</p>
+          {(context.audience || context.sales) && <div className="kit-context">{context.audience && <p><strong>Para quem</strong><span>{context.audience}</span></p>}{context.sales && <p><strong>Por que agora</strong><span>{context.sales}</span></p>}</div>}
+          <div className="kit-meta">{[currentKit.formato, currentKit.nivel_dificuldade, currentKit.duracao_seg ? `${currentKit.duracao_seg}s` : null].filter(Boolean).map((value) => <span key={String(value)}>{value}</span>)}{currentKit.usou_voz && <span>No seu jeito ✓</span>}</div>
+        </div>
+        <aside className="content-kit-product" aria-label="Produto deste conteúdo">
+          <ProductImage product={currentProduct} width={220} height={180} />
+          <div><span>Produto deste conteúdo</span><strong>{currentProduct.categoria || "Produto"}</strong><Link href={`/app/produtos/${currentProduct.id}`}>Ver detalhes →</Link></div>
+        </aside>
       </header>
       <ProductionSteps current={production ? ({ salvo: 1, em_producao: 2, gravado: 3, publicado: 4 })[production.status] : 1} />
       <GuidedKit

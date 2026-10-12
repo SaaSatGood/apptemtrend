@@ -69,7 +69,7 @@ export default function GuidedKit({ kit, product, status, readyLabel, readyDisab
   const hookChoices = [...new Set([kit.hook, ...strategy.hookOptions].filter((item): item is string => Boolean(item)))];
 
   useEffect(() => { const saved = readGuideProgress(kit.id); queueMicrotask(() => { setSelectedHook(saved.hook); setRecordedScenes(saved.scenes); }); }, [kit.id]);
-  useEffect(() => { if (status === "gravado") queueMicrotask(() => setActiveIndex(steps.length - 1)); }, [status, steps.length]);
+  useEffect(() => { if (status === "gravado" || status === "publicado") queueMicrotask(() => setActiveIndex(steps.length - 1)); }, [status, steps.length]);
 
   function selectHook(value: string) { const next = value === kit.hook ? null : value; setSelectedHook(next); saveGuideProgress(kit.id, { hook: next, scenes: recordedScenes }); }
   function toggleScene(index: number) {
