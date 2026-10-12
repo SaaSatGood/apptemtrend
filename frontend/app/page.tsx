@@ -13,7 +13,7 @@ const kitSteps = [
 ];
 
 const featureCards = [
-  ["↗", "Produtos que vendem", "Nada de achismo: um catálogo feito para você decidir hoje, não mês que vem."],
+  ["↗", "Produtos para avaliar", "Um catálogo organizado para você comparar oportunidades e decidir com clareza."],
   ["✦", "Ideias que viram vídeo", "Cada produto já nasce com um ângulo de conteúdo. Você nunca parte do zero."],
   ["≡", "Roteiro sem enrolação", "Abertura, meio e fim escritos para prender atenção e empurrar para a compra."],
   ["◎", "Cenas passo a passo", "O que mostrar, o que falar, quando cortar. É só apertar o REC."],
@@ -34,6 +34,7 @@ export default function LandingPage() {
   return (
     <div className="tt-home">
       <LandingMotion />
+      <a className="tt-skip-link" href="#landing-discover-input">Pular para busca de produtos</a>
       <main id="top">
       <header className="tt-header">
         <nav className="tt-shell tt-nav" aria-label="Navegação principal">
@@ -57,6 +58,19 @@ export default function LandingPage() {
           <div className="tt-hero-copy">
             <LandingHero />
           </div>
+          <div className="tt-hero-showcase">
+            <Image
+              className="tt-hero-creators-image"
+              src="/hero-creators-reference.png"
+              alt="Três criadores mostrando uma garrafa rosa, um gadget e um aparelho facial"
+              width={1536}
+              height={1024}
+              priority
+            />
+            <span className="tt-hero-spark" aria-hidden="true" />
+            <span className="tt-hero-play tt-hero-play-middle" aria-hidden="true">▷</span>
+            <span className="tt-hero-play tt-hero-play-last" aria-hidden="true">▷</span>
+          </div>
         </section>
 
         <section className="tt-trust"><div className="tt-shell"><p>Pare de enrolar. O caminho é esse.</p><div className="tt-trust-flow" aria-label="Fluxo da TemTrend"><span>Produto</span><i>→</i><span>Ideia</span><i>→</i><span>Plano</span><i>→</i><span>Vídeo</span><i>→</i><span>Venda</span></div></div></section>
@@ -79,7 +93,7 @@ export default function LandingPage() {
               <article className="tt-story tt-story-light">
                 <div className="tt-story-copy"><span>01 · DESCUBRA</span><h3>Decida hoje o que você vai vender.</h3><p>Rolagem infinita não paga conta. Escolha um produto de verdade e transforme em conteúdo que vende.</p><ul><li>Produtos reais organizados por categoria</li><li>Dados para decidir sem chute</li><li>Do produto direto para o roteiro</li></ul></div>
                 <div className="tt-catalog-mockup">
-                  {products.slice(0, 3).map((product, index) => <div key={product.name}><Image src={product.image} alt="" width={320} height={240} /><small>{product.category}</small><strong>{product.name}</strong><span>{index === 0 ? "Em alta" : "Ver produto"}</span></div>)}
+                  {products.slice(0, 3).map((product) => <div key={product.name}><Image src={product.image} alt="" width={320} height={240} /><small>{product.category}</small><strong>{product.name}</strong><span>Explorar</span></div>)}
                 </div>
               </article>
 
@@ -143,9 +157,9 @@ export default function LandingPage() {
           </div>
         </section>
 
-        <section className="tt-dark-section"><div className="tt-shell"><span className="tt-eyebrow">A verdade nua</span><h2>Influencer posta por status.<br /><em>Você vai postar para vender.</em></h2><div className="tt-audience-grid">{profiles.map(([number, title, body], index) => <article key={title}><Image src={peoplePhotos[index].src} alt={`${title} criando conteúdo`} width={500} height={420} /><div><span>{number}</span><h3>{title}</h3><p>{body}</p></div></article>)}</div><div className="tt-dark-quote"><span>PARA QUEM EXECUTA</span><p>“Quem publica, vende.<br />Quem espera a ideia perfeita, <em>assiste.</em>”</p><Link className="tt-btn tt-btn-lime" href="/app?mode=signup">Quero vender ↗</Link></div></div></section>
+        <section className="tt-dark-section"><div className="tt-shell"><span className="tt-eyebrow">A verdade nua</span><h2>Influencer posta por status.<br /><em>Você vai postar para vender.</em></h2><div className="tt-audience-grid">{profiles.map(([number, title, body], index) => <article key={title}><Image src={peoplePhotos[index].src} alt={`${title} criando conteúdo`} width={500} height={420} /><div><span>{number}</span><h3>{title}</h3><p>{body}</p></div></article>)}</div><div className="tt-dark-quote"><span>PARA QUEM EXECUTA</span><p>“Quem publica, aprende.<br />Quem espera a ideia perfeita, <em>assiste.</em>”</p><Link className="tt-btn tt-btn-lime" href="/app?mode=signup">Quero começar ↗</Link></div></div></section>
 
-        <section className="tt-section tt-products" id="produtos"><div className="tt-shell"><span className="tt-eyebrow">Pare de procurar. Escolha.</span><h2>Seu próximo vídeo está <em>nesta lista.</em></h2><div className="tt-product-grid">{products.map((product, index) => <article key={product.name}><div className="tt-product-image"><Image src={product.image} alt={product.name} width={700} height={520} loading="lazy" /><span>0{index + 1}</span></div><small>{product.category}</small><h3>{product.name}</h3><Link href="/app?mode=signup">Transformar em vídeo <span>↗</span></Link></article>)}</div></div></section>
+        <section className="tt-section tt-products" id="produtos"><div className="tt-shell"><span className="tt-eyebrow">Um ponto de partida</span><h2>Ideias de produto para <em>explorar.</em></h2><p className="tt-section-lead">Veja exemplos de categorias e descubra opções no catálogo da TemTrend.</p><div className="tt-product-grid">{products.map((product, index) => <article key={product.name}><div className="tt-product-image"><Image src={product.image} alt={product.name} width={700} height={520} loading="lazy" /><span>0{index + 1}</span></div><small>{product.category}</small><h3>{product.name}</h3><Link href="/app?mode=signup">Explorar catálogo <span>↗</span></Link></article>)}</div></div></section>
 
         <section className="tt-section tt-steps"><div className="tt-shell"><div className="tt-steps-head"><span className="tt-eyebrow">Sem mistério</span><h2>Três passos.<br />Zero desculpa.</h2></div><div className="tt-steps-list">{kitSteps.map(([number, title, body]) => <article key={number}><span>{number}</span><div><h3>{title}</h3><p>{body}</p></div><i>↗</i></article>)}</div></div></section>
 
@@ -172,7 +186,7 @@ export default function LandingPage() {
           </div>
         </section>
 
-        <section className="tt-final"><div className="tt-shell tt-final-card"><div><span>AMANHÃ VOCÊ VAI QUERER TER COMEÇADO HOJE</span><h2>Pare de adiar.<br />Comece a vender.</h2><p>Cada dia enrolando é venda que fica na mesa. Escolha o produto, pegue o plano, grave.</p></div><Link className="tt-btn" href="/app?mode=signup">Criar minha conta grátis <span>↗</span></Link></div></section>
+        <section className="tt-final"><div className="tt-shell tt-final-card"><div><span>AMANHÃ VOCÊ VAI QUERER TER COMEÇADO HOJE</span><h2>Pare de adiar.<br />Comece a vender.</h2><p>Escolha um produto, pegue o plano e grave seu próximo vídeo.</p></div><Link className="tt-btn" href="/app?mode=signup">Criar minha conta grátis <span>↗</span></Link></div></section>
       </main>
 
       <footer className="tt-footer"><div className="tt-shell tt-footer-grid"><div><a className="tt-logo" href="#top"><span>T</span><b>TemTrend</b></a><p>Produto vira conteúdo.<br />Conteúdo vira oportunidade.</p></div><div><strong>Produto</strong><a href="#produtos">Produtos</a><a href="#content-kits">Plano de gravação</a><a href="#como-funciona">Como funciona</a></div><div><strong>Legal</strong><Link href="/termos">Termos</Link><Link href="/privacidade">Privacidade</Link></div><div><strong>Acesso</strong><Link href="/app">Entrar</Link><Link href="/app?mode=signup">Criar conta</Link></div></div><div className="tt-shell tt-footer-bottom"><span>© 2026 TemTrend</span><span>Feito para quem executa.</span></div></footer>

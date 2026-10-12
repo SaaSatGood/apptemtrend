@@ -20,6 +20,7 @@ export default function Topbar() {
 
   return (
     <header className={`topbar${scrolled ? " is-scrolled" : ""}`}>
+      <a className="app-skip-link" href="#page-content">Pular para conteúdo</a>
       <Link className="app-logo" href="/app" aria-label="TemTrend, início">
         <span aria-hidden="true">T</span><b>TemTrend</b>
       </Link>

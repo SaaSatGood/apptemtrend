@@ -1,0 +1,312 @@
+/* Primeira dobra alinhada à referência visual aprovada para a landing page. */
+.tt-home .tt-hero-band {
+  margin: 0;
+  padding-top: 0;
+  border-radius: 0;
+  background:
+    radial-gradient(ellipse 33% 52% at 80% 29%, #e9ffaf 0%, #efffc65e 50%, transparent 100%),
+    radial-gradient(ellipse 31% 32% at 34% 75%, #eaffab 0%, #f1ffd080 50%, transparent 100%),
+    #fcfdf9;
+}
+.tt-home .tt-hero-band::after { display: none; }
+.tt-home .tt-header {
+  top: 26px;
+  width: min(1560px, calc(100% - 6.5%));
+  border: 0;
+  background: #fff;
+  box-shadow: 0 14px 45px #5b69120d;
+}
+.tt-home .tt-nav {
+  width: calc(100% - 48px);
+  height: 98px;
+}
+.tt-home .tt-logo { font-size: clamp(21px, 1.65vw, 28px); letter-spacing: -.065em; }
+.tt-home .tt-logo > span {
+  width: 50px;
+  height: 50px;
+  border-radius: 12px;
+  font-size: 27px;
+  letter-spacing: -.1em;
+}
+.tt-home .tt-nav-links { gap: clamp(28px, 3vw, 52px); font-size: 16px; }
+.tt-home .tt-nav-actions { gap: 12px; }
+.tt-home .tt-login {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 110px;
+  min-height: 57px;
+  padding-inline: 23px;
+  background: #c7ff2d;
+  font-size: 16px;
+}
+.tt-home .tt-nav-actions .tt-btn-small {
+  min-height: 57px;
+  padding-inline: 30px;
+  font-size: 16px;
+}
+.tt-home .tt-hero {
+  display: block;
+  width: min(1560px, calc(100% - 6.5%));
+  min-height: max(760px, 56.4vw);
+  padding: clamp(184px, 14.1vw, 235px) 0 86px;
+}
+.tt-home .tt-hero::before { display: none; }
+.tt-home .tt-hero-copy {
+  position: relative;
+  z-index: 5;
+  width: min(1050px, 70%);
+}
+.tt-home .tt-discover-hero { position: relative; }
+.tt-home .tt-discover-hero::before {
+  content: "";
+  position: absolute;
+  top: -42px;
+  left: -43px;
+  width: 95px;
+  height: 68px;
+  background:
+    linear-gradient(#b7ed1c, #b7ed1c) 19px 42px / 30px 5px no-repeat,
+    linear-gradient(48deg, transparent 45%, #b7ed1c 47% 53%, transparent 55%) 33px 6px / 38px 42px no-repeat,
+    linear-gradient(80deg, transparent 45%, #b7ed1c 47% 53%, transparent 55%) 63px 5px / 20px 38px no-repeat;
+  transform: rotate(-8deg);
+  pointer-events: none;
+}
+.tt-home .tt-discover-hero h1 {
+  max-width: none;
+  margin-left: 45px;
+  font-size: clamp(74px, 6.25vw, 106px);
+  font-weight: 750;
+  line-height: .98;
+  letter-spacing: -.083em;
+  text-wrap: initial;
+}
+.tt-home .tt-discover-hero h1 span { display: block; white-space: nowrap; }
+.tt-home .tt-discover-hero h1 em {
+  display: block;
+  margin-top: -8px;
+  color: #83b900;
+  font-size: 1.19em;
+  font-style: italic;
+  font-weight: 400;
+  line-height: .88;
+  letter-spacing: -.065em;
+}
+.tt-home .tt-discover-hero .tt-discover-sub {
+  max-width: 610px;
+  margin-left: 45px;
+  margin-top: 21px;
+  color: #777973;
+  font-size: clamp(19px, 1.55vw, 25px);
+  line-height: 1.4;
+  letter-spacing: -.025em;
+}
+.tt-home .tt-discover-form {
+  position: relative;
+  z-index: 7;
+  width: min(1030px, 65vw);
+  margin-top: 37px;
+}
+.tt-home .tt-discover-form > label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+}
+.tt-home .tt-discover-row {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  min-height: 86px;
+  padding: 6px 7px 6px 73px;
+  border: 1px solid #d0e3b5;
+  border-radius: 999px;
+  background: #fff;
+  box-shadow: 0 13px 32px #6f883018;
+}
+.tt-home .tt-discover-row::before {
+  content: "";
+  position: absolute;
+  top: 30px;
+  left: 34px;
+  width: 17px;
+  height: 17px;
+  border: 2px solid #171917;
+  border-radius: 50%;
+  pointer-events: none;
+}
+.tt-home .tt-discover-row::after {
+  content: "";
+  position: absolute;
+  top: 49px;
+  left: 51px;
+  width: 11px;
+  height: 2px;
+  border-radius: 2px;
+  background: #171917;
+  transform: rotate(48deg);
+  pointer-events: none;
+}
+.tt-home .tt-discover-row input {
+  min-height: 65px;
+  padding: 0 12px;
+  font-size: 17px;
+}
+.tt-home .tt-discover-row input::placeholder { color: #9295a4; opacity: 1; }
+.tt-home .tt-discover-row .tt-btn {
+  min-width: 316px;
+  min-height: 72px;
+  padding: 0 28px;
+  background: #c7ff2d;
+  border-color: #c7ff2d;
+  color: #111 !important;
+  font-size: 18px;
+  box-shadow: none;
+}
+.tt-home .tt-discover-row .tt-btn:hover { background: #d9ff75; }
+.tt-home .tt-discover-row .tt-btn span { margin-left: 9px; font-size: 26px; font-weight: 400; }
+.tt-home .tt-discover-chips {
+  position: relative;
+  z-index: 7;
+  width: min(1030px, 65vw);
+  flex-wrap: nowrap;
+  gap: 8px;
+  margin-top: 22px;
+  white-space: nowrap;
+}
+.tt-home .tt-discover-chips > span { margin-right: 6px; font-size: 14px; font-weight: 800; }
+.tt-home .tt-discover-chips a {
+  min-height: 49px;
+  padding: 0 17px;
+  border: 1px solid #e1e3dd;
+  border-radius: 999px;
+  background: #fff;
+  font-size: 14px;
+  font-weight: 500;
+  box-shadow: 0 1px 2px #00000008;
+}
+.tt-home .tt-discover-surprise,
+.tt-home .tt-discover-note,
+.tt-home .tt-discover-hero > small { display: none; }
+.tt-home .tt-hero-showcase {
+  position: absolute;
+  z-index: 2;
+  top: clamp(103px, 7.5vw, 125px);
+  right: -14vw;
+  display: block;
+  width: min(67vw, 1120px);
+  min-height: 0;
+  pointer-events: none;
+}
+.tt-home .tt-hero-showcase::before {
+  inset: 18% 0 9% 8%;
+  border: 5px solid #c7ff2d;
+  border-radius: 50%;
+  transform: rotate(-24deg);
+}
+.tt-home .tt-hero-showcase::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  top: 6%;
+  right: 24%;
+  width: 31%;
+  height: 14%;
+  border-radius: 30px;
+  background: #d7ff60;
+  transform: rotate(-12deg);
+}
+.tt-home .tt-hero-creators-image {
+  position: relative;
+  z-index: 1;
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.tt-home .tt-hero-spark {
+  position: absolute;
+  z-index: 2;
+  top: 23%;
+  left: 13.5%;
+  width: 74px;
+  height: 65px;
+  background:
+    linear-gradient(83deg, transparent 45%, #fff 47% 53%, transparent 55%) 25px 0 / 18px 56px no-repeat,
+    linear-gradient(36deg, transparent 45%, #fff 47% 53%, transparent 55%) 0 27px / 37px 31px no-repeat,
+    linear-gradient(-36deg, transparent 45%, #fff 47% 53%, transparent 55%) 43px 27px / 31px 34px no-repeat;
+  filter: drop-shadow(0 2px 2px #0003);
+}
+.tt-home .tt-hero-play {
+  position: absolute;
+  z-index: 2;
+  bottom: 13%;
+  color: #fff;
+  font-family: Arial, sans-serif;
+  font-size: clamp(31px, 3vw, 52px);
+  line-height: 1;
+  text-shadow: 0 1px 5px #0005;
+}
+.tt-home .tt-hero-play-middle { left: 46%; }
+.tt-home .tt-hero-play-last { left: 68%; bottom: 17%; }
+@media (max-width: 1100px) {
+  .tt-home .tt-header { top: 16px; }
+  .tt-home .tt-nav { height: 78px; }
+  .tt-home .tt-logo { font-size: 20px; }
+  .tt-home .tt-logo > span { width: 42px; height: 42px; font-size: 22px; }
+  .tt-home .tt-nav-links { gap: 21px; font-size: 13px; }
+  .tt-home .tt-login { min-width: 85px; min-height: 48px; font-size: 14px; }
+  .tt-home .tt-nav-actions .tt-btn-small { min-height: 48px; padding-inline: 18px; font-size: 14px; }
+  .tt-home .tt-hero { padding-top: 184px; }
+  .tt-home .tt-discover-hero h1 { font-size: clamp(65px, 7vw, 77px); }
+  .tt-home .tt-discover-row .tt-btn { min-width: 245px; font-size: 15px; }
+  .tt-home .tt-discover-chips { flex-wrap: wrap; white-space: normal; }
+  .tt-home .tt-discover-chips a { min-height: 42px; font-size: 12px; }
+}
+@media (max-width: 800px) {
+  .tt-home .tt-hero { min-height: auto; padding-top: 157px; padding-bottom: 55px; }
+  .tt-home .tt-hero-copy { width: 100%; }
+  .tt-home .tt-discover-hero h1 { font-size: clamp(56px, 8vw, 76px); }
+  .tt-home .tt-discover-hero h1,
+  .tt-home .tt-discover-hero .tt-discover-sub { margin-left: 0; }
+  .tt-home .tt-discover-hero .tt-discover-sub { max-width: 570px; }
+  .tt-home .tt-discover-form,
+  .tt-home .tt-discover-chips { width: 100%; }
+  .tt-home .tt-hero-showcase { position: relative; top: auto; right: auto; width: min(100%, 720px); margin: 16px auto -40px; }
+  .tt-home .tt-hero-showcase::before { border-width: 3px; }
+}
+@media (max-width: 720px) {
+  .tt-home .tt-header { top: 8px; width: calc(100% - 24px); }
+  .tt-home .tt-nav { width: calc(100% - 22px); height: 66px; }
+  .tt-home .tt-logo { font-size: 18px; }
+  .tt-home .tt-logo > span { width: 36px; height: 36px; border-radius: 9px; font-size: 19px; }
+  .tt-home .tt-nav-actions .tt-btn-small { min-height: 38px; padding-inline: 13px; font-size: 13px; }
+  .tt-home .tt-hero { width: calc(100% - 36px); padding-top: 130px; padding-bottom: 35px; }
+  .tt-home .tt-discover-hero::before { top: -33px; left: -13px; transform: scale(.7) rotate(-8deg); transform-origin: left top; }
+  .tt-home .tt-discover-hero h1 { font-size: clamp(44px, 11.4vw, 65px); line-height: .98; }
+  .tt-home .tt-discover-hero h1 span { white-space: normal; }
+  .tt-home .tt-discover-hero h1 em { margin-top: 0; font-size: 1.16em; }
+  .tt-home .tt-discover-hero .tt-discover-sub { margin-top: 18px; font-size: 16px; }
+  .tt-home .tt-discover-form { margin-top: 25px; }
+  .tt-home .tt-discover-row { grid-template-columns: 1fr; min-height: 0; padding: 7px; border-radius: 23px; }
+  .tt-home .tt-discover-row::before { top: 26px; left: 20px; width: 15px; height: 15px; }
+  .tt-home .tt-discover-row::after { top: 43px; left: 35px; width: 10px; }
+  .tt-home .tt-discover-row input { min-height: 52px; padding-left: 49px; font-size: 15px; }
+  .tt-home .tt-discover-row .tt-btn { width: 100%; min-width: 0; min-height: 53px; font-size: 15px; }
+  .tt-home .tt-discover-chips { gap: 7px; margin-top: 16px; }
+  .tt-home .tt-discover-chips > span { width: 100%; font-size: 13px; }
+  .tt-home .tt-discover-chips a { min-height: 38px; padding-inline: 11px; font-size: 11px; }
+  .tt-home .tt-hero-showcase { margin-top: 18px; margin-bottom: -23px; }
+}
+@media (max-width: 380px) {
+  .tt-home .tt-discover-hero h1 { font-size: 42px; }
+  .tt-home .tt-nav { gap: 8px; }
+  .tt-home .tt-logo { flex-shrink: 0; gap: 5px; font-size: 15px; }
+  .tt-home .tt-logo > span { width: 32px; height: 32px; font-size: 17px; }
+  .tt-home .tt-nav-actions { flex-shrink: 0; gap: 4px; }
+  .tt-home .tt-nav-actions .tt-btn-small { width: 88px; min-width: 0; padding-inline: 7px; font-size: 0; }
+  .tt-home .tt-nav-actions .tt-btn-small::after { content: "Começar"; font-size: 11px; }
+  .tt-home .tt-nav-actions .menu-button { width: 31px; font-size: 24px; }
+}

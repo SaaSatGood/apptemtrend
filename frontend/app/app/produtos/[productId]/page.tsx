@@ -19,7 +19,7 @@ function Content() {
   return (
     <main id="app-view">
       <Topbar />
-      <section className="page-wrap">
+      <section id="page-content" className="page-wrap">
         <ProductDetail
           key={params.productId}
           productId={params.productId}

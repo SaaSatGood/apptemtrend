@@ -312,7 +312,7 @@ export default function AuthPanel({
             <ProviderButtons dividerLabel="ou entre com email" busy={busy} busyProvider={busyProvider} onSelect={(id) => void continueWithProvider(id)} />
             <label>
               Email
-              <input id="email" name="email" type="email" required autoComplete="email" inputMode="email" placeholder="seu@email.com" autoFocus />
+              <input id="email" name="email" type="email" required autoComplete="email" inputMode="email" spellCheck={false} placeholder="seu@email.com" />
             </label>
             <label>
               Senha
@@ -341,11 +341,11 @@ export default function AuthPanel({
             <ProviderButtons dividerLabel="ou crie com email" busy={busy} busyProvider={busyProvider} onSelect={(id) => void continueWithProvider(id)} />
             <label>
               Nome
-              <input id="signup-name" name="signup-name" required minLength={2} maxLength={120} autoComplete="name" placeholder="Como podemos chamar você?" autoFocus />
+              <input id="signup-name" name="signup-name" required minLength={2} maxLength={120} autoComplete="name" placeholder="Como podemos chamar você?" />
             </label>
             <label>
               Email
-              <input id="signup-email" name="signup-email" type="email" required autoComplete="email" inputMode="email" placeholder="seu@email.com" />
+              <input id="signup-email" name="signup-email" type="email" required autoComplete="email" inputMode="email" spellCheck={false} placeholder="seu@email.com" />
             </label>
             <label>
               Senha
@@ -376,7 +376,7 @@ export default function AuthPanel({
           <form className="stack auth-form" onSubmit={handleRecovery}>
             <label>
               Email
-              <input id="recovery-email" name="recovery-email" type="email" required autoComplete="email" inputMode="email" placeholder="seu@email.com" autoFocus />
+              <input id="recovery-email" name="recovery-email" type="email" required autoComplete="email" inputMode="email" spellCheck={false} placeholder="seu@email.com" />
             </label>
             <button className="primary" type="submit" disabled={busy}>
               {busy ? busyLabel : "Enviar link →"}

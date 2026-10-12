@@ -6,15 +6,21 @@ import { useState } from "react";
 
 const SIGNUP = "/app?mode=signup";
 
+function signupWithSearch(search: string) {
+  const query = search.trim();
+  return query ? `${SIGNUP}&search=${encodeURIComponent(query)}` : SIGNUP;
+}
+
+function rememberSearch(search: string) {
+  try { sessionStorage.setItem("temtrend_pending_search", search.trim()); } catch { /* armazenamento opcional */ }
+}
+
 const EXAMPLES = [
   "Produto para academia",
   "Achadinho para casa",
   "Produto de beleza",
   "Fácil de demonstrar",
   "Até R$ 50",
-  "Para presentear",
-  "Para iniciantes",
-  "Para o TikTok",
 ];
 
 export default function LandingHero() {
@@ -23,22 +29,24 @@ export default function LandingHero() {
 
   return (
     <div className="tt-discover-hero">
-      <div className="tt-pill"><i /> DA IDEIA AO SEU PRÓXIMO VÍDEO</div>
-      <h1>Descubra o que vale<br />a pena <em>vender.</em></h1>
-      <p className="tt-discover-sub">Diga o que você procura ou deixe a TemTrend encontrar uma oportunidade para você.</p>
+      <h1><span>Descubra o que</span><span>vale a pena</span><em>vender.</em></h1>
+      <p className="tt-discover-sub">Encontre produtos para vender e transforme cada escolha em um plano de gravação.</p>
       <form
         className="tt-discover-form"
         onSubmit={(e) => {
           e.preventDefault();
-          router.push(SIGNUP);
+          rememberSearch(value);
+          router.push(signupWithSearch(value));
         }}
       >
         <label htmlFor="landing-discover-input">O que você quer vender?</label>
         <div className="tt-discover-row">
           <input
             id="landing-discover-input"
+            name="search"
             type="text"
             autoComplete="off"
+            maxLength={500}
             placeholder="Ex.: Quero um produto barato para demonstrar em 15 segundos"
             value={value}
             onChange={(e) => setValue(e.target.value)}
@@ -51,7 +59,7 @@ export default function LandingHero() {
       <div className="tt-discover-chips" role="group" aria-label="Exemplos de busca">
         <span>Experimente:</span>
         {EXAMPLES.map((label) => (
-          <Link key={label} href={SIGNUP}>{label}</Link>
+          <Link key={label} href={signupWithSearch(label)} onClick={() => rememberSearch(label)}>{label}</Link>
         ))}
       </div>
       <Link className="tt-discover-surprise" href={SIGNUP}>Não sei o que vender →</Link>

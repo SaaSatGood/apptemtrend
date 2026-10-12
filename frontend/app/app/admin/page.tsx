@@ -12,7 +12,7 @@ function Content() {
     return (
       <main id="app-view">
         <Topbar />
-        <section className="page-wrap">
+        <section id="page-content" className="page-wrap">
           <div className="empty-state">
             <h3>Acesso negado.</h3>
             <p>Sua conta não tem permissão de administração.</p>
@@ -25,7 +25,7 @@ function Content() {
   return (
     <main id="app-view">
       <Topbar />
-      <section className="page-wrap">
+      <section id="page-content" className="page-wrap">
         <Admin />
       </section>
     </main>

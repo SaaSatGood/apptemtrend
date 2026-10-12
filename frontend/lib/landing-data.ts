@@ -2,11 +2,11 @@ export const problems = ['Qual produto eu escolho?', 'O que eu gravo?', 'O que e
 export const transformation = ['PRODUTO', 'IDEIA', 'CONTENT KIT', 'VÍDEO', 'TIKTOK SHOP', 'VENDA'];
 export const profiles: Array<[string, string, string]> = [['01', 'Pessoa comum', 'Zero experiência, zero audiência. Só vontade de vender — e isso basta para começar.'], ['02', 'Creator iniciante', 'Cansou de travar no “o que eu falo?”. Aqui cada vídeo já nasce roteirizado.'], ['03', 'Creator profissional', 'Quer volume sem refazer tudo do zero. Pegue o plano, grave, publique, repita.']];
 export const products = [
-  { category: 'Beleza', name: 'Massageador facial', image: 'https://images.unsplash.com/photo-1556228578-8c89e6adf883?auto=format&fit=crop&w=700&q=82' },
+  { category: 'Beleza', name: 'Sérum facial', image: 'https://images.unsplash.com/photo-1556228578-8c89e6adf883?auto=format&fit=crop&w=700&q=82' },
   { category: 'Tecnologia', name: 'Fone sem fio', image: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=700&q=82' },
-  { category: 'Casa', name: 'Luminária portátil', image: 'https://images.unsplash.com/photo-1507473885765-e6ed057f782c?auto=format&fit=crop&w=700&q=82' },
-  { category: 'Fitness', name: 'Acessórios de treino', image: 'https://images.unsplash.com/photo-1599058917212-d750089bc07e?auto=format&fit=crop&w=700&q=82' },
-  { category: 'Acessórios', name: 'Suporte para celular', image: 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=700&q=82' },
+  { category: 'Casa', name: 'Luminária de mesa', image: 'https://images.unsplash.com/photo-1507473885765-e6ed057f782c?auto=format&fit=crop&w=700&q=82' },
+  { category: 'Fitness', name: 'Corda de treino', image: 'https://images.unsplash.com/photo-1599058917212-d750089bc07e?auto=format&fit=crop&w=700&q=82' },
+  { category: 'Tecnologia', name: 'Smartphone', image: 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=700&q=82' },
   { category: 'Lifestyle', name: 'Garrafa térmica', image: 'https://images.unsplash.com/photo-1602143407151-7111542de6e8?auto=format&fit=crop&w=700&q=82' },
 ];
 export const workflow: Array<[string, string, string]> = [['01', 'ENCONTRE', 'Encontre um produto.'], ['02', 'ESCOLHA', 'Veja o que gravar.'], ['03', 'GRAVE', 'Grave.'], ['04', 'PUBLIQUE', 'Publique.'], ['05', 'VENDA', 'Venda.']];

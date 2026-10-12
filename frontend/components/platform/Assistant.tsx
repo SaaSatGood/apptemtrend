@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { api, friendlyError } from "@/lib/api";
 import { displayProductName } from "@/lib/format";
@@ -109,8 +109,10 @@ export function ProductCard({
 
 export default function Assistant({ onOpen }: { onOpen: (id: string) => void }) {
   const router = useRouter();
+  const params = useSearchParams();
+  const landingSearch = params.get("search");
   const { toast, productions, me, session, loadProductions } = usePlatform();
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState(() => (landingSearch || "").slice(0, 500));
   const [searching, setSearching] = useState(false);
   const [searched, setSearched] = useState(false);
   const [message, setMessage] = useState("");
@@ -121,6 +123,7 @@ export default function Assistant({ onOpen }: { onOpen: (id: string) => void }) 
   const [kitProductId, setKitProductId] = useState<string | null>(null);
   const [contextIds, setContextIds] = useState<string[]>([]);
   const [hideSensitive, setHideSensitive] = useState(false);
+  const hasPendingSearch = useRef(false);
   const inFlight = useRef(false);
   const scrollAfterSearch = useRef(false);
   const responseRef = useRef<HTMLDivElement>(null);
@@ -131,6 +134,22 @@ export default function Assistant({ onOpen }: { onOpen: (id: string) => void }) 
   const recurring = productions.length > 0;
   const inProgress = productions.filter((item) => item.status === "em_producao").length;
   const firstName = String((session?.user?.user_metadata?.full_name as string | undefined) || session?.user?.email?.split("@")[0] || "creator").trim().split(/\s+/)[0];
+
+  useEffect(() => {
+    let active = true;
+    try {
+      const pending = sessionStorage.getItem("temtrend_pending_search");
+      if (pending) {
+        hasPendingSearch.current = true;
+        queueMicrotask(() => {
+          if (!active) return;
+          setQuery((current) => current || pending.slice(0, 500));
+          sessionStorage.removeItem("temtrend_pending_search");
+        });
+      }
+    } catch { /* armazenamento opcional */ }
+    return () => { active = false; };
+  }, []);
 
   useEffect(() => {
     try { const saved = localStorage.getItem("temtrend-hide-sensitive") === "true"; queueMicrotask(() => setHideSensitive(saved)); } catch { /* optional preference */ }
@@ -147,6 +166,7 @@ export default function Assistant({ onOpen }: { onOpen: (id: string) => void }) 
     let active = true;
     queueMicrotask(() => {
       if (!active) return;
+      if (landingSearch || hasPendingSearch.current) return;
       try {
         const saved = JSON.parse(sessionStorage.getItem(storageKey) || "null") as {
           savedAt?: number;
@@ -182,7 +202,7 @@ export default function Assistant({ onOpen }: { onOpen: (id: string) => void }) 
       active = false;
       window.removeEventListener("keydown", focusSearch);
     };
-  }, [storageKey]);
+  }, [storageKey, landingSearch]);
 
   const topResults = useMemo(() => results.filter((product) => !hideSensitive || !isSensitive(product)).slice(0, TOP_RESULTS), [results, hideSensitive]);
   const highlight = useMemo(() => highlightFor(topResults), [topResults]);

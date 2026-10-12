@@ -10,3 +10,5 @@ frontend/test-results/
 !.env.example
 *.log
 *.tsbuildinfo
+# Playwright CLI output (may contain credentials)
+.playwright-cli/

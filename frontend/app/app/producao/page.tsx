@@ -11,7 +11,7 @@ function Content() {
     return (
       <main id="app-view">
         <Topbar />
-        <section className="page-wrap">
+        <section id="page-content" className="page-wrap">
           <div className="empty-state">
             <h3>Área de creators.</h3>
             <p>Sua conta é administradora.</p>
@@ -23,7 +23,7 @@ function Content() {
   return (
     <main id="app-view">
       <Topbar />
-      <section className="page-wrap">
+      <section id="page-content" className="page-wrap">
         <section id="creator-content-view">
           <Production />
         </section>

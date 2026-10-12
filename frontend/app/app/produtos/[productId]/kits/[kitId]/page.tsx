@@ -11,7 +11,7 @@ function Content() {
   return (
     <main id="app-view">
       <Topbar />
-      <section className="page-wrap">
+      <section id="page-content" className="page-wrap">
         <KitDetail key={params.kitId} productId={params.productId} kitId={params.kitId} />
       </section>
     </main>

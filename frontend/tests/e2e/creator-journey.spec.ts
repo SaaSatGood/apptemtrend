@@ -120,6 +120,19 @@ test("descoberta, kit e produção até publicação manual", async ({ page }, t
   await expect(page.getByRole("heading", { name: product.nome })).toBeVisible();
 });
 
+test("busca enviada da landing fica pronta na descoberta", async ({ page }) => {
+  await setup(page);
+  await page.goto("/app?search=produto%20de%20beleza");
+  await expect(page.getByLabel("O que você quer vender?")).toHaveValue("produto de beleza");
+});
+
+test("busca pendente sobrevive ao retorno do login social", async ({ page }) => {
+  await setup(page);
+  await page.addInitScript(() => sessionStorage.setItem("temtrend_pending_search", "achadinho para casa"));
+  await page.goto("/app");
+  await expect(page.getByLabel("O que você quer vender?")).toHaveValue("achadinho para casa");
+});
+
 test("salvo não avança ao abrir o kit; retomada no celular", async ({ page }, testInfo) => {
   await page.setViewportSize({ width: 390, height: 844 });
   const fixture = await setup(page, { saved: true });

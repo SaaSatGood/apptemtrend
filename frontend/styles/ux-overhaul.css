@@ -223,3 +223,58 @@
 @media (max-width: 650px) {
   #app-view .assistant-hero { min-height: calc(100svh - 160px); }
 }
+
+/* Sistema final: leitura e comparação primeiro, decoração em segundo plano. */
+#app-view { background: #fbfcf8; }
+#app-view .page-wrap { width: min(1200px, calc(100% - 48px)); max-width: 1200px; }
+#app-view #page-content { scroll-margin-top: 100px; }
+#app-view .assistant-hero { min-height: 0; }
+#app-view .assistant-hero .discovery-hero,
+#app-view .assistant-hero.is-compact .discovery-hero {
+  width: 100%;
+  margin: 0;
+  padding: clamp(110px, 12vw, 155px) 0 42px;
+}
+#app-view .assistant-hero.is-compact .discovery-hero { padding: 22px 0 26px; }
+#app-view .page-wrap:has(.assistant-hero.is-compact) { padding-top: 88px; }
+#app-view .assistant-hero::before { opacity: .38; top: 130px; }
+#app-view .discover-intro,
+#app-view .assistant-form { text-align: left; }
+#app-view .discover-intro h1 { max-width: 780px; font-size: clamp(48px, 5.4vw, 78px); }
+#app-view .discover-intro > p:last-child,
+#app-view .assistant-hero.is-compact .discover-intro > p:last-child { max-width: 650px; font-size: 16px; line-height: 1.6; }
+#app-view .assistant-form { max-width: 100%; }
+#app-view .assistant-form > label { display: flex; justify-content: space-between; max-width: 960px; font-size: 13px; letter-spacing: 0; text-transform: none; }
+#app-view .assistant-input-row { max-width: 960px; }
+#app-view .assistant-input-row input { min-width: 0; font-size: 16px; }
+#app-view .assistant-input-row :is(button.primary, button.ghost) { min-height: 48px; font-size: 13px; }
+#app-view .assistant-shortcut-groups { justify-content: flex-start; }
+#app-view .assistant-shortcut-groups :is(.assistant-interest-shortcuts,.assistant-examples) { justify-content: flex-start; }
+#app-view .assistant-shortcut-groups button { font-size: 13px; }
+#app-view .discovery-note { font-size: 13px; }
+#app-view .assistant-response { padding-top: 28px; }
+#app-view .discover-results-heading h2 { text-wrap: balance; }
+#app-view .opportunity-card { overflow: hidden; border-color: #dce3d3; box-shadow: 0 8px 25px #2537170b; }
+#app-view .opportunity-card .product-body { padding: 20px; }
+#app-view .opportunity-card .product-body h3 { font-size: 20px; line-height: 1.2; }
+#app-view .opportunity-card .opportunity-motivo { font-size: 13px; }
+#app-view .opportunity-metrics dt { font-size: 12px; }
+#app-view .opportunity-metrics dd { font-size: 15px; font-variant-numeric: tabular-nums; }
+#app-view .opportunity-metrics dd small { font-size: 11px; }
+#app-view .opportunity-secondary-actions button { min-height: 44px; font-size: 12px; white-space: nowrap; }
+#app-view .opportunity-highlight { font-size: 11px; }
+#app-view :is(.production-card, .account-card, .kit-card, .recording-guide-stage) { border-color: #dce3d3; }
+#app-view :is(.production-card p, .account-card p, .kit-card p, .recording-guide-stage p) { font-size: 14px; line-height: 1.55; }
+#app-view :is(.production-card, .kit-card, .account-card) h3 { font-size: clamp(18px, 2vw, 23px); line-height: 1.2; }
+#app-view :is(.product-detail-metrics dd, .production-overview strong) { font-variant-numeric: tabular-nums; }
+#app-view :is(button, a, input, select, textarea, summary):focus-visible { outline: 3px solid #385400; outline-offset: 3px; }
+@media (max-width: 750px) {
+  #app-view .page-wrap { width: calc(100% - 32px); }
+  #app-view .assistant-hero .discovery-hero { padding: 110px 0 30px; }
+  #app-view .assistant-hero.is-compact .discovery-hero { padding: 22px 0 26px; }
+  #app-view .discover-intro h1 { font-size: clamp(42px, 10vw, 60px); }
+  #app-view .assistant-input-row { grid-template-columns: minmax(0, 1fr); border-radius: 20px; }
+  #app-view .assistant-input-row input { grid-column: auto; }
+  #app-view .assistant-input-row :is(button.primary, button.ghost) { width: 100%; }
+  #app-view .opportunity-card .product-body { padding: 16px; }
+}

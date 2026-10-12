@@ -9,6 +9,24 @@ test("landing apresenta a proposta e leva ao cadastro", async ({ page }) => {
   await expect(page.getByRole("heading", { name: /comece a vender/i })).toBeVisible();
 });
 
+test("todas as seções da landing aparecem mesmo antes da rolagem", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.locator(".tt-home.tt-motion-ready")).toHaveCount(1);
+  await expect(page.getByRole("heading", { name: /Ideias de produto para explorar/ })).toHaveCount(1);
+  const hiddenSections = await page.locator("[data-motion]").evaluateAll((elements) =>
+    elements.filter((element) => getComputedStyle(element).opacity === "0").length
+  );
+  expect(hiddenSections).toBe(0);
+});
+
+test("busca da landing acompanha o creator até o cadastro", async ({ page }) => {
+  await page.goto("/");
+  await page.getByLabel("O que você quer vender?").fill("produto de beleza até R$ 50");
+  await page.getByRole("button", { name: /Encontrar produtos/ }).click();
+  await expect(page).toHaveURL(/search=produto%20de%20beleza%20at%C3%A9%20R%24%2050/);
+  await expect(page.getByRole("heading", { name: /comece a vender/i })).toBeVisible();
+});
+
 test("login, termos e privacidade estão acessíveis", async ({ page }) => {
   await page.goto("/app");
   await expect(page.getByRole("button", { name: /continuar com google/i })).toBeVisible();
@@ -27,8 +45,17 @@ test("login, termos e privacidade estão acessíveis", async ({ page }) => {
   await expect(page.getByRole("button", { name: /começar agora →/i })).toBeVisible();
   await page.goto("/termos");
   await expect(page.getByRole("heading", { name: /termos de uso/i })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Voltar ao início" })).toBeVisible();
   await page.goto("/privacidade");
   await expect(page.getByRole("heading", { name: /política de privacidade/i })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Acessar a plataforma" })).toBeVisible();
+});
+
+test("endereço inexistente mostra saída útil", async ({ page }) => {
+  const response = await page.goto("/caminho-inexistente");
+  expect(response?.status()).toBe(404);
+  await expect(page.getByRole("heading", { name: /Esse caminho não existe/ })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Ir para o início" })).toBeVisible();
 });
 
 test("headers defensivos são enviados", async ({ request }) => {

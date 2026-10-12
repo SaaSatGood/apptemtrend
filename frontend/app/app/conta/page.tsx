@@ -23,7 +23,7 @@ function Content() {
   return (
     <main id="app-view" className={showEditor ? "app-view--editing-onboarding" : undefined}>
       <Topbar />
-      <section className="page-wrap">
+      <section id="page-content" className="page-wrap">
         {showEditor ? (
           <Onboarding editing onDone={closeEditor} />
         ) : (

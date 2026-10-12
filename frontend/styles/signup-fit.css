@@ -36,12 +36,13 @@
 .auth-view--signup .auth-providers .provider-label { display: none; }
 .auth-view--signup .auth-providers .provider-label-short { display: inline; }
 .auth-view--signup .divider { margin: 0; font-size: 10px; }
-.auth-view--signup .auth-form label { gap: 4px; font-size: 11px; }
-.auth-view--signup .auth-form input { min-height: 44px; height: 44px; padding: 9px 12px; font-size: 13px; }
+.auth-view--signup .auth-form label { gap: 4px; font-size: 12px; }
+.auth-view--signup .auth-form input { min-height: 44px; height: 44px; padding: 9px 12px; font-size: 14px; }
 .auth-view--signup .password-help { margin: 0; font-size: 10px; }
 .auth-view--signup .auth-form .primary { min-height: 44px; }
-.auth-view--signup .legal-note { margin: 0; font-size: 10px; line-height: 1.4; }
-.auth-view--signup .auth-switch { margin: 0; font-size: 11px; }
+.auth-view--signup .legal-note { margin: 0; font-size: 12px; line-height: 1.4; }
+.auth-view--signup .legal-note a { color: #385400; font-weight: 700; text-underline-offset: 2px; }
+.auth-view--signup .auth-switch { margin: 0; font-size: 12px; }
 .auth-view--signup .back-home { align-self: center; font-size: 11px; }
 
 @media (max-width: 850px) {
@@ -68,7 +69,7 @@
   .auth-view--signup .auth-form label { gap: 2px; }
   .auth-view--signup .auth-form input { min-height: 44px; height: 44px; }
   .auth-view--signup .auth-form .primary { min-height: 44px; }
-  .auth-view--signup .legal-note { font-size: 9px; line-height: 1.25; }
-  .auth-view--signup .auth-switch { font-size: 10px; }
+  .auth-view--signup .legal-note { font-size: 12px; line-height: 1.3; }
+  .auth-view--signup .auth-switch { font-size: 12px; }
   .auth-view--signup .back-home { display: none; }
 }

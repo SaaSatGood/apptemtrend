@@ -20,6 +20,7 @@ const contentSecurityPolicy = [
   "style-src 'self' 'unsafe-inline'",
   "font-src 'self' data:",
   "img-src 'self' data: blob: https://images.unsplash.com https://images.pexels.com https://s.500fd.com https://*.supabase.co",
+  "media-src 'self' https://videos.pexels.com",
   `connect-src ${connectSrc}`,
   "upgrade-insecure-requests",
 ].join("; ");

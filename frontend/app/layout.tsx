@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Instrument_Serif, Manrope } from "next/font/google";
 import "../styles/landing.css";
 import "../styles/landing-refinements.css";
@@ -15,6 +15,8 @@ import "../styles/signup-fit.css";
 import "../styles/discovery-results.css";
 import "../styles/guided-kit.css";
 import "../styles/ux-overhaul.css";
+import "../styles/document-pages.css";
+import "../styles/landing-reference.css";
 
 const manrope = Manrope({
   subsets: ["latin"],
@@ -34,6 +36,8 @@ export const metadata: Metadata = {
     "Encontre produtos para vender no TikTok Shop e descubra exatamente o que criar para transformar produtos em conteúdo.",
   icons: { icon: "/temtrend-mark.svg" },
 };
+
+export const viewport: Viewport = { themeColor: "#fbfcf8" };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
