@@ -1,0 +1,147 @@
+/* Acesso e configuração seguem a mesma linguagem da landing. */
+.auth-view .auth-providers,
+.auth-view--signup .auth-providers { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.auth-view .auth-providers .provider-label { display: none; }
+.auth-view .auth-providers .provider-label-short { display: inline; }
+.auth-view .auth-providers .provider-button {
+  min-width: 0;
+  min-height: 48px;
+  padding: 8px 6px;
+  border-color: #dce4d4;
+  font-size: 12px;
+  font-weight: 750;
+}
+.auth-view .auth-providers .provider-button:hover { border-color: #86ab41; background: #f7fbed; }
+.auth-view .auth-form label { color: #273023; }
+.auth-view .auth-form input { border-color: #d8e0d1; border-radius: 12px; }
+.auth-view .auth-form input:focus { border-color: #6b9d27; box-shadow: 0 0 0 3px #c8ff2e66; }
+.auth-view .password-toggle { color: #476120; }
+.auth-view .auth-form .primary { border-radius: 999px; background: #c8ff2e; color: #111b0e; box-shadow: none; }
+.auth-view .auth-form .primary:hover:not(:disabled) { background: #b8ef16; }
+.auth-view .auth-form .primary:focus-visible,
+.auth-view .auth-tabs button:focus-visible,
+.auth-view .auth-providers button:focus-visible { outline: 3px solid #80ae31; outline-offset: 3px; }
+.auth-view .auth-value-intro > p:last-child { max-width: 37ch; margin: 0; color: #4d5c3c; font-size: 15px; line-height: 1.6; }
+.auth-view .auth-value h2 em { font-family: var(--font-instrument-serif), Georgia, serif; font-weight: 400; color: #5b861b; }
+.auth-view .auth-value > small span { color: #739d20; }
+
+@media (min-width: 851px) and (min-height: 760px) {
+  .auth-view { min-height: 100svh; padding: 21px clamp(28px, 4vw, 64px) 22px; grid-template-rows: 38px minmax(0, 1fr) 18px; background: #f7f9f2; }
+  .auth-view .auth-logo { align-self: center; font-size: 17px; letter-spacing: -.035em; }
+  .auth-view .auth-logo span { width: 36px; height: 36px; }
+  .auth-view .auth-layout { width: min(1180px, 100%); grid-template-columns: minmax(0, .96fr) minmax(0, 1.04fr); gap: 24px; align-self: center; padding: 10px 0; }
+  .auth-view .auth-value {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    min-height: 610px;
+    overflow: hidden;
+    padding: clamp(36px, 4vw, 56px);
+    border: 1px solid #dcebc0;
+    border-radius: 28px;
+    background: #e9f5cf;
+    isolation: isolate;
+  }
+  .auth-view .auth-value::after { content: ""; position: absolute; z-index: -1; right: -225px; bottom: -230px; width: 510px; height: 510px; border: 1px solid #9ac35d66; border-radius: 50%; box-shadow: 0 0 0 70px #ddf0b18c, 0 0 0 140px #d5ec9e75; }
+  .auth-view .auth-value .eyebrow { margin-bottom: 32px; }
+  .auth-view .auth-value h2 { max-width: 11ch; margin: 0 0 24px; font-family: var(--font-manrope), Arial, sans-serif; font-size: clamp(45px, 4vw, 61px); font-style: normal; font-weight: 690; line-height: .99; letter-spacing: -.07em; }
+  .auth-view .auth-benefits { gap: 0; margin-top: auto; padding-top: 30px; }
+  .auth-view .auth-benefits > div { grid-template-columns: 30px 1fr; gap: 10px; padding: 12px 0; border-top: 1px solid #acc98a8a; }
+  .auth-view .auth-benefits > div > span { color: #567b20; }
+  .auth-view .auth-benefits p { color: #4d5b43; font-size: 12px; }
+  .auth-view .auth-benefits strong { color: #182014; font-size: 13px; }
+  .auth-view .auth-value > small { width: fit-content; margin-top: 22px; padding: 11px 14px; border: 1px solid #ffffffa6; border-radius: 999px; background: #ffffffe0; color: #25351c; font-size: 11px; font-weight: 850; letter-spacing: .04em; }
+  .auth-view .auth-shell,
+  .auth-view--signup .auth-shell { width: 100%; padding: clamp(28px, 3.1vw, 42px); border: 1px solid #e0e7d9; border-radius: 28px; background: #fff; box-shadow: 0 20px 60px #26391b0e; }
+  .auth-view .auth-tabs,
+  .auth-view--signup .auth-tabs { margin-bottom: 21px; }
+  .auth-view .auth-heading,
+  .auth-view--signup .auth-heading { margin-bottom: 18px; }
+  .auth-view .auth-heading h1,
+  .auth-view--signup .auth-heading h1 { max-width: 12ch; margin-bottom: 6px; font-size: clamp(39px, 3.55vw, 52px); line-height: 1.02; }
+  .auth-view .auth-heading > p:last-child,
+  .auth-view--signup .auth-heading > p:last-child { color: #5b6755; font-size: 14px; }
+  .auth-view .auth-form,
+  .auth-view--signup .auth-form { gap: 11px; }
+  .auth-view .auth-form label,
+  .auth-view--signup .auth-form label { gap: 5px; font-size: 12px; }
+  .auth-view .auth-form input,
+  .auth-view--signup .auth-form input { min-height: 47px; height: 47px; font-size: 14px; }
+  .auth-view .auth-form .primary,
+  .auth-view--signup .auth-form .primary { min-height: 48px; }
+  .auth-view .legal-note { color: #586251; font-size: 11px; }
+  .auth-view .auth-switch { font-size: 12px; }
+  .auth-view .back-home { align-self: center; }
+}
+
+@media (min-width: 851px) and (max-height: 759px) {
+  .auth-view { background: #f7f9f2; }
+  .auth-view .auth-layout { width: min(1120px, 100%); gap: 25px; }
+  .auth-view .auth-value { position: relative; overflow: hidden; padding: 28px; border: 1px solid #dcebc0; border-radius: 24px; background: #e9f5cf; }
+  .auth-view .auth-value h2 { max-width: 12ch; margin-bottom: 16px; font-family: var(--font-manrope), Arial, sans-serif; font-size: clamp(37px, 3.6vw, 48px); font-style: normal; font-weight: 690; line-height: 1; }
+  .auth-view .auth-value-intro > p:last-child { font-size: 12px; }
+  .auth-view .auth-benefits { gap: 7px; margin-top: 22px; }
+  .auth-view .auth-benefits p { font-size: 11px; }
+  .auth-view .auth-benefits strong { font-size: 12px; }
+  .auth-view .auth-value > small { margin-top: 16px; color: #435735; font-size: 10px; font-weight: 800; }
+  .auth-view .auth-shell { border-radius: 24px; }
+}
+
+@media (max-width: 850px) and (min-height: 760px) {
+  .auth-view { padding: 17px 18px 22px; grid-template-rows: 34px minmax(0, 1fr) 18px; background: #f7f9f2; }
+  .auth-view .auth-logo { align-self: center; }
+  .auth-view .auth-layout { width: min(100%, 490px); align-self: center; padding: 12px 0; }
+  .auth-view .auth-shell,
+  .auth-view--signup .auth-shell { padding: 24px; border-radius: 24px; }
+  .auth-view .auth-tabs,
+  .auth-view--signup .auth-tabs { margin-bottom: 18px; }
+  .auth-view .auth-heading,
+  .auth-view--signup .auth-heading { margin-bottom: 15px; }
+  .auth-view .auth-heading h1,
+  .auth-view--signup .auth-heading h1 { margin-bottom: 5px; font-size: 36px; line-height: 1.03; }
+  .auth-view .auth-heading > p:last-child,
+  .auth-view--signup .auth-heading > p:last-child { font-size: 13px; }
+  .auth-view .auth-form,
+  .auth-view--signup .auth-form { gap: 9px; }
+  .auth-view .auth-form label,
+  .auth-view--signup .auth-form label { gap: 4px; font-size: 12px; }
+  .auth-view .auth-form input,
+  .auth-view--signup .auth-form input { min-height: 46px; height: 46px; font-size: 14px; }
+  .auth-view .auth-form .primary,
+  .auth-view--signup .auth-form .primary { min-height: 48px; }
+  .auth-view .auth-switch { font-size: 12px; }
+  .auth-view .back-home { align-self: center; }
+}
+
+@media (max-width: 600px) and (min-height: 760px) {
+  .auth-view { padding-inline: 16px; }
+  .auth-view .auth-shell,
+  .auth-view--signup .auth-shell { padding: 21px; }
+  .auth-view .auth-heading h1,
+  .auth-view--signup .auth-heading h1 { font-size: 34px; }
+  .auth-view .auth-providers .provider-button { min-height: 44px; }
+  .auth-view .back-home { font-size: 11px; }
+}
+
+/* O onboarding conserva a sequência; aqui reforçamos legibilidade e estado. */
+.onboarding .onboarding-progress { overflow: hidden; border-radius: 999px; }
+.onboarding .onboarding-progress > div { background: #8cc11f; }
+.onboarding .selection-card.selected,
+.onboarding .chip-grid button.selected { border-color: #6f9e20; background: #f2fadd; box-shadow: inset 4px 0 0 #a8e52b; }
+.onboarding .selection-card:focus-visible,
+.onboarding .chip-grid button:focus-visible,
+.onboarding .onboarding-actions button:focus-visible { outline: 3px solid #7dae28; outline-offset: 3px; }
+.onboarding .onboarding-actions .primary { border-radius: 999px; }
+
+@media (min-width: 851px) {
+  .onboarding .onboarding-aside { background: #e9f5cf; }
+  .onboarding .selection-copy strong { font-size: 14px; }
+  .onboarding .selection-copy small { font-size: 12px; }
+}
+
+@media (max-width: 600px) and (min-height: 701px) {
+  .onboarding .selection-copy strong { font-size: 13px; }
+  .onboarding .selection-copy small { font-size: 11px; }
+  .onboarding .onboarding-heading > p:last-child { color: #4f5b4b; }
+}

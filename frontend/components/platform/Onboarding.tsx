@@ -189,7 +189,7 @@ export default function Onboarding({ editing, onDone }: { editing: boolean; onDo
               );
             })}
           </ol>
-        <div className="onboarding-progress" aria-label="Progresso do onboarding">
+        <div className="onboarding-progress" role="progressbar" aria-label="Progresso do onboarding" aria-valuenow={step} aria-valuemin={0} aria-valuemax={5}>
           <div id="onboarding-progress-bar" style={{ width: `${(Math.min(step, 5) / 5) * 100}%` }}></div>
         </div>
         <div className="onboarding-meta">

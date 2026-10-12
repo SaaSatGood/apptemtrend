@@ -281,8 +281,11 @@ export default function AuthPanel({
       </Link>
       <div className="auth-layout">
         <aside className="auth-value" aria-label="O que você encontra na TemTrend">
-          <p className="eyebrow">Da descoberta à gravação</p>
-          <h2>Menos dúvida.<br />Mais conteúdo pronto.</h2>
+          <div className="auth-value-intro">
+            <p className="eyebrow">Da descoberta à gravação</p>
+            <h2>Seu próximo vídeo começa <em>com um plano.</em></h2>
+            <p>Encontre um produto, entenda o que mostrar e grave do seu jeito.</p>
+          </div>
           <div className="auth-benefits">
             {AUTH_BENEFITS.map(([number, benefitTitle, description]) => (
               <div key={number}>
@@ -291,7 +294,7 @@ export default function AuthPanel({
               </div>
             ))}
           </div>
-          <small>Você escolhe o produto. A TemTrend ajuda a decidir o que gravar.</small>
+          <small>PRODUTO <span>→</span> IDEIA <span>→</span> PLANO <span>→</span> REC</small>
         </aside>
         <section className="auth-shell" aria-live="polite">
         <div className="auth-accent" aria-hidden="true"></div>
