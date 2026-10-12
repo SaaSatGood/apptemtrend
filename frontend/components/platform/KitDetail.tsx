@@ -90,12 +90,10 @@ export default function KitDetail({ productId, kitId }: { productId: string; kit
         <p className="eyebrow">Seu Content Kit</p>
         <h1><EmphasizedTitle text={currentKit.titulo} /></h1>
         <p className="kit-summary">{context.summary}</p>
-        <div className="kit-side">
         {(context.audience || context.sales) && <div className="kit-context">{context.audience && <p><strong>Para quem</strong><span>{context.audience}</span></p>}{context.sales && <p><strong>Por que agora</strong><span>{context.sales}</span></p>}</div>}
         <div className="kit-meta">{[currentKit.formato, currentKit.nivel_dificuldade, currentKit.duracao_seg ? `${currentKit.duracao_seg}s` : null].filter(Boolean).map((value) => <span key={String(value)}>{value}</span>)}{currentKit.usou_voz && <span>No seu jeito ✓</span>}</div>
-        </div>
       </header>
-      <div className="production-status"><p className="eyebrow">Status da produção</p><ProductionSteps current={production ? ({ salvo: 1, em_producao: 2, gravado: 3, publicado: 4 })[production.status] : 1} /></div>
+      <ProductionSteps current={production ? ({ salvo: 1, em_producao: 2, gravado: 3, publicado: 4 })[production.status] : 1} />
       <GuidedKit
         kit={currentKit}
         product={currentProduct}
