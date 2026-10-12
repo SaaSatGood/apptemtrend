@@ -43,6 +43,7 @@ export default function Topbar() {
         </nav>
       )}
       {admin && <span className="admin-nav-label">Painel administrativo</span>}
+      {!admin && <Link className="app-create-link" href="/app#assistant-section"><span aria-hidden="true">+</span> Novo conteúdo</Link>}
       <UserMenu onSignOut={() => void signOut()} active={pathname?.startsWith("/app/conta") === true} />
     </header>
   );
@@ -67,6 +68,7 @@ function UserMenu({ onSignOut, active }: { onSignOut: () => void; active: boolea
           <small>{session?.user.email || ""}</small>
         </span>
         <span className="user-avatar">{display.trim().charAt(0).toUpperCase() || "T"}</span>
+        <span className="user-menu-chevron" aria-hidden="true">⌄</span>
       </summary>
       <div className="user-menu-panel">
         <div className="user-menu-heading">
