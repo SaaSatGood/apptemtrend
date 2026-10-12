@@ -8,6 +8,7 @@ import { sceneParts } from "./kit-text";
 import { directCta, finalSceneLine, strategyFrom } from "./kit-presentation";
 import { readGuideProgress, saveGuideProgress } from "./guide-progress";
 import ProductImage from "./ProductImage";
+import Modal from "./Modal";
 import { usePlatform } from "./store";
 
 type Detail = { label: string; text: string };
@@ -17,6 +18,14 @@ const PREPARE = ["Produto à mão", "Boa luz", "Fundo organizado", "Lente limpa"
 function shortSceneLabel(value: string, index: number) {
   const clause = value.split(/[,.;:]/)[0].trim();
   return clause.length > 0 && clause.length <= 27 ? `Cena ${index + 1} · ${clause}` : `Cena ${index + 1}`;
+}
+
+function tipForStep(active: GuideStep, publishingTip: string | null): string {
+  if (active.id === "prepare") return "Deixe o produto, a luz e o fundo prontos antes de apertar o rec — cada interrupção custa um take.";
+  if (active.id === "hook") return "Fale a abertura olhando para a lente nos 3 primeiros segundos: é ela que segura o scroll.";
+  if (active.id === "script") return "Adapte as palavras ao seu jeito de falar — roteiro bom é roteiro falado.";
+  if (active.id === "publication") return publishingTip || "Publique nos horários em que seu público está online e responda os primeiros comentários.";
+  return "Grave 2–3 takes de cada cena e escolha o mais natural na hora de editar.";
 }
 
 function stepsFor(kit: ContentKit, selectedHook: string | null, status: CreatorContent["status"]): GuideStep[] {
@@ -52,6 +61,7 @@ export default function GuidedKit({ kit, product, status, readyLabel, readyDisab
   const [checkedPrep, setCheckedPrep] = useState<string[]>([]);
   const [copied, setCopied] = useState(false);
   const [allCopied, setAllCopied] = useState(false);
+  const [scriptOpen, setScriptOpen] = useState(false);
   const strategy = useMemo(() => strategyFrom(kit.roteiro), [kit.roteiro]);
   const scenes = normalizeScenes(kit.cenas);
   const steps = stepsFor(kit, selectedHook, status);
@@ -61,6 +71,15 @@ export default function GuidedKit({ kit, product, status, readyLabel, readyDisab
   const finishedScenes = allRecorded ? scenes.length : recordedScenes.filter((index) => index < scenes.length).length;
   const progress = scenes.length ? Math.round(finishedScenes / scenes.length * 100) : Math.round((activeIndex + 1) / steps.length * 100);
   const hookChoices = [...new Set([kit.hook, ...strategy.hookOptions].filter((item): item is string => Boolean(item)))];
+  const showScript = Boolean(strategy.main || strategy.faceless || strategy.publishing || strategy.scriptOptions.length > 0 || hookChoices.length > 1);
+  const guideParts = ["preparação"];
+  if (steps.some((step) => step.id === "hook")) guideParts.push("abertura");
+  if (scenes.length) guideParts.push(`${scenes.length} ${scenes.length === 1 ? "cena" : "cenas"}`);
+  if (steps.some((step) => step.id === "script")) guideParts.push("roteiro");
+  if (steps.some((step) => step.id === "publication")) guideParts.push("publicação");
+  const guideComposition = guideParts.length > 1
+    ? `${guideParts.slice(0, -1).join(", ")} e ${guideParts[guideParts.length - 1]}`
+    : guideParts[0];
 
   useEffect(() => { const saved = readGuideProgress(kit.id); queueMicrotask(() => { setSelectedHook(saved.hook); setRecordedScenes(saved.scenes); }); }, [kit.id]);
   useEffect(() => { if (status === "gravado") queueMicrotask(() => setActiveIndex(steps.length - 1)); }, [status, steps.length]);
@@ -74,12 +93,13 @@ export default function GuidedKit({ kit, product, status, readyLabel, readyDisab
     if (scenes.length > 0 && next.length === scenes.length) onAllScenesRecorded();
   }
   function selectStep(index: number) { setActiveIndex(index); setCopied(false); }
+  function applyVariant(option: string) { setScriptOpen(false); onGenerateVariant(option); }
   async function copyStep() { const value = active.details.map((item) => `${item.label}: ${item.text}`).join("\n\n") || active.description; if (!(await copyText(value))) { toast("Não conseguimos copiar esta etapa. Tente novamente."); return; } setCopied(true); window.setTimeout(() => setCopied(false), 2200); }
   async function copyPlan() { const lines = steps.filter((step) => step.id !== "prepare").map((step) => [step.title, ...step.details.map((item) => `${item.label}: ${item.text}`)].join("\n")); if (!(await copyText([kit.titulo, ...lines].join("\n\n")))) { toast("Não conseguimos copiar o plano. Tente novamente."); return; } setAllCopied(true); window.setTimeout(() => setAllCopied(false), 2200); }
   async function copyField(item: Detail) { toast(await copyText(item.text) ? `${item.label} copiado ✓` : "Não conseguimos copiar. Tente novamente."); }
 
   return <section className="recording-guide" aria-labelledby="recording-guide-title">
-    <header className="recording-guide-heading"><div><p className="eyebrow">Guia de gravação</p><h2 id="recording-guide-title">Grave uma etapa de cada vez.</h2><p>{scenes.length ? `${finishedScenes} de ${scenes.length} cenas gravadas` : "Siga as etapas do roteiro."}</p></div><span className="recording-guide-counter">{String(activeIndex + 1).padStart(2, "0")} <small>/ {String(steps.length).padStart(2, "0")}</small></span></header>
+    <header className="recording-guide-heading"><div><p className="eyebrow">Guia de gravação</p><h2 id="recording-guide-title">Grave uma etapa de cada vez.</h2><p>{scenes.length ? `${finishedScenes} de ${scenes.length} cenas gravadas` : "Siga as etapas do roteiro."}</p></div><span className="recording-guide-counter" aria-label={`Etapa ${activeIndex + 1} de ${steps.length} do guia (${guideComposition})`}>{String(activeIndex + 1).padStart(2, "0")} <small>/ {String(steps.length).padStart(2, "0")} do guia</small></span></header>
     <label className="recording-guide-mobile-select">Etapa {activeIndex + 1} de {steps.length}<select value={activeIndex} onChange={(event) => selectStep(Number(event.target.value))} aria-label="Escolher etapa do roteiro">{steps.map((step, index) => <option value={index} key={step.id}>{step.label}</option>)}</select></label>
     <div className="recording-guide-grid">
       <div className="recording-guide-stage" key={active.id}>
@@ -90,12 +110,20 @@ export default function GuidedKit({ kit, product, status, readyLabel, readyDisab
           {active.id === "hook" && hookChoices.length > 1 && <div className="recording-guide-choices"><strong>Escolha seu hook</strong>{hookChoices.map((option, index) => <div key={`${option}-${index}`} className={(selectedHook || kit.hook) === option ? "selected" : ""}><p>{option}</p><button type="button" onClick={() => selectHook(option)}>{(selectedHook || kit.hook) === option ? "Em uso ✓" : "Usar este hook"}</button></div>)}</div>}
           {active.sceneIndex != null && <label className="recording-guide-scene-check"><input type="checkbox" checked={allRecorded || recordedScenes.includes(active.sceneIndex)} disabled={allRecorded || readyDisabled} onChange={() => toggleScene(active.sceneIndex!)} /> Já gravei esta cena</label>}
           {active.id !== "prepare" && <button className="recording-guide-copy" type="button" onClick={() => void copyStep()}>{copied ? "Etapa copiada ✓" : "Copiar esta etapa"}</button>}
+          <div className="recording-guide-tip"><strong>Dica da etapa</strong><p>{tipForStep(active, strategy.publishing)}</p></div>
         </div>
+        <div className="recording-guide-actions">{activeIndex > 0 && <button className="ghost" type="button" onClick={() => selectStep(activeIndex - 1)}>Voltar</button>}<button className="primary" type="button" disabled={atEnd && readyDisabled} onClick={() => atEnd ? onReady() : selectStep(activeIndex + 1)}>{atEnd ? readyLabel : "Próxima etapa →"}</button></div>
       </div>
-      <div className="recording-guide-navigation"><div className="recording-guide-progress-heading"><strong>Seu plano</strong><span>{finishedScenes} de {scenes.length} cenas</span></div><div className="recording-guide-progress" role="progressbar" aria-label="Progresso do guia" aria-valuemin={0} aria-valuemax={100} aria-valuenow={progress}><span style={{ width: `${progress}%` }} /></div><nav className="recording-guide-steps" aria-label="Etapas do roteiro">{steps.map((step, index) => { const done = step.sceneIndex != null && (allRecorded || recordedScenes.includes(step.sceneIndex)); return <button key={step.id} type="button" className={index === activeIndex ? "active" : ""} aria-current={index === activeIndex ? "step" : undefined} onClick={() => selectStep(index)}><span className="recording-guide-step-number">{done ? "✓" : index + 1}</span><span className="recording-guide-step-copy"><strong>{step.label}</strong><small>{done ? "Gravado" : index === activeIndex ? "Atual" : "Pendente"}</small></span><span className="recording-guide-step-arrow" aria-hidden="true">→</span></button>; })}</nav><div className="recording-guide-controls"><div className="recording-guide-actions">{activeIndex > 0 && <button className="ghost" type="button" onClick={() => selectStep(activeIndex - 1)}>Voltar</button>}<button className="primary" type="button" disabled={atEnd && readyDisabled} onClick={() => atEnd ? onReady() : selectStep(activeIndex + 1)}>{atEnd ? readyLabel : "Próxima etapa →"}</button></div></div></div>
+      <div className="recording-guide-navigation"><div className="recording-guide-progress-heading"><strong>Seu plano</strong><span>{finishedScenes} de {scenes.length} cenas</span></div><div className="recording-guide-progress" role="progressbar" aria-label="Progresso do guia" aria-valuemin={0} aria-valuemax={100} aria-valuenow={progress}><span style={{ width: `${progress}%` }} /></div><nav className="recording-guide-steps" aria-label="Etapas do roteiro">{steps.map((step, index) => { const done = step.sceneIndex != null && (allRecorded || recordedScenes.includes(step.sceneIndex)); return <button key={step.id} type="button" className={index === activeIndex ? "active" : ""} aria-current={index === activeIndex ? "step" : undefined} onClick={() => selectStep(index)}><span className="recording-guide-step-number">{done ? "✓" : index + 1}</span><span className="recording-guide-step-copy"><strong>{step.label}</strong><small>{done ? "Gravado" : index === activeIndex ? "Atual" : "Pendente"}</small></span><span className="recording-guide-step-arrow" aria-hidden="true">→</span></button>; })}</nav></div>
     </div>
-    <div className="recording-guide-bottom"><div className="recording-guide-support"><span className="recording-guide-status">{statusLabel}</span><button type="button" onClick={() => void copyPlan()}>{allCopied ? "Plano copiado ✓" : "Copiar plano"}</button><button type="button" onClick={onGenerateAnother}>Gerar outra versão</button><Link href="/app/producao">Minha produção →</Link></div>
-      {(strategy.main || strategy.faceless || strategy.publishing || strategy.scriptOptions.length > 0 || hookChoices.length > 1) && <details className="recording-guide-more"><summary>Ver roteiro completo <span aria-hidden="true">⌄</span></summary><div className="recording-guide-more-content">{strategy.main && <section><h3>Roteiro principal</h3><p>{strategy.main}</p></section>}{hookChoices.length > 1 && <section><h3>Variações de hook</h3><div className="recording-guide-variants">{hookChoices.map((option) => <div key={option}><p>{option}</p><button type="button" onClick={() => selectHook(option)}>{(selectedHook || kit.hook) === option ? "Em uso ✓" : "Usar este hook"}</button></div>)}</div></section>}{strategy.scriptOptions.length > 0 && <section><h3>Variações de roteiro</h3><div className="recording-guide-variants">{strategy.scriptOptions.map((option, index) => <div key={`${option}-${index}`}><span>IDEIA {String(index + 1).padStart(2, "0")}</span><p>{option}</p><button type="button" onClick={() => onGenerateVariant(option)}>Usar esta variação →</button></div>)}</div></section>}{strategy.faceless && <section><h3>Sem aparecer</h3><p>{strategy.faceless}</p></section>}{strategy.publishing && <section><h3>Dica de publicação</h3><p>{strategy.publishing}</p></section>}</div></details>}
+    <div className="recording-guide-bottom"><div className="recording-guide-support"><span className="recording-guide-status">{statusLabel}</span><button type="button" onClick={() => void copyPlan()}>{allCopied ? "Plano copiado ✓" : "Copiar plano"}</button><button type="button" onClick={onGenerateAnother}>Gerar outra versão</button>{showScript && <button type="button" onClick={() => setScriptOpen(true)}>Ver roteiro completo</button>}<Link href="/app/producao">Minha produção →</Link></div>
     </div>
+    {scriptOpen && <Modal titleId="roteiro-completo-title" onClose={() => setScriptOpen(false)}>
+      <div className="stack">
+        <p className="eyebrow">Roteiro completo</p>
+        <h2 id="roteiro-completo-title">{kit.titulo}</h2>
+        <div className="recording-guide-more-content">{strategy.main && <section><h3>Roteiro principal</h3><p>{strategy.main}</p></section>}{hookChoices.length > 1 && <section><h3>Variações de hook</h3><div className="recording-guide-variants">{hookChoices.map((option) => <div key={option}><p>{option}</p><button type="button" onClick={() => selectHook(option)}>{(selectedHook || kit.hook) === option ? "Em uso ✓" : "Usar este hook"}</button></div>)}</div></section>}{strategy.scriptOptions.length > 0 && <section><h3>Variações de roteiro</h3><div className="recording-guide-variants">{strategy.scriptOptions.map((option, index) => <div key={`${option}-${index}`}><span>IDEIA {String(index + 1).padStart(2, "0")}</span><p>{option}</p><button type="button" onClick={() => applyVariant(option)}>Usar esta variação →</button></div>)}</div></section>}{strategy.faceless && <section><h3>Sem aparecer</h3><p>{strategy.faceless}</p></section>}{strategy.publishing && <section><h3>Dica de publicação</h3><p>{strategy.publishing}</p></section>}</div>
+      </div>
+    </Modal>}
   </section>;
 }

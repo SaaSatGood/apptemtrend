@@ -143,3 +143,162 @@
   #app-view .recording-guide-support > * { padding-inline: 10px; }
   #app-view .recording-guide-choices > div { display: block; }
 }
+
+/* ---------- Content Kit em uma tela (sem scroll de página) ---------- */
+#app-view .detail-breadcrumb { margin-bottom: 10px; }
+#app-view .kit-focus-view .content-kit-header { margin-bottom: 10px; }
+#app-view .kit-focus-view .content-kit-header h1 { font-size: clamp(26px, 3.2vw, 38px); margin-bottom: 8px; }
+#app-view .kit-focus-view .kit-summary { margin: 0 0 10px; font-size: clamp(13px, 1.4vw, 15px); }
+#app-view .kit-focus-view .kit-context { margin: 0 0 10px; }
+#app-view .production-status { display: flex; align-items: center; gap: 12px; }
+#app-view .production-status .eyebrow { margin: 0; white-space: nowrap; }
+#app-view .production-status .journey-steps { flex: 1 1 auto; min-width: 0; margin: 0; padding: 6px 0; }
+#app-view .recording-guide { padding: 10px clamp(12px, 2vw, 18px); }
+#app-view .recording-guide-heading .eyebrow { margin-bottom: 2px; }
+#app-view .recording-guide-heading h2 { font-size: clamp(20px, 2vw, 22px); margin-bottom: 2px; }
+#app-view .recording-guide-grid { gap: 8px; }
+#app-view .recording-guide-stage { padding: 16px; }
+#app-view .recording-guide-stage-top { margin-bottom: 8px; }
+#app-view .recording-guide-instruction { padding: 14px 16px; }
+#app-view .recording-guide-instruction h3 { font-size: clamp(18px, 2vw, 22px); }
+#app-view .recording-guide-details { gap: 10px; margin-top: 12px; padding-top: 12px; }
+#app-view .recording-guide-prep { margin-top: 12px; }
+#app-view .recording-guide-prep button { min-height: 42px; }
+#app-view .recording-guide-choices { margin-top: 12px; padding-top: 10px; }
+#app-view .recording-guide-scene-check { min-height: 44px; margin-top: 12px; }
+#app-view .recording-guide-tip { margin-top: 10px; padding: 10px 12px; }
+#app-view .recording-guide-actions { margin-top: auto; padding-top: 12px; }
+#app-view .recording-guide-navigation { padding: 16px; }
+#app-view .recording-guide-progress-heading strong { font-size: 15px; }
+#app-view .recording-guide-progress { margin: 10px 0 8px; }
+#app-view .recording-guide-steps { gap: 2px; }
+#app-view .recording-guide-steps button { min-height: 44px; padding: 6px 8px; }
+#app-view .recording-guide-step-number { width: 24px; height: 24px; font-size: 10px; }
+#app-view .recording-guide-bottom { margin-top: 10px; border-top: 0; }
+#app-view .recording-guide-support { position: static; padding: 6px; gap: 6px; }
+#app-view .recording-guide-support > * { min-height: 32px; padding: 7px 11px; }
+@media (max-width: 760px) {
+  #app-view .recording-guide-grid > .recording-guide-stage { position: static; }
+  #app-view .production-status { align-items: start; flex-direction: column; gap: 0; }
+}
+
+/* ---------- Kit em tela única: segunda passada de compactação ---------- */
+#app-view .page-wrap:has(.kit-focus-view) { padding-bottom: 8px; }
+#app-view .kit-focus-view.detail-view { padding: 14px 0 0; }
+#app-view .kit-focus-view .content-kit-header h1 { font-size: clamp(24px, 2.6vw, 30px); margin-bottom: 4px; }
+#app-view .kit-focus-view .kit-summary { margin: 0 0 6px; font-size: 13px; line-height: 1.45; }
+#app-view .kit-focus-view .kit-context { margin: 0 0 6px; gap: 6px; }
+#app-view .kit-focus-view .kit-context p { padding: 5px 8px; font-size: 10px; }
+#app-view .kit-focus-view .kit-meta { margin-bottom: 0; }
+#app-view .production-status .journey-steps { padding: 4px 0; }
+#app-view .production-status .journey-steps li { font-size: 11px; gap: 8px; }
+#app-view .recording-guide { padding: 12px clamp(12px, 2vw, 18px); }
+#app-view .recording-guide-heading h2 { font-size: clamp(20px, 2vw, 24px); margin-bottom: 4px; }
+#app-view .recording-guide-instruction h3 { font-size: 19px; }
+#app-view .recording-guide-steps button { min-height: 38px; }
+#app-view .recording-guide-step-copy strong { white-space: nowrap; text-overflow: ellipsis; overflow: hidden; }
+#app-view .recording-guide-actions .primary, #app-view .recording-guide-actions .ghost { min-height: 44px; }
+#app-view:has(.kit-focus-view) .topbar { height: 60px; min-height: 60px; }
+#app-view .kit-focus-view .content-kit-header { display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 20px; align-items: start; }
+#app-view .kit-focus-view .content-kit-header > .eyebrow { grid-column: 1 / -1; margin-bottom: 6px; }
+#app-view .kit-focus-view .content-kit-header h1 { margin-bottom: 4px; }
+#app-view .kit-focus-view .kit-side { display: grid; gap: 6px; justify-items: end; padding-top: 2px; }
+#app-view .kit-focus-view .kit-side .kit-context, #app-view .kit-focus-view .kit-side .kit-meta { margin: 0; justify-content: end; }
+#app-view .recording-guide-steps { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+#app-view .recording-guide-steps button { min-height: 36px; }
+#app-view .recording-guide-step-copy small { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+#app-view .recording-guide-steps button:last-child:nth-child(odd) { grid-column: 1 / -1; }
+@media (max-width: 760px) {
+  #app-view .kit-focus-view .content-kit-header { display: block; }
+  #app-view .kit-focus-view .kit-side { justify-content: start; }
+  #app-view .kit-focus-view .kit-side .kit-context, #app-view .kit-focus-view .kit-side .kit-meta { justify-content: start; }
+}
+#app-view .kit-focus-view .content-kit-header h1 { font-size: clamp(22px, 2.2vw, 26px); }
+#app-view .kit-focus-view .kit-summary { font-size: 12px; }
+#app-view .kit-focus-view .kit-side { display: flex; flex-wrap: wrap; gap: 6px; justify-content: end; align-content: start; padding-top: 2px; }
+#app-view .kit-focus-view .kit-context p { padding: 4px 7px; }
+#app-view .kit-focus-view .kit-meta span { font-size: 10px; }
+#app-view .detail-breadcrumb { margin-bottom: 6px; font-size: 11px; }
+#app-view .production-status .journey-steps li { font-size: 10px; gap: 6px; }
+#app-view .recording-guide { padding: 10px clamp(12px, 2vw, 18px); }
+#app-view .recording-guide-heading { align-items: center; }
+#app-view .recording-guide-heading .eyebrow { margin-bottom: 4px; }
+#app-view .recording-guide-heading h2 { font-size: clamp(20px, 2vw, 23px); }
+#app-view .recording-guide-stage-top .recording-guide-image { width: 44px; height: 44px; flex-basis: 44px; }
+#app-view .recording-guide-instruction { padding: 12px 14px; }
+#app-view .recording-guide-instruction h3 { font-size: 17px; }
+#app-view .recording-guide-prep button { min-height: 38px; font-size: 10px; }
+@media (min-width: 761px) {
+  #app-view .recording-guide-prep { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  #app-view .recording-guide-choices { max-height: 150px; }
+}
+#app-view .recording-guide-tip { margin-top: 6px; padding: 6px 10px; }
+#app-view .recording-guide-tip { padding: 8px 10px; }
+#app-view .recording-guide-tip p { font-size: 11px; }
+#app-view .recording-guide-actions { margin-top: auto; padding-top: 6px; }
+#app-view .recording-guide-actions .primary, #app-view .recording-guide-actions .ghost { min-height: 42px; }
+#app-view .recording-guide-navigation { padding: 12px; }
+#app-view .recording-guide-progress { margin: 8px 0 6px; }
+#app-view .recording-guide-bottom { margin-top: 4px; }
+#app-view .recording-guide-support { padding: 2px; gap: 4px; }
+#app-view .recording-guide-support > * { min-height: 28px; padding: 4px 10px; font-size: 10px; }
+#app-view .recording-guide-heading h2 { font-size: clamp(19px, 1.9vw, 21px); }
+#app-view .recording-guide-counter { font-size: 22px; }
+#app-view .recording-guide { padding: 8px clamp(12px, 2vw, 18px); }
+#app-view .recording-guide-grid { gap: 6px; }
+#app-view .recording-guide-stage { padding: 12px; }
+#app-view .recording-guide-instruction { padding: 10px 12px; }
+#app-view .recording-guide-instruction h3 { font-size: 16px; }
+#app-view .recording-guide-prep button { min-height: 36px; }
+#app-view .kit-focus-view .content-kit-header h1 { font-size: clamp(21px, 2vw, 24px); }
+#app-view .kit-focus-view .content-kit-header { margin-bottom: 6px; }
+#app-view .kit-focus-view .content-kit-header > .eyebrow { margin-bottom: 2px; }
+#app-view .kit-focus-view .content-kit-header h1 { margin-bottom: 2px; }
+#app-view .production-status .journey-steps { padding: 0; }
+#app-view .detail-breadcrumb { margin-bottom: 4px; }
+#app-view .recording-guide { padding: 4px clamp(12px, 2vw, 18px); }
+#app-view .kit-focus-view.detail-view { padding: 12px 0 0; }
+#app-view .recording-guide { margin: 0; padding: 4px clamp(12px, 2vw, 18px) 2px; }
+#app-view .recording-guide-heading { margin-bottom: 4px; }
+#app-view .recording-guide-stage { padding: 8px; }
+#app-view .recording-guide-support > * { min-height: 24px; }
+#app-view .recording-guide-heading h2 { font-size: 19px; }
+#app-view .recording-guide-stage { padding: 10px; }
+#app-view .recording-guide-bottom { margin-top: 0; }
+#app-view .recording-guide-heading { margin-bottom: 8px; }
+#app-view .recording-guide-heading h2 { font-size: clamp(19px, 1.9vw, 20px); margin-bottom: 0; }
+#app-view .recording-guide-counter { font-size: 20px; }
+#app-view .recording-guide-grid { gap: 4px; }
+#app-view .recording-guide-stage-top { margin-bottom: 6px; }
+#app-view .recording-guide-stage-top .recording-guide-image { width: 40px; height: 40px; flex-basis: 40px; }
+#app-view .recording-guide-instruction h3 { font-size: 15px; }
+#app-view .recording-guide-prep { margin-top: 8px; }
+#app-view .recording-guide-prep button { min-height: 36px; }
+#app-view .recording-guide-tip { margin-top: 6px; padding: 5px 8px; }
+#app-view .recording-guide-tip strong { margin-bottom: 2px; }
+#app-view .recording-guide-actions { margin-top: auto; padding-top: 6px; }
+#app-view .recording-guide-actions .primary, #app-view .recording-guide-actions .ghost { min-height: 40px; }
+#app-view .recording-guide-bottom { margin-top: 2px; }
+#app-view .recording-guide-support { padding: 0; }
+#app-view .recording-guide-support > * { min-height: 26px; }
+#app-view .recording-guide-support > * { min-height: 30px; padding: 5px 10px; }
+
+/* Consolidação final single-screen (vence duplicatas acima) */
+#app-view .recording-guide-heading { margin-bottom: 4px; }
+#app-view .recording-guide-stage { padding: 8px; }
+#app-view .recording-guide-stage-top .recording-guide-image { width: 36px; height: 36px; flex-basis: 36px; }
+#app-view .recording-guide-prep { margin-top: 6px; }
+#app-view .recording-guide-bottom { margin-top: 0; }
+#app-view .recording-guide-support > button, #app-view .recording-guide-support > a, #app-view .recording-guide-support > span { min-height: 24px; padding: 4px 10px; font-size: 10px; white-space: nowrap; flex-shrink: 0; }
+@media (max-width: 760px) {
+  #app-view .kit-focus-view .content-kit-header h1 { font-size: 22px; }
+  #app-view .recording-guide { padding-top: 4px; padding-bottom: 0; }
+  #app-view .recording-guide-mobile-select { margin: 0; }
+  #app-view .recording-guide-mobile-select select { min-height: 38px; }
+  #app-view .production-status .journey-steps li { font-size: 9px; gap: 4px; }
+  #app-view .recording-guide-stage { padding: 12px; }
+  #app-view .recording-guide-instruction { padding: 8px; }
+  #app-view .recording-guide-status { display: none; }
+  #app-view .recording-guide-support { gap: 2px; }
+  #app-view .recording-guide-support > button, #app-view .recording-guide-support > a { font-size: 9px; min-height: 22px; padding: 2px 6px; }
+}

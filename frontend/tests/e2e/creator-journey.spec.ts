@@ -254,11 +254,11 @@ test("guia do roteiro conduz a gravação por etapas no celular", async ({ page 
   await guide.getByRole("combobox", { name: "Escolher etapa do roteiro" }).selectOption("3");
   await expect(guide.getByText("Confira o produto no TikTok Shop.")).toBeVisible();
   await expect(guide.getByText(/se ainda tem disponível/i)).toHaveCount(0);
-  const more = guide.locator(".recording-guide-more");
-  await expect(more).not.toHaveAttribute("open");
-  await more.locator("summary").click();
-  await expect(more.getByRole("button", { name: "Usar esta variação →" })).toHaveCount(5);
-  await more.getByRole("button", { name: "Usar esta variação →" }).first().click();
+  const more = guide.getByRole("button", { name: "Ver roteiro completo" });
+  await more.click();
+  const script = page.getByRole("dialog");
+  await expect(script.getByRole("button", { name: "Usar esta variação →" })).toHaveCount(5);
+  await script.getByRole("button", { name: "Usar esta variação →" }).first().click();
   const dialog = page.getByRole("dialog");
   await expect(dialog.getByLabel("Como você imagina o vídeo? (opcional)")).toHaveValue(/Antes e depois da bancada/);
   await page.keyboard.press("Escape");
