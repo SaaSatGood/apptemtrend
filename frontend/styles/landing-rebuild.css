@@ -121,13 +121,31 @@
 .tt-home .tt-rd-example-list h3 { margin: 8px 0 14px; font-size: 26px; font-weight: 720; line-height: 1.1; letter-spacing: -.05em; }
 .tt-home .tt-rd-example-list p { grid-column: 2 / 3; margin: -10px 0 0; color: #5e6859; font-size: 14px; line-height: 1.5; }
 
-/* 05 — Pessoas reais com carrossel controlável. */
+/* 05 — Referências para gravar com o celular. */
 .tt-home .tt-rd-reel { padding: clamp(110px, 10vw, 165px) 0; background: #eef4e1; text-align: left; }
-.tt-home .tt-rd-reel-head { display: flex; flex-direction: column; align-items: flex-start; margin-bottom: 38px; }
-.tt-home .tt-rd-reel h2 { max-width: 14ch; margin: 0; text-align: left; }
-.tt-home .tt-rd-reel-head > p { max-width: 55ch; margin: 25px 0 0; color: #566250; font-size: 17px; line-height: 1.58; }
+.tt-home .tt-rd-reel-head { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(280px, .7fr); gap: clamp(35px, 7vw, 110px); align-items: end; margin-bottom: 48px; }
+.tt-home .tt-rd-reel-head .tt-rd-kicker { display: inline-block; margin-bottom: 23px; }
+.tt-home .tt-rd-reel h2 { max-width: 15ch; margin: 0; text-align: left; }
+.tt-home .tt-rd-reel-head > p { max-width: 38ch; margin: 0 0 8px; color: #485441; font-size: 18px; line-height: 1.55; }
+.tt-home .tt-rd-reel-guide { display: grid; grid-template-columns: repeat(3, 1fr); margin: 0 0 38px; border-top: 1px solid #becdae; border-bottom: 1px solid #becdae; }
+.tt-home .tt-rd-reel-guide > span { display: flex; align-items: center; gap: 13px; min-height: 72px; color: #20291a; font-size: 14px; font-weight: 700; }
+.tt-home .tt-rd-reel-guide > span + span { padding-left: 26px; border-left: 1px solid #becdae; }
+.tt-home .tt-rd-reel-guide b { color: #597c11; font-size: 11px; letter-spacing: .05em; }
 .tt-home .tt-rd-reel .tt-carousel-toolbar { margin-bottom: 18px; }
-.tt-home .tt-rd-reel .tt-reel-grid .tt-reel-card { border-radius: 18px; }
+.tt-home .tt-rd-reel-count { margin-right: 12px; color: #597c11; font-size: 11px; font-weight: 850; letter-spacing: .1em; }
+.tt-home .tt-rd-reel .tt-reel-grid .tt-reel-card { flex-basis: clamp(255px, 25vw, 330px); height: 465px; border-radius: 18px; }
+.tt-home .tt-rd-reel .tt-reel-live { background: #141b12d9; }
+.tt-home .tt-rd-reel .tt-reel-caption { bottom: 19px; gap: 7px; }
+.tt-home .tt-rd-reel .tt-reel-caption > strong { max-width: 13ch; font-size: 24px; line-height: 1.08; }
+.tt-home .tt-rd-reel-tip { max-width: 25ch; color: #e7ede0; font-size: 12px; line-height: 1.45; }
+.tt-home .tt-rd-reel .tt-reel-account { margin-top: 8px; }
+.tt-home .tt-rd-video-toggle { position: absolute; z-index: 3; top: 48%; left: 50%; display: grid; place-items: center; width: 70px; height: 70px; border: 1px solid #ffffffbd; border-radius: 50%; background: #c8ff2e; color: #131b0d; font-size: 24px; cursor: pointer; transform: translate(-50%, -50%); transition: transform .2s ease, background .2s ease, opacity .2s ease; box-shadow: 0 10px 30px #101e1240; }
+.tt-home .tt-rd-video-toggle > span { margin-left: 3px; }
+.tt-home .tt-rd-video-toggle:hover { transform: translate(-50%, -50%) scale(1.08); background: #dbff76; }
+.tt-home .tt-rd-video-toggle:focus-visible { outline: 3px solid #c8ff2e; outline-offset: 4px; }
+.tt-home .tt-reel-is-playing .tt-rd-video-toggle { top: 20px; right: 16px; left: auto; width: 34px; height: 34px; border-color: #ffffff85; background: #111b13d6; color: #fff; font-size: 15px; transform: none; }
+.tt-home .tt-reel-is-playing .tt-rd-video-toggle > span { margin-left: 0; }
+.tt-home .tt-reel-is-playing .tt-rd-video-toggle:hover { transform: scale(1.06); }
 
 /* 06 — Perguntas em linhas abertas. */
 .tt-home .tt-rd-faq { padding: clamp(112px, 10vw, 170px) 0; background: #fcfdf9; }
@@ -208,8 +226,17 @@
   .tt-home .tt-rd-example-list article { min-height: 120px; padding: 22px 4px; }
   .tt-home .tt-rd-example-list article + article { padding-left: 4px; border-top: 1px solid #d7dfcf; border-left: 0; }
   .tt-home .tt-rd-example-list h3 { margin-bottom: 10px; font-size: 23px; }
+  .tt-home .tt-rd-reel-head { grid-template-columns: 1fr; gap: 25px; margin-bottom: 30px; }
+  .tt-home .tt-rd-reel-head .tt-rd-kicker { margin-bottom: 16px; }
   .tt-home .tt-rd-reel h2 { margin: 0; }
-  .tt-home .tt-rd-reel-head > p { font-size: 16px; }
+  .tt-home .tt-rd-reel-head > p { max-width: 42ch; margin: 0; font-size: 16px; }
+  .tt-home .tt-rd-reel-guide { margin-bottom: 30px; }
+  .tt-home .tt-rd-reel-guide > span { display: grid; align-content: center; gap: 4px; min-height: 74px; padding: 9px 6px; font-size: 11px; line-height: 1.25; }
+  .tt-home .tt-rd-reel-guide > span + span { padding-left: 12px; }
+  .tt-home .tt-rd-reel .tt-reel-grid .tt-reel-card { flex-basis: min(76vw, 285px); height: 420px; }
+  .tt-home .tt-rd-reel .tt-reel-caption > strong { font-size: 21px; }
+  .tt-home .tt-rd-reel-tip { font-size: 11px; }
+  .tt-home .tt-rd-video-toggle { width: 64px; height: 64px; }
   .tt-home .tt-rd-faq-grid { gap: 40px; }
   .tt-home .tt-rd-faq-intro { position: static; }
   .tt-home .tt-rd-final { padding-block: 105px; }

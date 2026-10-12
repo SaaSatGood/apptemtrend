@@ -113,7 +113,13 @@ export default function LandingRebuild() {
 
       <section className="tt-creator-reel tt-rd-reel" aria-labelledby="reel-title">
         <div className="tt-rd-shell">
-          <div className="tt-rd-reel-head"><h2 id="reel-title">O vídeo não precisa ser perfeito. <em>Precisa existir.</em></h2><p>Inspire-se em jeitos reais de gravar com o celular. Depois adapte o seu plano à sua voz, ao produto e ao tempo que você tem.</p></div>
+          <div className="tt-rd-reel-head">
+            <div><span className="tt-rd-kicker">Do plano ao REC</span><h2 id="reel-title">O vídeo não precisa ser perfeito. <em>Precisa existir.</em></h2></div>
+            <p>Comece com o que você tem: um celular, um produto e uma ideia clara. Use os exemplos como inspiração e adapte cada gravação ao seu jeito.</p>
+          </div>
+          <div className="tt-rd-reel-guide" aria-label="Três passos para começar a gravar">
+            <span><b>01</b> Escolha um ângulo</span><span><b>02</b> Apoie o celular</span><span><b>03</b> Grave uma tomada</span>
+          </div>
           <CreatorCarousel videos={reelMedia} />
         </div>
       </section>
