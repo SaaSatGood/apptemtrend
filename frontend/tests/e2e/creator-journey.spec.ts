@@ -75,6 +75,8 @@ test("descoberta, kit e produção até publicação manual", async ({ page }, t
   await page.getByLabel("O que você quer vender?").fill("organizador de cozinha");
   await page.getByRole("button", { name: "Encontrar produtos →" }).click();
   await expect(page.getByText("1 produto encontrado")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Conheça o produto encontrado" })).toBeVisible();
+  expect(await page.locator(".discovery-hero").evaluate((element) => element.getBoundingClientRect().height)).toBeLessThan(450);
   await expect(page.getByText(/Preço acessível/)).toBeVisible();
   await page.screenshot({ path: testInfo.outputPath("discover-desktop.png"), fullPage: true });
   await page.getByRole("button", { name: "Ver produto Organizador de cozinha" }).click();
@@ -233,6 +235,8 @@ test("guia do roteiro conduz a gravação por etapas no celular", async ({ page 
   const guide = page.locator(".recording-guide");
   await expect(guide.getByRole("heading", { name: "Grave uma etapa de cada vez." })).toBeVisible();
   await expect(guide.getByRole("combobox", { name: "Escolher etapa do roteiro" })).toBeVisible();
+  await expect(guide.locator(".recording-guide-steps")).toBeHidden();
+  await expect(guide.locator(".recording-guide-reference")).toHaveCount(0);
   await expect(guide.getByRole("button", { name: /Ouvir etapa|Parar leitura/ })).toHaveCount(0);
   for (const item of ["Produto à mão", "Boa luz", "Fundo organizado", "Lente limpa"]) {
     await expect(guide.getByRole("button", { name: item })).toBeVisible();
@@ -292,13 +296,38 @@ test("detalhes, guia e produção mantêm o nome completo e a largura em três t
     await page.goto(`/app/produtos/${productId}/kits/${kitId}`);
     await expect(page.getByRole("heading", { name: kit.titulo })).toBeVisible();
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
-    if (width > 760) expect(await page.locator(".recording-guide-steps").evaluate((element) => element.scrollHeight <= element.clientHeight)).toBe(true);
+    if (width > 760) {
+      await expect(page.getByRole("navigation", { name: "Etapas do roteiro" })).toBeVisible();
+      expect(await page.locator(".recording-guide-steps").evaluate((element) => element.scrollHeight <= element.clientHeight)).toBe(true);
+    }
     await page.goto("/app/producao");
     await expect(page.getByRole("heading", { name: longName, exact: true })).toBeVisible();
     await expect(page.getByText("Imagem do produto")).toHaveCount(0);
     if (width === 390) await page.screenshot({ path: testInfo.outputPath("production-mobile.png"), fullPage: true });
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   }
+});
+
+test("conta mostra ações secundárias e estado de erro recuperável", async ({ page }, testInfo) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await setup(page);
+  await page.goto("/app/conta");
+  await expect(page.getByRole("heading", { name: "Minha conta." })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Atualizar senha" })).toHaveClass(/ghost/);
+  await expect(page.getByText("Voz atualizada ✓")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Dados atualizados ✓" })).toHaveCount(0);
+  const cardOrder = await page.locator(".account-layout .account-card").evaluateAll((cards) => cards.map((card) => ({ title: card.querySelector("h2")?.textContent || "", top: card.getBoundingClientRect().top })).sort((a, b) => a.top - b.top).map((card) => card.title));
+  expect(cardOrder).toEqual(["Informações do perfil", "Preferências de conteúdo", "Sua voz", "Segurança"]);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await page.screenshot({ path: testInfo.outputPath("account-settings-mobile.png"), fullPage: true });
+
+  const failAccount = (route: import("@playwright/test").Route) => route.fulfill({ status: 503, json: { error: { message: "Indisponível" } } });
+  await page.route("http://localhost:3333/account", failAccount);
+  await page.reload();
+  await expect(page.getByRole("heading", { name: "Não conseguimos carregar sua conta." })).toBeVisible();
+  await page.unroute("http://localhost:3333/account", failAccount);
+  await page.getByRole("button", { name: "Tentar novamente" }).click();
+  await expect(page.getByRole("heading", { name: "Informações do perfil" })).toBeVisible();
 });
 
 test("produto sem kit mostra prévia compacta e uma ação principal", async ({ page }) => {

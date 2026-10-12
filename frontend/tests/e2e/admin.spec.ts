@@ -9,7 +9,8 @@ function fakeJwt() {
   return `${encode({ alg: "HS256", typ: "JWT" })}.${encode({ sub: userId, role: "authenticated", email: "admin@temtrend.test", exp: Math.floor(Date.now() / 1000) + 3600 })}.signature`;
 }
 
-test("admin organiza operação, catálogo e creators", async ({ page }) => {
+test("admin organiza operação, catálogo e creators", async ({ page }, testInfo) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
   const token = fakeJwt();
   await page.addInitScript(({ tokenValue, id }) => {
     window.localStorage.setItem("sb-iwktyugnwtdroberoces-auth-token", JSON.stringify({
@@ -64,4 +65,13 @@ test("admin organiza operação, catálogo e creators", async ({ page }) => {
   await page.getByRole("button", { name: /^creators/i }).click();
   await expect(page.getByText("Creator Teste", { exact: true })).toBeVisible();
   await expect(page.getByText("creator@temtrend.test", { exact: true })).toBeVisible();
+  await page.setViewportSize({ width: 390, height: 844 });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await page.screenshot({ path: testInfo.outputPath("admin-mobile.png"), fullPage: true });
+  await page.getByRole("button", { name: /^visão geral/i }).click();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await page.getByRole("button", { name: /^produtos/i }).click();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await page.getByRole("button", { name: /adicionar produto/i }).click();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 });

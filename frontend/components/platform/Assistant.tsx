@@ -282,7 +282,7 @@ export default function Assistant({ onOpen }: { onOpen: (id: string) => void }) 
       <div className="discovery-hero">
       <div className="discover-intro">
         <p className="eyebrow">Da ideia ao seu próximo vídeo</p>
-        {recurring ? <><h1 id="dashboard-title">Olá, <em>{firstName || "creator"}.</em></h1><p>Você tem {inProgress} {inProgress === 1 ? "conteúdo em produção" : "conteúdos em produção"}. Encontre a próxima ideia quando quiser.</p></> : <><h1 id="dashboard-title">Descubra o que vale<br />a pena <em>vender.</em></h1><p>Diga o que você procura ou deixe a TemTrend encontrar uma oportunidade para você.</p></>}
+        {recurring ? <><h1 id="dashboard-title">Olá, <em>{firstName || "creator"}.</em></h1><p>{inProgress > 0 ? `Você tem ${inProgress} ${inProgress === 1 ? "conteúdo em produção" : "conteúdos em produção"}.` : `${productions.length} ${productions.length === 1 ? "conteúdo" : "conteúdos"} na sua produção.`} Encontre a próxima ideia quando quiser.</p></> : <><h1 id="dashboard-title">Descubra o que vale<br />a pena <em>vender.</em></h1><p>Diga o que você procura ou deixe a TemTrend encontrar uma oportunidade para você.</p></>}
       </div>
       <form
         className="assistant-form"
@@ -370,7 +370,7 @@ export default function Assistant({ onOpen }: { onOpen: (id: string) => void }) 
             <div className="discover-results-heading">
               <div>
                 <span>{topResults.length} {topResults.length === 1 ? "produto encontrado" : "produtos encontrados"}</span>
-                <h2>Compare e escolha seu produto</h2>
+                <h2>{topResults.length === 1 ? "Conheça o produto encontrado" : "Compare e escolha seu produto"}</h2>
               </div>
               <small>Dados do catálogo TemTrend</small>
             </div>

@@ -8,10 +8,10 @@ import { humanAuthError } from "@/lib/api";
 type Panel = "login" | "signup" | "recovery" | "reset";
 type OAuthProvider = "google" | "facebook" | "apple";
 
-const PROVIDERS: Array<{ id: OAuthProvider; label: string; icon: string }> = [
-  { id: "google", label: "Continuar com Google", icon: "G" },
-  { id: "facebook", label: "Continuar com Facebook", icon: "f" },
-  { id: "apple", label: "Continuar com Apple", icon: "" },
+const PROVIDERS: Array<{ id: OAuthProvider; label: string }> = [
+  { id: "google", label: "Continuar com Google" },
+  { id: "facebook", label: "Continuar com Facebook" },
+  { id: "apple", label: "Continuar com Apple" },
 ];
 
 const COPY: Record<Panel, [string, string, string]> = {
@@ -74,7 +74,7 @@ function ProviderButtons({
   return (
     <>
       <div className="auth-providers">
-        {PROVIDERS.map(({ id, label, icon }) => (
+        {PROVIDERS.map(({ id, label }) => (
           <button
             key={id}
             className="provider-button google-button"
@@ -83,7 +83,6 @@ function ProviderButtons({
             onClick={() => onSelect(id)}
             disabled={busyProvider !== null || busy}
           >
-            <span className="provider-icon google-icon" aria-hidden="true">{icon}</span>
             <span className="provider-label">{busyProvider === id ? "Conectando..." : label}</span>
             <span className="provider-label-short" aria-hidden="true">{id === "google" ? "Google" : id === "facebook" ? "Facebook" : "Apple"}</span>
           </button>

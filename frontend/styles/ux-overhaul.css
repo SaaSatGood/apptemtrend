@@ -68,7 +68,17 @@
 #app-view .kit-focus-view .content-kit-header { margin-bottom: 12px; }
 #app-view .kit-focus-view .content-kit-header h1 { overflow-wrap: anywhere; }
 #app-view .recording-guide-stage { min-height: 0; }
-#app-view .recording-guide-grid { align-items: stretch; }
+#app-view .recording-guide-grid { align-items: start; gap: 16px; padding: 0; border: 0; background: transparent; }
+#app-view .recording-guide-grid > .recording-guide-stage { min-height: 0; }
+#app-view .recording-guide-steps { display: grid; align-content: start; gap: 7px; max-width: none; margin: 0; padding: 18px; overflow: visible; border: 1px solid #e1e5d9; border-radius: 17px; background: #fff; }
+#app-view .recording-guide-plan-heading { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin-bottom: 7px; }
+#app-view .recording-guide-plan-heading h3 { margin: 0; font-size: 17px; }
+#app-view .recording-guide-plan-heading span { color: #4b5547; font-size: 11px; font-weight: 750; white-space: nowrap; }
+#app-view .recording-guide-steps button { display: flex; align-items: center; width: 100%; min-height: 54px; padding: 9px 11px; border-radius: 11px; text-align: left; white-space: normal; }
+#app-view .recording-guide-steps button > span:last-child { display: grid; gap: 2px; min-width: 0; line-height: 1.3; }
+#app-view .recording-guide-steps button small { color: #4b5547; font-size: 10px; font-weight: 600; }
+#app-view .recording-guide-steps button.active small { color: #2e3a1b; }
+#app-view .recording-guide-steps button.is-done:not(.active) small { color: #3e562a; }
 #app-view .recording-guide-stage-top > div:first-child { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
 #app-view .recording-guide-image { width: 64px; height: 64px; flex: 0 0 64px; border-radius: 12px; }
 #app-view .recording-guide-image .product-image-fallback span { width: 38px; height: 38px; border-radius: 9px; font-size: 22px; }
@@ -78,6 +88,7 @@
 #app-view .recording-guide-steps button { min-height: 42px; }
 #app-view .recording-guide-step-copy strong { white-space: normal; text-overflow: clip; overflow: visible; font-size: 11px; line-height: 1.35; }
 #app-view .recording-guide-step-copy small, #app-view .recording-guide-progress-heading span { color: #4e5849; }
+#app-view .recording-guide-next { color: #4b5547; }
 #app-view .recording-guide-controls { margin-top: 8px; padding-top: 9px; }
 #app-view .recording-guide-copy { display: inline-flex; align-items: center; min-height: 44px; margin-top: 10px; color: #365509; }
 #app-view .recording-guide-scene-check { display: flex; align-items: center; gap: 10px; min-height: 48px; margin-top: 16px; padding: 10px 12px; border: 1px solid #d3e1bf; border-radius: 11px; background: #f5faed; color: #2d401d; font-size: 12px; font-weight: 800; cursor: pointer; }
@@ -104,6 +115,8 @@
 #app-view .production-card-actions .production-copy-hook { flex: 0 0 44px; min-width: 44px; border: 1px solid #d9e0cf; background: #fff; font-size: 20px; }
 #app-view .production-card-actions .continue-production { border: 1px solid #111; background: #111; color: #fff; text-decoration: none; }
 #app-view .production-card-actions .continue-production:hover { background: #30382a; color: #fff; }
+#app-view .account-saved-status { display: inline-flex; align-items: center; min-height: 44px; margin: 0; color: #405a2b; font-size: 12px; font-weight: 750; }
+#app-view .account-card label > small { color: #4b5547; line-height: 1.5; }
 
 /* Create content: concise choices, readable hierarchy and one fixed action area. */
 .content-kit-dialog { width: min(92vw, 640px); max-height: calc(100svh - 32px); padding: 28px 30px 24px; overflow-x: hidden; }
@@ -136,6 +149,14 @@
   #app-view .production-grid > .production-card:last-child:nth-child(odd) { grid-column: auto; }
 }
 @media (max-width: 760px) {
+  #app-view .account-layout { display: flex; flex-direction: column; }
+  #app-view .account-main, #app-view .account-sidebar { display: contents; }
+  #app-view .account-layout .account-card { width: 100%; }
+  #app-view .account-main > .account-card:first-child { order: 1; }
+  #app-view .account-plan-card { order: 2; }
+  #app-view .account-preferences { order: 3; }
+  #app-view .account-voice { order: 4; }
+  #app-view .account-main > .account-card:nth-child(2) { order: 5; }
   #app-view .assistant-response .product-grid > .opportunity-card { flex-basis: 100%; }
   #app-view .assistant-response .product-grid > .skeleton-card { flex-basis: 100%; }
   #app-view .assistant-input-row { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
@@ -143,11 +164,11 @@
   #app-view .assistant-input-row .primary, #app-view .assistant-input-row .discovery-surprise { width: 100%; padding-inline: 9px; white-space: normal; }
   #app-view .assistant-shortcut-groups { align-items: start; flex-direction: column; }
   #app-view .assistant-shortcut-groups :is(.assistant-interest-shortcuts,.assistant-examples) { justify-content: start; }
-  #app-view .recording-guide-grid { display: grid; gap: 12px; }
+  #app-view .recording-guide-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0; }
+  #app-view .recording-guide-steps { display: none; }
   #app-view .recording-guide-mobile-select { display: grid; gap: 5px; margin: 0 0 12px; color: #394832; font-size: 12px; font-weight: 800; }
   #app-view .recording-guide-mobile-select select { width: 100%; min-height: 44px; padding: 9px 14px; border: 1px solid #d6dfcb; border-radius: 12px; background: #fff; color: #192218; }
   #app-view .recording-guide-navigation { padding: 0; border: 0; background: transparent; }
-  #app-view .recording-guide-navigation :is(.recording-guide-progress-heading,.recording-guide-progress,.recording-guide-steps) { display: none; }
   #app-view .recording-guide-controls { padding: 0; }
   #app-view .recording-guide-choices > div { display: flex; align-items: center; }
   #app-view .recording-guide-support { position: static; }
@@ -190,6 +211,11 @@
   padding-top: 8px;
   padding-bottom: 8px;
 }
+#app-view .assistant-hero.is-compact { min-height: 0; }
+#app-view .assistant-hero.is-compact .discovery-hero { margin: 0; padding: 20px 0 24px; }
+#app-view .assistant-hero.is-compact .discover-intro { margin-bottom: 16px; }
+#app-view .assistant-hero.is-compact .discover-intro h1 { font-size: clamp(30px, 3.5vw, 44px); margin-bottom: 9px; }
+#app-view .assistant-hero.is-compact .discover-intro > p:last-child { font-size: 13px; line-height: 1.5; }
 #app-view .assistant-hero::before {
   top: min(40%, 300px);
   transform: translate(-50%, -50%);

@@ -400,7 +400,7 @@ export default function Admin() {
       <header className={styles.hero}>
         <div>
           <p className="eyebrow">Painel administrativo</p>
-          <h1>Controle a operação <em>sem perder o ritmo.</em></h1>
+          <h1>Controle a <em>operação.</em></h1>
           <p className={styles.heroCopy}>Catálogo, creators e saúde da plataforma em uma única visão.</p>
         </div>
         <div className={styles.heroActions}>
