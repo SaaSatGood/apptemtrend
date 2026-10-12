@@ -91,7 +91,7 @@ const METRIC_LABELS: Record<string, { label: string; detail: string }> = {
   creators_ativos: { label: "Creators ativos", detail: "Com acesso à plataforma" },
   total_produtos: { label: "Produtos", detail: "Itens no catálogo" },
   produtos_ativos: { label: "Produtos ativos", detail: "Visíveis para creators" },
-  total_content_kits: { label: "Kits de conteúdo", detail: "Roteiros disponíveis" },
+  total_content_kits: { label: "Conteúdos", detail: "Conteúdos disponíveis" },
   oportunidades_salvas: { label: "Oportunidades salvas", detail: "Produtos em consideração" },
   conteudos_publicados: { label: "Publicações", detail: "Conteúdos concluídos" },
 };

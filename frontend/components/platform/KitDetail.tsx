@@ -45,7 +45,7 @@ export default function KitDetail({ productId, kitId }: { productId: string; kit
   }, [productId, kitId, toast]);
 
   if (failed || (!product && !kit)) {
-    if (!failed) return <section className="detail-view" aria-live="polite"><p role="status">Carregando seu Content Kit…</p><div className="product-grid"><Skeletons /></div></section>;
+    if (!failed) return <section className="detail-view" aria-live="polite"><p role="status">Carregando seu conteúdo…</p><div className="product-grid"><Skeletons /></div></section>;
     return <section className="detail-view" aria-live="polite"><div className="empty-state"><h3>Não encontramos este plano de gravação.</h3><p>Ele pode ter sido removido ou pertencer a outro produto.</p><Link className="primary" href={`/app/produtos/${productId}`}>← Voltar para o produto</Link></div></section>;
   }
   if (!product || !kit) return null;
@@ -85,9 +85,9 @@ export default function KitDetail({ productId, kitId }: { productId: string; kit
 
   return (
     <section className="detail-view kit-focus-view" aria-live="polite">
-      <nav className="detail-breadcrumb" aria-label="Navegação estrutural"><Link href="/app">Descobrir</Link><span>›</span><Link href={`/app/produtos/${currentProduct.id}`}>Produto</Link><span>›</span><strong>Content Kit</strong></nav>
+      <nav className="detail-breadcrumb" aria-label="Navegação estrutural"><Link href="/app">Descobrir</Link><span>›</span><Link href={`/app/produtos/${currentProduct.id}`}>Produto</Link><span>›</span><strong>Criar conteúdo</strong></nav>
       <header className="content-kit-header">
-        <p className="eyebrow">Seu Content Kit</p>
+        <p className="eyebrow">Seu conteúdo</p>
         <h1><EmphasizedTitle text={currentKit.titulo} /></h1>
         <p className="kit-summary">{context.summary}</p>
         {(context.audience || context.sales) && <div className="kit-context">{context.audience && <p><strong>Para quem</strong><span>{context.audience}</span></p>}{context.sales && <p><strong>Por que agora</strong><span>{context.sales}</span></p>}</div>}

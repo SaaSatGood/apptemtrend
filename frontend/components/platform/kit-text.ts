@@ -52,7 +52,7 @@ export function kitCopyText(kit: {
     ["ÁUDIO", kit.audio_sugerido],
     ["DURAÇÃO", kit.duracao_seg ? `${kit.duracao_seg}s` : null],
   ];
-  return [`CONTENT KIT — ${kit.titulo}`]
+  return [`CRIAR CONTEÚDO — ${kit.titulo}`]
     .concat(rows.filter(([, v]) => v).map(([label, value]) => `${label}\n${value}`))
     .join("\n\n");
 }

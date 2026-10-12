@@ -33,7 +33,7 @@ const STATUS_LABEL: Record<string, string> = {
 const PRIORITY: Record<string, number> = { em_producao: 0, salvo: 1, gravado: 2, publicado: 3 };
 
 function nextHint(content: CreatorContent, scenesDone: number[]) {
-  if (content.status === "salvo") return content.content_kits ? "Revisar roteiro" : "Criar Content Kit";
+  if (content.status === "salvo") return content.content_kits ? "Revisar roteiro" : "Criar conteúdo";
   if (content.status === "gravado") return "Publicar o vídeo";
   if (content.status === "publicado") return content.published_url ? "Vídeo publicado" : "Publicação registrada";
   const total = normalizeScenes(content.content_kits?.cenas).length;
@@ -232,7 +232,7 @@ export default function Production() {
                             : `/app/produtos/${c.product_id}`
                         }
                       >
-                        {status === "salvo" ? kit ? "Ver Content Kit →" : "Criar Content Kit →" : status === "publicado" ? "Ver roteiro →" : "Continuar produção →"}
+                        {status === "salvo" ? kit ? "Ver conteúdo →" : "Criar conteúdo →" : status === "publicado" ? "Ver roteiro →" : "Continuar produção →"}
                       </Link>
                     )}
                     {kit?.hook && (

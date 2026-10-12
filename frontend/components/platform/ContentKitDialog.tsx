@@ -75,7 +75,7 @@ export default function ContentKitDialog({
         });
         await loadProductions().catch(() => {});
         onClose();
-        toast("Produto salvo ✓ Seu Content Kit está na área Produção.");
+        toast("Produto salvo ✓ Seu conteúdo está na área Produção.");
       } else {
         const result = await api<{ content_kit?: import("@/lib/types").ContentKit; created?: boolean; fallback?: boolean }>(
           `/products/${productId}/content-kit`,
@@ -91,8 +91,8 @@ export default function ContentKitDialog({
           result?.fallback
             ? "IA indisponível — salvamos um roteiro base. Gere outra versão depois."
             : result?.created
-              ? "Content Kit criado ✓ Agora você pode começar a produção."
-              : "Seu Content Kit está pronto ✓"
+              ? "Conteúdo criado ✓ Agora você pode começar a produção."
+              : "Seu conteúdo está pronto ✓"
         );
       }
     } catch (err) {
@@ -124,11 +124,11 @@ export default function ContentKitDialog({
         <button className="dialog-close" type="button" aria-label="Fechar" disabled={busy} onClick={onClose}>
           ×
         </button>
-        <p className="eyebrow">{mode === "save" ? "Salvar para depois" : "Seu Content Kit"}</p>
+        <p className="eyebrow">{mode === "save" ? "Salvar para depois" : "Seu conteúdo"}</p>
         <h2 id="content-kit-dialog-title">Como você quer gravar?</h2>
         <p className="muted">
           Descreva o tom, a duração, se vai aparecer, o estilo e qualquer detalhe importante. Este
-          roteiro será exclusivo para a sua conta. {mode === "save" ? "Ao salvar o produto, também preparamos um Content Kit para você continuar depois." : "Você poderá revisar o kit antes de começar a produção."}
+          roteiro será exclusivo para a sua conta. {mode === "save" ? "Ao salvar o produto, também preparamos um conteúdo para você continuar depois." : "Você poderá revisar o conteúdo antes de começar a produção."}
         </p>
         <div className="briefing-suggestions" aria-label="Sugestões para o briefing">
           {SUGGESTIONS.map((s) => (
@@ -158,13 +158,13 @@ export default function ContentKitDialog({
         <button className="primary" type="submit" disabled={busy}>
           {busy
             ? mode === "save"
-              ? "Salvando e preparando seu kit…"
-              : "Criando seu Content Kit…"
+              ? "Salvando e preparando seu conteúdo…"
+              : "Criando seu conteúdo…"
             : mode === "save"
-              ? "Salvar produto e preparar kit →"
+              ? "Salvar produto e preparar conteúdo →"
               : forceNew
                 ? "Gerar outra versão →"
-                : "Criar Content Kit →"}
+                : "Criar conteúdo →"}
         </button>
       </form>
     </dialog>

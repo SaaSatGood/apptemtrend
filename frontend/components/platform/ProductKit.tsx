@@ -132,11 +132,11 @@ export default function ProductDetail({ productId, onNeedKit }: { productId: str
               </a>
             )}
             <div className="product-detail-primary">
-              {kits.length ? <Link className="primary" href={`/app/produtos/${product.id}/kits/${kits.find((kit) => kit.id === production?.content_kit_id)?.id || kits[0].id}`}>Ver Content Kit →</Link> : <button className="primary" type="button" onClick={primaryAction}>Criar Content Kit →</button>}
+              {kits.length ? <Link className="primary" href={`/app/produtos/${product.id}/kits/${kits.find((kit) => kit.id === production?.content_kit_id)?.id || kits[0].id}`}>Ver conteúdo →</Link> : <button className="primary" type="button" onClick={primaryAction}>Criar conteúdo →</button>}
               {!saved && <button className="ghost save-product" type="button" onClick={quickSave}>Salvar produto</button>}
               {kits.length > 0 && (
                 <button className="ghost" type="button" onClick={() => onNeedKit(product.id, "kit", true)}>
-                  Gerar outro Content Kit →
+                  Gerar outro conteúdo →
                 </button>
               )}
             </div>
@@ -144,7 +144,7 @@ export default function ProductDetail({ productId, onNeedKit }: { productId: str
         </div>
         <section className="kits-section">
           <div className="kits-section-heading">
-            <div><p className="eyebrow">Da ideia à gravação</p><h2>Seus Content Kits</h2></div>
+            <div><p className="eyebrow">Da ideia à gravação</p><h2>Seus conteúdos</h2></div>
             <span>{kits.length} {kits.length === 1 ? "roteiro disponível" : "roteiros disponíveis"}</span>
           </div>
           {kits.length > 0 && <p>Use um roteiro existente ou gere outra abordagem quando quiser testar uma nova ideia.</p>}
@@ -162,12 +162,12 @@ export default function ProductDetail({ productId, onNeedKit }: { productId: str
                   <h3>{kit.titulo}</h3>
                   <p>{kitContext(kit, product).summary}</p>
                   {production?.content_kit_id === kit.id && <span className="kit-card-status">{({ salvo: "Salvo", em_producao: "Em produção", gravado: "Gravado", publicado: "Publicado" })[production.status]}</span>}
-                  <strong>Abrir kit →</strong>
+                  <strong>Abrir conteúdo →</strong>
                 </Link>
               ))
             ) : (
               <div className="kit-empty-preview">
-                <strong>Seu kit vai trazer</strong>
+                <strong>Seu conteúdo vai trazer</strong>
                 <div>{["Hook", "5 cenas", "Legenda", "Hashtags", "CTA"].map((item) => <span key={item}>{item}</span>)}</div>
               </div>
             )}
