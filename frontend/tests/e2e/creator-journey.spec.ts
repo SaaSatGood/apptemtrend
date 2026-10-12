@@ -37,6 +37,7 @@ async function setup(page: Page, options: { saved?: boolean; onboarding?: boolea
   let hasKit = Boolean(options.saved);
   let onboarded = !options.onboarding;
   let searchCalls = 0;
+  let kitInstructions = "";
   const mutations: string[] = [];
   const production = () => ({ id: productionId, creator_id: userId, product_id: productId, content_kit_id: kitId, status, products: fixtureProduct, content_kits: kit, atualizado_em: "2026-10-09T12:00:00Z" });
   await page.route("http://localhost:3333/**", async (route) => {
@@ -47,7 +48,7 @@ async function setup(page: Page, options: { saved?: boolean; onboarding?: boolea
     if (path === "/me") return route.fulfill({ json: { user_id: userId, creator: { id: userId, estilos_conteudo: [], temas_interesse: [] }, onboarding_completo: onboarded, is_admin: false } });
     if (path === "/products") return route.fulfill({ json: [fixtureProduct, { ...product, id: "66666666-6666-4666-8666-666666666666", nome: "Kit de cuidados para cabelo", categoria: "Beleza", preco_min_brl: 79.9, preco_texto: "R$ 79,90" }] });
     if (path === `/products/${productId}`) return route.fulfill({ json: { product: fixtureProduct, content_kits: hasKit ? [kit] : [] } });
-    if (path === `/products/${productId}/content-kit`) { hasKit = true; return route.fulfill({ json: { content_kit: kit, created: true } }); }
+    if (path === `/products/${productId}/content-kit`) { kitInstructions = req.postDataJSON().instructions || ""; hasKit = true; return route.fulfill({ json: { content_kit: kit, created: true } }); }
     if (path === "/creator-content" && method === "GET") return route.fulfill({ json: status ? [production()] : [] });
     if (path === "/creator-content" && method === "POST") { hasKit = true; status = req.postDataJSON().product_id ? "salvo" : "em_producao"; return route.fulfill({ json: production() }); }
     if (path === `/creator-content/${productionId}/content-kit`) { status = "em_producao"; return route.fulfill({ json: production() }); }
@@ -64,7 +65,7 @@ async function setup(page: Page, options: { saved?: boolean; onboarding?: boolea
     if (path === "/account") return route.fulfill({ json: { nome: "Rafa", email: "creator@temtrend.test" } });
     return route.fulfill({ status: 404, json: { error: { message: `Unmocked: ${path}` } } });
   });
-  return { mutations, getStatus: () => status };
+  return { mutations, getStatus: () => status, getKitInstructions: () => kitInstructions };
 }
 
 test("descoberta, kit e produção até publicação manual", async ({ page }, testInfo) => {
@@ -81,9 +82,13 @@ test("descoberta, kit e produção até publicação manual", async ({ page }, t
   await page.getByRole("button", { name: "Criar conteúdo →", exact: true }).click();
   const dialog = page.getByRole("dialog");
   await expect(dialog).toBeVisible();
-  await dialog.getByLabel("Como você imagina o vídeo? (opcional)").fill("Um vídeo de 15 segundos");
+  await dialog.getByRole("button", { name: "+ Sem aparecer" }).click();
+  await expect(dialog.getByRole("button", { name: "✓ Sem aparecer" })).toHaveAttribute("aria-pressed", "true");
+  await dialog.getByLabel("Algum detalhe importante? (opcional)").fill("Um vídeo de 15 segundos");
   await dialog.getByRole("button", { name: "Criar conteúdo →" }).click();
   await expect(page.getByRole("heading", { name: kit.titulo })).toBeVisible();
+  expect(fixture.getKitInstructions()).toContain("sem mostrar o rosto");
+  expect(fixture.getKitInstructions()).toContain("Um vídeo de 15 segundos");
   expect(fixture.getStatus()).toBe("");
   const guide = page.locator(".recording-guide");
   await expect(page.getByText("Classificação: RISING")).toHaveCount(0);
@@ -260,7 +265,7 @@ test("guia do roteiro conduz a gravação por etapas no celular", async ({ page 
   await expect(more.getByRole("button", { name: "Usar esta variação →" })).toHaveCount(5);
   await more.getByRole("button", { name: "Usar esta variação →" }).first().click();
   const dialog = page.getByRole("dialog");
-  await expect(dialog.getByLabel("Como você imagina o vídeo? (opcional)")).toHaveValue(/Antes e depois da bancada/);
+  await expect(dialog.getByLabel("Algum detalhe importante? (opcional)")).toHaveValue(/Antes e depois da bancada/);
   await page.keyboard.press("Escape");
   await expect(dialog).toBeHidden();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
@@ -306,6 +311,19 @@ test("produto sem kit mostra prévia compacta e uma ação principal", async ({ 
   await expect(page.getByRole("button", { name: "Salvar produto" })).toBeVisible();
   await expect(page.locator("#product-detail .primary")).toHaveCount(1);
   await expect(page.getByText("Use os dados confirmados do produto para gerar seu roteiro.")).toHaveCount(0);
+});
+
+test("criação de conteúdo cabe no celular sem rolagem lateral", async ({ page }, testInfo) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await setup(page);
+  await page.goto(`/app/produtos/${productId}`);
+  await page.getByRole("button", { name: "Criar conteúdo →", exact: true }).click();
+  const dialog = page.getByRole("dialog");
+  await expect(dialog.getByRole("heading", { name: "Seu vídeo começa aqui." })).toBeVisible();
+  await expect(dialog.getByRole("button", { name: "Criar conteúdo →" })).toBeInViewport();
+  expect(await dialog.evaluate((node) => node.scrollWidth <= node.clientWidth && node.scrollHeight <= node.clientHeight + 1)).toBe(true);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await page.screenshot({ path: testInfo.outputPath("create-content-mobile.png") });
 });
 
 test("produção ordena pela próxima ação e ajusta o botão ao estado", async ({ page }) => {

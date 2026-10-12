@@ -6,11 +6,11 @@ import { api, friendlyError, type ApiError } from "@/lib/api";
 import { usePlatform } from "./store";
 
 const SUGGESTIONS = [
-  "Tom mais agressivo e direto",
-  "Vídeo curto, com no máximo 15 segundos",
-  "Vídeo sem aparecer, mostrando somente o produto e as mãos",
-  "Estilo UGC natural, como uma recomendação pessoal",
-  "Começar mostrando o problema e depois a solução",
+  { label: "Direto ao ponto", instruction: "Use um tom direto e objetivo." },
+  { label: "Até 15 segundos", instruction: "Crie um vídeo curto, com no máximo 15 segundos." },
+  { label: "Sem aparecer", instruction: "Mostre somente o produto e as mãos, sem mostrar o rosto." },
+  { label: "Recomendação natural", instruction: "Use um tom natural, como uma recomendação pessoal." },
+  { label: "Problema e solução", instruction: "Comece com um problema real e mostre a solução com o produto." },
 ];
 
 export default function ContentKitDialog({
@@ -34,6 +34,9 @@ export default function ContentKitDialog({
   const [selected, setSelected] = useState<string[]>([]);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const selectedInstructions = SUGGESTIONS.filter((item) => selected.includes(item.label)).map((item) => item.instruction);
+  const customLimit = Math.max(0, 1500 - selectedInstructions.join(" ").length - (selectedInstructions.length ? 1 : 0));
+  const tooLong = briefing.trim().length > customLimit;
 
   useEffect(() => {
     const dialog = dialogRef.current;
@@ -45,24 +48,19 @@ export default function ContentKitDialog({
     };
   }, []);
 
-  function toggleSuggestion(suggestion: string) {
-    const isSelected = selected.includes(suggestion);
-    const next = isSelected ? selected.filter((s) => s !== suggestion) : [...selected, suggestion];
-    setSelected(next);
-    const current = briefing.trim();
-    if (!isSelected) {
-      if (!current.includes(suggestion)) setBriefing(current ? `${current}. ${suggestion}` : suggestion);
-    } else if (current.includes(suggestion)) {
-      setBriefing(
-        current.replace(suggestion, "").replace(/\.\s*\./g, ".").replace(/\s{2,}/g, " ").trim().replace(/^\.\s*/, "")
-      );
-    }
+  function toggleSuggestion(label: string) {
+    setError("");
+    setSelected((current) => current.includes(label) ? current.filter((item) => item !== label) : [...current, label]);
   }
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     if (busy) return;
-    const text = briefing.trim();
+    const text = [...selectedInstructions, briefing.trim()].filter(Boolean).join(" ");
+    if (text.length > 1500) {
+      setError("Resuma os detalhes para caber em 1500 caracteres.");
+      return;
+    }
     setError("");
     setBusy(true);
     try {
@@ -120,52 +118,50 @@ export default function ContentKitDialog({
         if (!busy) onClose();
       }}
     >
-      <form className="stack" onSubmit={submit}>
+      <form className="stack content-kit-form" onSubmit={submit}>
         <button className="dialog-close" type="button" aria-label="Fechar" disabled={busy} onClick={onClose}>
           ×
         </button>
-        <p className="eyebrow">{mode === "save" ? "Salvar para depois" : "Seu conteúdo"}</p>
-        <h2 id="content-kit-dialog-title">Como você quer gravar?</h2>
-        <p className="muted">
-          Descreva o tom, a duração, se vai aparecer, o estilo e qualquer detalhe importante. Este
-          roteiro será exclusivo para a sua conta. {mode === "save" ? "Ao salvar o produto, também preparamos um conteúdo para você continuar depois." : "Você poderá revisar o conteúdo antes de começar a produção."}
-        </p>
-        <div className="briefing-suggestions" aria-label="Sugestões para o briefing">
-          {SUGGESTIONS.map((s) => (
-            <button
-              key={s}
-              type="button"
-              aria-pressed={selected.includes(s)}
-              className={selected.includes(s) ? "selected" : ""}
-              onClick={() => toggleSuggestion(s)}
-            >
-              {s === SUGGESTIONS[0] ? "Mais agressivo" : s === SUGGESTIONS[1] ? "Vídeo de 15s" : s === SUGGESTIONS[2] ? "Sem aparecer" : s === SUGGESTIONS[3] ? "UGC natural" : "Problema e solução"}
-            </button>
-          ))}
-        </div>
-        <label>
-          Como você imagina o vídeo? (opcional)
+        <header className="content-kit-form-header">
+          <p className="eyebrow">{mode === "save" ? "Salvar e criar" : forceNew ? "Nova versão" : "Novo conteúdo"}</p>
+          <h2 id="content-kit-dialog-title">{mode === "save" ? "Salve sua ideia." : forceNew ? "Teste outro ângulo." : "Seu vídeo começa aqui."}</h2>
+          <p className="muted">Escolha como quer gravar. Você poderá revisar o roteiro antes da produção.</p>
+        </header>
+        <fieldset className="content-kit-style">
+          <legend>Estilo do vídeo <span>(opcional)</span></legend>
+          <div className="briefing-suggestions">
+            {SUGGESTIONS.map(({ label }) => (
+              <button
+                key={label}
+                type="button"
+                aria-pressed={selected.includes(label)}
+                className={selected.includes(label) ? "selected" : ""}
+                onClick={() => toggleSuggestion(label)}
+              >
+                {selected.includes(label) ? "✓ " : "+ "}{label}
+              </button>
+            ))}
+          </div>
+        </fieldset>
+        <label className="content-kit-custom">
+          <span>Algum detalhe importante? <small>(opcional)</small></span>
           <textarea
-            rows={6}
-            maxLength={1500}
-            placeholder="Ex.: Quero um vídeo curto de 15 segundos, mais agressivo, sem aparecer e com foco no antes e depois."
+            rows={3}
+            maxLength={customLimit}
+            placeholder="Ex.: Tenho pouco espaço e quero mostrar o produto em uso."
             value={briefing}
-            onChange={(e) => setBriefing(e.target.value)}
+            onChange={(e) => { setBriefing(e.target.value); setError(""); }}
           />
         </label>
-        <small className="muted">{briefing.length} de 1500 caracteres</small>
+        <small className={`content-kit-count${tooLong ? " is-over-limit" : ""}`}>{briefing.length}/{customLimit}{tooLong ? " · Resuma os detalhes para continuar" : ""}</small>
         {error && <p className="form-message error" role="alert">{error}</p>}
-        <button className="primary" type="submit" disabled={busy}>
-          {busy
-            ? mode === "save"
-              ? "Salvando e preparando seu conteúdo…"
-              : "Criando seu conteúdo…"
-            : mode === "save"
-              ? "Salvar produto e preparar conteúdo →"
-              : forceNew
-                ? "Gerar outra versão →"
-                : "Criar conteúdo →"}
-        </button>
+        <div className="content-kit-form-actions">
+          <button className="ghost" type="button" disabled={busy} onClick={onClose}>Cancelar</button>
+          <button className="primary" type="submit" disabled={busy || tooLong}>
+            {busy ? "Preparando seu roteiro…" : mode === "save" ? "Salvar e criar roteiro →" : forceNew ? "Gerar outra versão →" : "Criar conteúdo →"}
+          </button>
+        </div>
+        <p className="content-kit-form-note">Suas escolhas orientam o roteiro. Você pode gerar outra versão depois.</p>
       </form>
     </dialog>
   );

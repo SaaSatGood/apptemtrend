@@ -410,7 +410,7 @@ export default function Assistant({ onOpen }: { onOpen: (id: string) => void }) 
                     : "Simplifique sua busca ou tente outra ideia."}
                 </p>
                 <button
-                  className="primary"
+                  className="ghost"
                   type="button"
                   onClick={() => (error ? search(query) : reset())}
                 >

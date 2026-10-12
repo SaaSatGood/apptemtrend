@@ -174,7 +174,7 @@ export default function Production() {
           <div className="empty-state">
             <h3>Você ainda não começou nenhuma produção.</h3>
             <p>Conte o que quer vender e escolha seu primeiro produto.</p>
-            <button className="primary" type="button" onClick={findProduct}>
+            <button className="ghost" type="button" onClick={findProduct}>
               Encontrar produto →
             </button>
           </div>
