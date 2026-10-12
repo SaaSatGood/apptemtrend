@@ -1,28 +1,47 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 export default function LandingMenu() {
   const [open, setOpen] = useState(false);
+  const buttonRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     const links = document.getElementById("nav-links");
     links?.classList.toggle("open", open);
-    const close = () => setOpen(false);
-    links?.addEventListener("click", close);
-    return () => links?.removeEventListener("click", close);
+    const closeOnLink = (event: MouseEvent) => {
+      if ((event.target as HTMLElement).closest("a")) setOpen(false);
+    };
+    links?.addEventListener("click", closeOnLink);
+    return () => links?.removeEventListener("click", closeOnLink);
   }, [open]);
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setOpen(false);
+      if (event.key === "Escape") {
+        setOpen(false);
+        buttonRef.current?.focus();
+      }
+    };
+    const closeOutside = (event: PointerEvent) => {
+      if (!(event.target as HTMLElement).closest(".tt-header")) setOpen(false);
+    };
+    const closeOnDesktop = () => {
+      if (window.innerWidth > 980) setOpen(false);
     };
     document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
+    document.addEventListener("pointerdown", closeOutside);
+    window.addEventListener("resize", closeOnDesktop);
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.removeEventListener("pointerdown", closeOutside);
+      window.removeEventListener("resize", closeOnDesktop);
+    };
   }, []);
 
   return (
     <button
+      ref={buttonRef}
       className="menu-button"
       aria-label={open ? "Fechar menu" : "Abrir menu"}
       aria-expanded={open}
@@ -30,7 +49,7 @@ export default function LandingMenu() {
       type="button"
       onClick={() => setOpen((v) => !v)}
     >
-      {open ? "×" : "☰"}
+      <span className="tt-menu-icon" aria-hidden="true"><i /><i /></span>
     </button>
   );
 }

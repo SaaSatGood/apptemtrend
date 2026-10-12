@@ -19,6 +19,7 @@ import "../styles/document-pages.css";
 import "../styles/landing-reference.css";
 import "../styles/landing-refine.css";
 import "../styles/landing-rebuild.css";
+import "../styles/landing-navbar.css";
 
 const manrope = Manrope({
   subsets: ["latin"],

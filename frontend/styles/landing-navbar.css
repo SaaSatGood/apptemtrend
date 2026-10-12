@@ -1,0 +1,122 @@
+/* Navegação da landing: cabeçalho compacto e menu móvel legível. */
+.tt-home .tt-header {
+  top: 18px;
+  width: min(1500px, calc(100% - 48px));
+  border: 1px solid #e9eee3;
+  border-radius: 999px;
+  background: #fffffff5;
+  box-shadow: 0 12px 38px #2c3d1714;
+  backdrop-filter: blur(18px);
+}
+.tt-home .tt-nav { width: calc(100% - 44px); height: 82px; }
+.tt-home .tt-logo { gap: 10px; font-size: 22px; }
+.tt-home .tt-logo > span { width: 44px; height: 44px; font-size: 23px; }
+.tt-home .tt-nav-links { gap: clamp(19px, 2.5vw, 38px); font-size: 14px; }
+.tt-home .tt-nav-links > a:not(.tt-mobile-login) { padding-block: 10px; border-bottom: 2px solid transparent; transition: color .2s ease, border-color .2s ease; }
+.tt-home .tt-nav-links > a:not(.tt-mobile-login):hover { color: #537500; border-color: #91c408; opacity: 1; }
+.tt-home .tt-nav-links a:focus-visible,
+.tt-home .tt-logo:focus-visible,
+.tt-home .tt-nav-actions a:focus-visible,
+.tt-home .tt-nav-actions button:focus-visible { outline: 3px solid #80b300; outline-offset: 4px; }
+.tt-home .tt-menu-kicker { display: none; }
+.tt-home .tt-login { min-width: 96px; min-height: 48px; font-size: 14px; }
+.tt-home .tt-nav-actions .tt-btn-small { min-height: 48px; padding-inline: 23px; font-size: 14px; }
+
+@media (max-width: 1100px) {
+  .tt-home .tt-header { top: 14px; }
+  .tt-home .tt-nav { height: 74px; }
+  .tt-home .tt-logo { font-size: 19px; }
+  .tt-home .tt-logo > span { width: 40px; height: 40px; font-size: 21px; }
+  .tt-home .tt-nav-links { gap: 17px; font-size: 12px; }
+  .tt-home .tt-login { min-width: 78px; min-height: 44px; font-size: 13px; }
+  .tt-home .tt-nav-actions .tt-btn-small { min-height: 44px; padding-inline: 16px; font-size: 13px; }
+}
+
+@media (max-width: 980px) {
+  .tt-home .tt-header { top: 10px; width: calc(100% - 28px); }
+  .tt-home .tt-nav { width: calc(100% - 26px); height: 68px; }
+  .tt-home .tt-nav-actions .menu-button {
+    display: grid;
+    place-items: center;
+    flex: 0 0 44px;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    border: 1px solid #e3eadb;
+    border-radius: 50%;
+    background: #f6f8f1;
+    cursor: pointer;
+  }
+  .tt-home .tt-menu-icon { display: grid; gap: 6px; place-items: center; }
+  .tt-home .tt-menu-icon i { display: block; width: 18px; height: 2px; border-radius: 2px; background: #172113; transition: transform .2s ease; }
+  .tt-home .menu-button[aria-expanded="true"] .tt-menu-icon i:first-child { transform: translateY(4px) rotate(45deg); }
+  .tt-home .menu-button[aria-expanded="true"] .tt-menu-icon i:last-child { transform: translateY(-4px) rotate(-45deg); }
+  .tt-home .tt-nav-links {
+    top: calc(100% + 9px);
+    right: 0;
+    left: 0;
+    width: 100%;
+    gap: 0;
+    padding: 17px 21px 21px;
+    border: 1px solid #e5ebdd;
+    border-radius: 24px;
+    background: #fff;
+    box-shadow: 0 24px 55px #25351a26;
+  }
+  .tt-home .tt-menu-kicker { display: block; padding: 5px 7px 13px; color: #5c7e18; font-size: 10px; font-weight: 850; letter-spacing: .1em; text-transform: uppercase; }
+  .tt-home .tt-nav-links.open > a:not(.tt-mobile-login) {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 58px;
+    padding: 0 7px;
+    border-top: 1px solid #e8ecdf;
+    border-bottom: 0;
+    border-radius: 0;
+    color: #182015;
+    font-size: 17px;
+    font-weight: 720;
+    letter-spacing: -.035em;
+  }
+  .tt-home .tt-nav-links.open > a:not(.tt-mobile-login)::after { content: "↗"; color: #718b39; font-size: 18px; font-weight: 400; }
+  .tt-home .tt-nav-links.open > a:not(.tt-mobile-login):hover { color: #537500; background: #f7faef; }
+  .tt-home .tt-nav-links.open .tt-mobile-login {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 49px;
+    margin-top: 14px;
+    padding: 0 14px;
+    border-radius: 14px;
+    background: #f0f6df;
+    color: #182015;
+    font-size: 14px;
+    font-weight: 750;
+  }
+  .tt-home .tt-nav-links.open .tt-mobile-login::after { content: "↗"; font-size: 17px; font-weight: 400; }
+}
+
+@media (max-width: 720px) {
+  .tt-home .tt-header { top: 8px; width: calc(100% - 24px); }
+  .tt-home .tt-nav { width: calc(100% - 20px); height: 64px; }
+  .tt-home .tt-logo { gap: 7px; font-size: 18px; }
+  .tt-home .tt-logo > span { width: 36px; height: 36px; font-size: 19px; }
+  .tt-home .tt-nav-actions { gap: 7px; }
+  .tt-home .tt-nav-actions .tt-btn-small { min-height: 39px; padding-inline: 14px; font-size: 12px; }
+  .tt-home .tt-nav-actions .menu-button { flex-basis: 40px; width: 40px; height: 40px; }
+}
+
+@media (max-width: 380px) {
+  .tt-home .tt-logo { font-size: 15px; }
+  .tt-home .tt-logo > span { width: 32px; height: 32px; font-size: 17px; }
+  .tt-home .tt-nav-actions { gap: 4px; }
+  .tt-home .tt-nav-actions .tt-btn-small { width: 88px; padding-inline: 4px; font-size: 10px; white-space: nowrap; }
+  .tt-home .tt-nav-actions .tt-btn-small::after { content: none; }
+  .tt-home .tt-nav-actions .menu-button { flex-basis: 38px; width: 38px; height: 38px; }
+  .tt-home .tt-nav-links { padding-inline: 16px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tt-home .tt-menu-icon i,
+  .tt-home .tt-nav-links > a:not(.tt-mobile-login) { transition: none; }
+}

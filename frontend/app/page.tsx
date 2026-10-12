@@ -17,7 +17,8 @@ export default function LandingPage() {
             <span aria-hidden="true">T</span><b>TemTrend</b>
           </Link>
           <div className="tt-nav-links" id="nav-links">
-            <a href="#como-funciona">Como funciona</a><a href="#content-kits">Plano de gravação</a><a href="#produtos">Produtos</a><a href="#faq">FAQ</a>
+            <span className="tt-menu-kicker">Explorar a TemTrend</span>
+            <a href="#como-funciona" aria-label="Como funciona">Como funciona</a><a href="#content-kits" aria-label="Plano de gravação">Plano de gravação</a><a href="#produtos" aria-label="Produtos">Produtos</a><a href="#faq" aria-label="FAQ">FAQ</a>
             <Link className="tt-mobile-login" href="/app">Entrar</Link>
           </div>
           <div className="tt-nav-actions">
