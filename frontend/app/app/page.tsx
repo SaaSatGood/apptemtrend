@@ -1,5 +1,6 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { usePlatform } from "@/components/platform/store";
@@ -8,6 +9,11 @@ import Onboarding from "@/components/platform/Onboarding";
 import Assistant from "@/components/platform/Assistant";
 import Topbar from "@/components/platform/Topbar";
 import { AccountLoadError, AppBoot } from "@/components/platform/PlatformState";
+
+const Admin = dynamic(() => import("@/components/platform/Admin"), {
+  ssr: false,
+  loading: () => <AppBoot />,
+});
 
 function Discover() {
   const { session, me, meLoading, globalError, booted } = usePlatform();
@@ -68,8 +74,6 @@ function Discover() {
     </main>
   );
 }
-
-import Admin from "@/components/platform/Admin";
 
 export default function AppPage() {
   return (

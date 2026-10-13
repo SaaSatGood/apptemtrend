@@ -328,7 +328,7 @@ export default function AuthPanel({
               </button>
             </div>
             <button className="primary" type="submit" disabled={busy || busyProvider !== null}>
-              {busy ? busyLabel : "Entrar →"}
+              {busy ? busyLabel : "Entrar"}
             </button>
             <p className="auth-switch">
               Ainda não tem uma conta?{" "}
@@ -360,7 +360,7 @@ export default function AuthPanel({
               </span>
             </label>
             <button className="primary" type="submit" disabled={busy || busyProvider !== null}>
-              {busy ? busyLabel : "Começar agora →"}
+              {busy ? busyLabel : "Começar agora"}
             </button>
             <p className="legal-note">
               Ao continuar, você concorda com nossos <Link href="/termos" target="_blank" rel="noopener">Termos</Link> e{" "}
@@ -382,10 +382,10 @@ export default function AuthPanel({
               <input id="recovery-email" name="recovery-email" type="email" required autoComplete="email" inputMode="email" spellCheck={false} placeholder="seu@email.com" />
             </label>
             <button className="primary" type="submit" disabled={busy}>
-              {busy ? busyLabel : "Enviar link →"}
+              {busy ? busyLabel : "Enviar link"}
             </button>
             <button className="back-button" type="button" onClick={() => switchPanel("login")}>
-              ← Voltar para entrar
+              Voltar para entrar
             </button>
           </form>
         )}
@@ -401,7 +401,7 @@ export default function AuthPanel({
               <PasswordInput id="confirm-password" autoComplete="new-password" />
             </label>
             <button className="primary" type="submit" disabled={busy}>
-              {busy ? busyLabel : "Salvar nova senha →"}
+              {busy ? busyLabel : "Salvar nova senha"}
             </button>
           </form>
         )}
@@ -413,7 +413,7 @@ export default function AuthPanel({
         {notice && <p className="form-message success" role="status">{notice}</p>}
         </section>
       </div>
-      <Link className="back-home" href="/">← Voltar para o início</Link>
+      <Link className="back-home" href="/">Voltar para o início</Link>
     </main>
   );
 }

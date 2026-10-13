@@ -98,9 +98,9 @@ export function ProductCard({
         <div className="product-actions">
           <div className="opportunity-secondary-actions">
             <button type="button" disabled={saved || saving} aria-label={`Salvar ${name}`} onClick={() => onSave(product.id)}>{saving ? "Salvando…" : saved ? "Salvo ✓" : "Salvar"}</button>
-            <button className="generate-script" type="button" aria-label={`Gerar roteiro para ${name}`} onClick={() => onGenerate(product.id)}>Gerar roteiro ↗</button>
+            <button className="generate-script" type="button" aria-label={`Gerar roteiro para ${name}`} onClick={() => onGenerate(product.id)}>Gerar roteiro</button>
           </div>
-          <button className="ghost open-product" type="button" aria-label={`Ver produto ${name}`} onClick={() => onOpen(product.id)}>Ver produto →</button>
+          <button className="ghost open-product" type="button" aria-label={`Ver produto ${name}`} onClick={() => onOpen(product.id)}>Ver produto</button>
         </div>
       </div>
     </article>
@@ -328,7 +328,7 @@ export default function Assistant({ onOpen }: { onOpen: (id: string) => void }) 
             onChange={(e) => setQuery(e.target.value)}
           />
           <button id="assistant-submit" className="primary" type="submit" disabled={searching}>
-            {searching ? "Encontrando produtos…" : "Encontrar produtos →"}
+            {searching ? "Encontrando produtos…" : "Encontrar produtos"}
           </button>
           <button className="ghost discovery-surprise" type="button" disabled={searching} onClick={() => void search("Não sei o que vender. Sugira oportunidades do catálogo para começar a criar conteúdo.", true)}>{recurring ? "Me surpreenda" : "Não sei o que vender"}</button>
         </div>
@@ -346,7 +346,7 @@ export default function Assistant({ onOpen }: { onOpen: (id: string) => void }) 
                 search(text, true);
               }}
             >
-              {theme} <span aria-hidden="true">↗</span>
+              {theme}
             </button>
           ))}</div>}
       <div className="assistant-examples" role="group" aria-label="Exemplos de busca">
@@ -382,7 +382,7 @@ export default function Assistant({ onOpen }: { onOpen: (id: string) => void }) 
           {!searching && needsClarification && (
             <div className="assistant-clarification" role="group" aria-label="Escolha como buscar produtos">
               {clarificationChoices.map(([label, text]) => (
-                <button key={label} type="button" onClick={() => { setContextIds([]); void search(text, true); }}>{label} →</button>
+                <button key={label} type="button" onClick={() => { setContextIds([]); void search(text, true); }}>{label}</button>
               ))}
             </div>
           )}

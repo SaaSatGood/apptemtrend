@@ -176,7 +176,7 @@ export default function ContentKitDialog({
           <div className="content-kit-form-actions">
             <button className="ghost" type="button" disabled={busy} onClick={onClose}>Cancelar</button>
             <button className="primary" type="submit" disabled={busy || tooLong}>
-              {busy ? "Preparando seu roteiro…" : mode === "save" ? "Salvar e criar roteiro →" : forceNew ? "Gerar outra versão →" : "Criar conteúdo →"}
+              {busy ? "Preparando seu roteiro…" : mode === "save" ? "Salvar e criar roteiro" : forceNew ? "Gerar outra versão" : "Criar conteúdo"}
             </button>
           </div>
         </footer>

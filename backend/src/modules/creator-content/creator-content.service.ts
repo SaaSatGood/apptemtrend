@@ -30,8 +30,10 @@ async function requireCreator(userId: string) {
 }
 
 async function requireOwnedProduction(userId: string, contentId: string) {
-  const creator = await requireCreator(userId);
-  const content = await findCreatorContentById(contentId);
+  const [creator, content] = await Promise.all([
+    requireCreator(userId),
+    findCreatorContentById(contentId),
+  ]);
   if (!content) throw Errors.NOT_FOUND('Produção');
   if (content.creator_id !== creator.id) throw Errors.FORBIDDEN;
   return { creator, content };
@@ -103,14 +105,16 @@ export async function selectContentKit(userId: string, contentId: string, conten
 }
 
 export async function saveOpportunity(userId: string, contentKitId: string) {
-  // Creator + kit em paralelo; produto e duplicatas depois.
-  const creator = await findCreatorByUserId(userId);
+  // Creator + kit independentes: busca em paralelo.
+  const [creator, contentKit] = await Promise.all([
+    findCreatorByUserId(userId),
+    findContentKitById(contentKitId),
+  ]);
   if (!creator) {
     throw Errors.NOT_FOUND('Creator');
   }
   if (creator.status === 'bloqueado') throw Errors.FORBIDDEN;
 
-  const contentKit = await findContentKitById(contentKitId);
   if (!contentKit || contentKit.creator_id !== creator.id) {
     throw Errors.NOT_FOUND('Content Kit');
   }

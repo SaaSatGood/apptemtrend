@@ -47,7 +47,7 @@ export default function KitDetail({ productId, kitId }: { productId: string; kit
 
   if (failed || (!product && !kit)) {
     if (!failed) return <section className="detail-view" aria-live="polite"><p role="status">Carregando seu conteúdo…</p><div className="product-grid"><Skeletons /></div></section>;
-    return <section className="detail-view" aria-live="polite"><div className="empty-state"><h3>Não encontramos este plano de gravação.</h3><p>Ele pode ter sido removido ou pertencer a outro produto.</p><Link className="primary" href={`/app/produtos/${productId}`}>← Voltar para o produto</Link></div></section>;
+    return <section className="detail-view" aria-live="polite"><div className="empty-state"><h3>Não encontramos este plano de gravação.</h3><p>Ele pode ter sido removido ou pertencer a outro produto.</p><Link className="primary" href={`/app/produtos/${productId}`}>Voltar para o produto</Link></div></section>;
   }
   if (!product || !kit) return null;
 
@@ -58,7 +58,7 @@ export default function KitDetail({ productId, kitId }: { productId: string; kit
   const otherKitInProgress = productProduction && productProduction.status !== "salvo" && productProduction.content_kit_id !== currentKit.id;
   const production = productions.find((item) => item.content_kit_id === currentKit.id || item.content_kits?.id === currentKit.id || (!item.content_kit_id && item.product_id === currentProduct.id));
   const statusLabel = productionsError ? "Progresso indisponível" : productionsLoading ? "Conferindo progresso" : otherKitInProgress ? "Outro roteiro em produção" : production ? ({ salvo: "Roteiro salvo", em_producao: "Em produção", gravado: "Vídeo gravado", publicado: "Publicado" } as Record<string, string>)[production.status] || "Roteiro pronto" : "Roteiro pronto";
-  const readyLabel = productionsError ? "Tentar novamente" : productionsLoading ? "Conferindo…" : otherKitInProgress ? "Continuar produção →" : production?.status === "gravado" ? "Marcar como publicado →" : production?.status === "publicado" ? "Minha produção →" : "Marcar como gravado →";
+  const readyLabel = productionsError ? "Tentar novamente" : productionsLoading ? "Conferindo…" : otherKitInProgress ? "Continuar produção" : production?.status === "gravado" ? "Marcar como publicado" : production?.status === "publicado" ? "Minha produção" : "Marcar como gravado";
 
   async function markRecorded() {
     if (busy || productionsLoading || productionsError) return;
@@ -97,7 +97,7 @@ export default function KitDetail({ productId, kitId }: { productId: string; kit
         </div>
         <aside className="content-kit-product" aria-label="Produto deste conteúdo">
           <ProductImage product={currentProduct} width={220} height={180} />
-          <div><span>Produto deste conteúdo</span><strong>{currentProduct.categoria || "Produto"}</strong><Link href={`/app/produtos/${currentProduct.id}`}>Ver detalhes →</Link></div>
+          <div><span>Produto deste conteúdo</span><strong>{currentProduct.categoria || "Produto"}</strong><Link href={`/app/produtos/${currentProduct.id}`}>Ver detalhes</Link></div>
         </aside>
       </header>
       <ProductionSteps current={production ? ({ salvo: 1, em_producao: 2, gravado: 3, publicado: 4 })[production.status] : 1} />

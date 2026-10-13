@@ -13,7 +13,7 @@ export default function NotFound() {
           <h1>Esse caminho não existe <em>por aqui.</em></h1>
           <p>Volte para a página inicial ou entre na plataforma para encontrar produtos e planejar seu próximo vídeo.</p>
           <div className="tt-not-found-actions">
-            <Link className="tt-document-primary" href="/">Ir para o início <span aria-hidden="true">↗</span></Link>
+            <Link className="tt-document-primary" href="/">Ir para o início</Link>
             <Link className="tt-document-secondary" href="/app">Acessar a plataforma</Link>
           </div>
         </div>

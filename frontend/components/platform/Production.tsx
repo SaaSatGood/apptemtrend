@@ -176,7 +176,7 @@ export default function Production() {
             <h3>Você ainda não começou nenhuma produção.</h3>
             <p>Conte o que quer vender e escolha seu primeiro produto.</p>
             <button className="ghost" type="button" onClick={findProduct}>
-              Encontrar produto →
+              Encontrar produto
             </button>
           </div>
         ) : !visible.length ? (
@@ -220,7 +220,7 @@ export default function Production() {
                         target="_blank"
                         rel="noopener noreferrer"
                       >
-                        Abrir vídeo ↗
+                        Abrir vídeo
                       </a>
                     ) : status === "gravado" ? (
                       <ProductionPublishButton content={c} />
@@ -233,7 +233,7 @@ export default function Production() {
                             : `/app/produtos/${c.product_id}`
                         }
                       >
-                        {status === "salvo" ? kit ? "Ver conteúdo →" : "Criar conteúdo →" : status === "publicado" ? "Ver roteiro →" : "Continuar produção →"}
+                        {status === "salvo" ? kit ? "Ver conteúdo" : "Criar conteúdo" : status === "publicado" ? "Ver roteiro" : "Continuar produção"}
                       </Link>
                     )}
                     {kit?.hook && (
@@ -265,7 +265,7 @@ function ProductionPublishButton({ content }: { content: CreatorContent }) {
   return (
     <>
       <button className="production-action" type="button" onClick={() => setOpen(true)}>
-        Publicar →
+        Publicar
       </button>
       {open && <PublicationDialog content={content} onClose={() => setOpen(false)} />}
     </>
@@ -333,7 +333,7 @@ export function PublicationDialog({
         </label>
         {error && <p className="form-message error" role="alert">{error}</p>}
         <button className="primary" type="submit" disabled={busy}>
-          {busy ? "Salvando..." : "Salvar publicação →"}
+          {busy ? "Salvando..." : "Salvar publicação"}
         </button>
       </form>
     </Modal>

@@ -376,15 +376,18 @@
 .tt-home .tt-carousel-toolbar p { margin: 0; color: #687063; font-size: 14px; text-align: left; }
 .tt-home .tt-carousel-controls { display: flex; gap: 8px; }
 .tt-home .tt-carousel-controls button {
-  display: grid;
-  place-items: center;
-  width: 42px;
-  height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 90px;
+  min-height: 42px;
+  padding: 0 14px;
   border: 1px solid #d7dfcd;
-  border-radius: 50%;
+  border-radius: 999px;
   background: #fff;
   color: #171a13;
-  font-size: 21px;
+  font-size: 12px;
+  font-weight: 800;
   cursor: pointer;
   transition: transform .2s ease, background .2s ease, border-color .2s ease;
 }

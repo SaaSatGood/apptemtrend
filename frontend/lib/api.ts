@@ -1,3 +1,5 @@
+import { requireApiUrl } from "./config";
+
 export interface ApiError extends Error {
   code?: string;
   status?: number;
@@ -8,7 +10,6 @@ export async function api<T>(
   accessToken: string | undefined,
   options: RequestInit & { json?: unknown } = {}
 ): Promise<T> {
-  const { requireApiUrl } = await import("./config");
   const headers: Record<string, string> = {};
   // Content-Type só com corpo: Fastify rejeita DELETE/GET com o header e sem body (400).
   if (options.body != null && !(options.body instanceof FormData)) headers["Content-Type"] = "application/json";

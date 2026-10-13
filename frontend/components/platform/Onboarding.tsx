@@ -1,13 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { api, friendlyError } from "@/lib/api";
 import { usePlatform } from "./store";
 
 const OBJECTIVES = [
-  { value: "comecar_vender", label: "Quero começar a vender", detail: "Encontre um produto e dê o primeiro passo.", icon: "↗" },
+  { value: "comecar_vender", label: "Quero começar a vender", detail: "Encontre um produto e dê o primeiro passo.", icon: "●" },
   { value: "vender_mais", label: "Já vendo e quero vender mais", detail: "Crie novas ideias para o seu catálogo.", icon: "✦" },
   { value: "criar_videos", label: "Quero criar vídeos para produtos", detail: "Transforme produtos em roteiros graváveis.", icon: "▣" },
   { value: "explorando", label: "Estou só explorando", detail: "Conheça a plataforma no seu ritmo.", icon: "◎" },
@@ -24,61 +24,28 @@ const STEP_LABELS = ["Objetivo", "Estilos", "Temas", "Sua voz", "Pronto"];
 
 const VOZ_MAX = 500;
 
-interface Saved {
-  objetivo: string;
-  estilos_conteudo: string[];
-  temas_interesse: string[];
-  voz_exemplo: string;
-  step: number;
-}
-
-function loadSaved(current: Saved, editing: boolean, storageKey: string): Saved {
-  const empty: Saved = { ...current, step: 1 };
-  if (typeof window === "undefined" || editing) return empty;
-  try {
-    const raw = window.localStorage.getItem(storageKey);
-    if (!raw) return empty;
-    const parsed = JSON.parse(raw) as Partial<Saved>;
-    return {
-      objetivo: typeof parsed.objetivo === "string" ? parsed.objetivo : empty.objetivo,
-      estilos_conteudo: Array.isArray(parsed.estilos_conteudo) ? parsed.estilos_conteudo : empty.estilos_conteudo,
-      temas_interesse: Array.isArray(parsed.temas_interesse) ? parsed.temas_interesse : empty.temas_interesse,
-      voz_exemplo: typeof parsed.voz_exemplo === "string" ? parsed.voz_exemplo : empty.voz_exemplo,
-      step: editing ? 1 : parsed.step === 2 || parsed.step === 3 || parsed.step === 4 ? parsed.step : 1,
-    };
-  } catch {
-    return empty;
-  }
-}
-
 export default function Onboarding({ editing, onDone }: { editing: boolean; onDone: () => void }) {
   const { toast, reloadMe, me } = usePlatform();
-  const storageKey = `temtrend_onboarding:${me?.user_id || "anonymous"}`;
-  const current: Saved = {
-    objetivo: me?.creator?.objetivo || "",
-    estilos_conteudo: me?.creator?.estilos_conteudo || [],
-    temas_interesse: me?.creator?.temas_interesse || [],
-    voz_exemplo: me?.creator?.voz_exemplo || "",
-    step: 1,
-  };
-  const [saved] = useState<Saved>(() => loadSaved(current, editing, storageKey));
-  const [step, setStep] = useState(saved.step);
-  const [objetivo, setObjetivo] = useState(saved.objetivo);
-  const [estilos, setEstilos] = useState<string[]>(saved.estilos_conteudo);
-  const [temas, setTemas] = useState<string[]>(saved.temas_interesse);
-  const [voz, setVoz] = useState(saved.voz_exemplo);
+  // O progresso intermediário NÃO é persistido (nem localStorage, nem
+  // backend). Só o POST final em /creators/onboarding salva na plataforma.
+  // Entrar com conta já cadastrada cai direto no app quando
+  // me.onboarding_completo é true; senão começa sempre da etapa 1.
+  const [step, setStep] = useState(1);
+  const [objetivo, setObjetivo] = useState(me?.creator?.objetivo || "");
+  const [estilos, setEstilos] = useState<string[]>(me?.creator?.estilos_conteudo || []);
+  const [temas, setTemas] = useState<string[]>(me?.creator?.temas_interesse || []);
+  const [voz, setVoz] = useState(me?.creator?.voz_exemplo || "");
   const [saving, setSaving] = useState(false);
 
-  useEffect(() => {
+  function clearStaleDraft() {
+    // Limpa rascunhos de versões antigas que salvavam etapa parcial.
     try {
-      window.localStorage.setItem(
-        storageKey,
-        JSON.stringify({ objetivo, estilos_conteudo: estilos, temas_interesse: temas, voz_exemplo: voz, step })
-      );
+      window.localStorage.removeItem("temtrend_onboarding");
+      if (me?.user_id) window.localStorage.removeItem(`temtrend_onboarding:${me.user_id}`);
     } catch {
       /* noop */
     }
-  }, [objetivo, estilos, temas, voz, step, storageKey]);
+  }
 
   function toggle(list: string[], value: string, set: (v: string[]) => void) {
     set(list.includes(value) ? list.filter((v) => v !== value) : [...list, value]);
@@ -121,11 +88,7 @@ export default function Onboarding({ editing, onDone }: { editing: boolean; onDo
       return;
     }
     if (step === 5) {
-      try {
-        window.localStorage.removeItem(storageKey);
-      } catch {
-        /* noop */
-      }
+      clearStaleDraft();
       setSaving(true);
       try { await reloadMe(); onDone(); }
       catch (error) { toast(friendlyError(error, "Suas preferências foram salvas. Tente continuar novamente.")); }
@@ -137,11 +100,7 @@ export default function Onboarding({ editing, onDone }: { editing: boolean; onDo
 
   function back() {
     if (step === 1 && editing) {
-      try {
-        window.localStorage.removeItem(storageKey);
-      } catch {
-        /* noop */
-      }
+      clearStaleDraft();
       onDone();
       return;
     }
@@ -313,7 +272,7 @@ export default function Onboarding({ editing, onDone }: { editing: boolean; onDo
               type="button"
               onClick={back} disabled={saving}
             >
-              {step === 1 ? "Cancelar" : "← Voltar"}
+              {step === 1 ? "Cancelar" : "Voltar"}
             </button>
             <button
               id="onboarding-skip"
@@ -330,7 +289,7 @@ export default function Onboarding({ editing, onDone }: { editing: boolean; onDo
               disabled={(step === 1 && !objetivo) || saving}
               onClick={() => advance(false)}
             >
-              {saving ? "Salvando preferências..." : done ? editing ? "Voltar à conta →" : "Ir para Descobrir →" : step === 4 ? "Concluir configuração →" : "Continuar →"}
+              {saving ? "Salvando preferências..." : done ? editing ? "Voltar à conta" : "Ir para Descobrir" : step === 4 ? "Concluir configuração" : "Continuar"}
             </button>
           </div>
         </div>

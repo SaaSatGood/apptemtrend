@@ -1,5 +1,12 @@
-const SUPABASE_URL = 'https://iwktyugnwtdroberoces.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml3a3R5dWdud3Rkcm9iZXJvY2VzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcwODYyODUsImV4cCI6MjA5MjY2MjI4NX0.1j-36p5mGNrcjaI1ezwghdgZFirWEMka1g7E9oFSJuc';
+// Credenciais Supabase resolvidas em runtime (config.js > meta tags).
+// Nenhum valor real vive neste arquivo: anon key é pública por design, mas
+// é injetada no deploy para não vazar o projeto via git.
+const SUPABASE_URL = (window.TEMTREND_CONFIG?.SUPABASE_URL || '')
+  || document.querySelector('meta[name="temtrend-supabase-url"]')?.content?.trim()
+  || '';
+const SUPABASE_ANON_KEY = (window.TEMTREND_CONFIG?.SUPABASE_ANON_KEY || '')
+  || document.querySelector('meta[name="temtrend-supabase-anon-key"]')?.content?.trim()
+  || '';
 const LOCAL_HOSTS = ['localhost', '127.0.0.1', '[::1]'];
 const API_URL = (window.TEMTREND_CONFIG?.API_URL || '')
   || localStorage.getItem('temtrend_api_url')
@@ -8,6 +15,7 @@ const API_URL = (window.TEMTREND_CONFIG?.API_URL || '')
 function requireApiUrl(){if(!API_URL)throw new Error('Serviço indisponível. Configure a API (config.js, meta temtrend-api-url ou localStorage temtrend_api_url).');return API_URL}
 if(!API_URL){window.addEventListener('DOMContentLoaded',()=>toast('Serviço indisponível. Tente novamente mais tarde.'))}
 if (!window.supabase) { const node = document.getElementById('toast'); if (node) { node.textContent = 'Não foi possível carregar a biblioteca de acesso. Recarregue a página.'; node.classList.remove('hidden'); } throw new Error('Supabase SDK não carregado'); }
+if (!SUPABASE_URL || !SUPABASE_ANON_KEY) { window.addEventListener('DOMContentLoaded', () => toast('Serviço indisponível. Tente novamente mais tarde.')); throw new Error('Supabase não configurado. Defina config.js ou meta temtrend-supabase-* no deploy.'); }
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 let session; let currentUser; let creatorProductions = []; let activeProductData = null; let activeKit = null; let onboardingStep = 1; let editingPreferences = false; let activeCreatorContentId = null; let productionFilter = 'todos'; let assistantContextProductIds = [];
 const onboardingData = { objetivo: '', estilos_conteudo: [], temas_interesse: [] };

@@ -18,14 +18,11 @@
 }
 .tt-home .tt-rd-kicker { display: inline-flex; align-items: center; gap: 10px; margin-bottom: 24px; font-size: 12px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
 .tt-home .tt-rd-kicker::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: #9dce0b; }
-.tt-home .tt-rd-text-link { display: inline-flex; align-items: center; gap: 40px; width: fit-content; padding: 0 0 9px; border-bottom: 1px solid currentColor; color: #20271b; font-size: 16px; font-weight: 800; }
+.tt-home .tt-rd-text-link { display: inline-flex; align-items: center; width: fit-content; padding: 0 0 9px; border-bottom: 1px solid currentColor; color: #20271b; font-size: 16px; font-weight: 800; }
 .tt-home .tt-rd-text-link:hover { color: #527300; }
-.tt-home .tt-rd-text-link span { font-size: 23px; line-height: .8; transition: transform .25s ease; }
-.tt-home .tt-rd-text-link:hover span { transform: translate(9px, -3px); }
-.tt-home .tt-rd-button { display: inline-flex; align-items: center; justify-content: space-between; gap: 30px; min-width: 220px; min-height: 62px; padding: 0 25px; border-radius: 999px; font-size: 15px; font-weight: 800; white-space: nowrap; transition: transform .22s ease; }
+.tt-home .tt-rd-button { display: inline-flex; align-items: center; justify-content: center; min-width: 220px; min-height: 62px; padding: 0 25px; border-radius: 999px; font-size: 15px; font-weight: 800; white-space: nowrap; transition: transform .22s ease; }
 .tt-home .tt-rd-button:hover { transform: translateY(-3px); }
 .tt-home .tt-rd-button:active { transform: translateY(1px); }
-.tt-home .tt-rd-button span { font-size: 23px; font-weight: 400; }
 .tt-home .tt-rd-button-lime { background: #c8ff2e; color: #151a0e; }
 .tt-home .tt-rd-button-lime:hover { background: #ddff75; }
 .tt-home .tt-rd-button-dark { background: #141714; color: #fff; }
@@ -265,5 +262,5 @@
   .tt-home .tt-rd-footer-main > div:first-child { grid-column: auto; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .tt-home :is(.tt-rd-button, .tt-rd-text-link span, .tt-rd-faq-list summary i) { transition: none; }
+  .tt-home :is(.tt-rd-button, .tt-rd-faq-list summary i) { transition: none; }
 }

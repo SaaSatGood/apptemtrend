@@ -39,13 +39,12 @@
 #app-view .opportunity-sensitive { margin: 2px 0 12px; color: #4b3d20; font-size: 11px; font-weight: 700; line-height: 1.4; }
 #app-view .sensitive-filter { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; margin: 0 0 12px; color: #3c4538; font-size: 12px; font-weight: 750; cursor: pointer; }
 #app-view .sensitive-filter input { width: 18px; height: 18px; accent-color: #679000; }
-#app-view .opportunity-card.is-featured .open-product, #app-view .opportunity-card.is-featured:hover .open-product { background: #fff; border-color: #cbd7bf; }
-#app-view .opportunity-secondary-actions { grid-template-columns: .75fr 1.25fr; }
+#app-view .opportunity-secondary-actions { grid-template-columns: minmax(0, .75fr) minmax(0, 1.25fr); min-width: 0; }
 #app-view .opportunity-secondary-actions button { min-height: 44px; color: #34422b; }
 #app-view .opportunity-secondary-actions .generate-script { border-color: #111; background: #111; color: #fff; }
 #app-view .opportunity-secondary-actions .generate-script:hover { background: #31382a; color: #fff; }
-#app-view .opportunity-card .open-product, #app-view .opportunity-card.is-featured .open-product { min-height: 44px; padding: 6px 0; border: 0; background: transparent; color: #34472b; justify-content: flex-start; }
-#app-view .opportunity-card .open-product:hover, #app-view .opportunity-card:hover .open-product { border: 0; background: transparent; color: #182715; text-decoration: underline; }
+#app-view .opportunity-card .open-product, #app-view .opportunity-card.is-featured .open-product { min-height: 44px; padding: 10px 14px; border: 1px solid #cbd7bf; background: #fff; color: #34472b; justify-content: center; text-decoration: none; }
+#app-view .opportunity-card .open-product:hover, #app-view .opportunity-card:hover .open-product { border-color: #a1c46f; background: #f4faeb; color: #182715; text-decoration: none; }
 #app-view .product-detail-hero > .product-image-fallback { min-height: 360px; border-radius: 16px; }
 #app-view .product-detail-copy h1 { display: block; overflow: visible; max-width: 100%; white-space: normal; text-overflow: clip; overflow-wrap: anywhere; font-size: clamp(26px, 3vw, 40px); line-height: 1.12; }
 #app-view .product-detail-copy h1.is-long-title { font-size: clamp(23px, 2.35vw, 31px); }
@@ -261,7 +260,7 @@
 #app-view .opportunity-metrics dt { font-size: 12px; }
 #app-view .opportunity-metrics dd { font-size: 15px; font-variant-numeric: tabular-nums; }
 #app-view .opportunity-metrics dd small { font-size: 11px; }
-#app-view .opportunity-secondary-actions button { min-height: 44px; font-size: 12px; white-space: nowrap; }
+#app-view .opportunity-secondary-actions button { min-height: 44px; font-size: 12px; white-space: normal; }
 #app-view .opportunity-highlight { font-size: 11px; }
 #app-view :is(.production-card, .account-card, .kit-card, .recording-guide-stage) { border-color: #dce3d3; }
 #app-view :is(.production-card p, .account-card p, .kit-card p, .recording-guide-stage p) { font-size: 14px; line-height: 1.55; }

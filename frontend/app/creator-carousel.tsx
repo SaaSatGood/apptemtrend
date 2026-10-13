@@ -75,8 +75,8 @@ export default function CreatorCarousel({ videos }: { videos: ReelVideo[] }) {
       <div className="tt-carousel-toolbar">
         <p><span className="tt-rd-reel-count">01 — 06</span> Ideias para testar com o celular</p>
         <div className="tt-carousel-controls" aria-label="Controles do carrossel">
-          <button type="button" onClick={() => move(-1)} disabled={!canPrev} aria-label="Ver vídeos anteriores">←</button>
-          <button type="button" onClick={() => move(1)} disabled={!canNext} aria-label="Ver próximos vídeos">→</button>
+          <button type="button" onClick={() => move(-1)} disabled={!canPrev} aria-label="Ver vídeos anteriores">Anteriores</button>
+          <button type="button" onClick={() => move(1)} disabled={!canNext} aria-label="Ver próximos vídeos">Próximos</button>
         </div>
       </div>
       <div

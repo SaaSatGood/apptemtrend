@@ -35,6 +35,7 @@ export const UPLOAD = {
 export const CACHE_TTL_MS = {
   AUTH_USER: 90 * 1000, // 90s por token
   ADMIN_FLAG: 60 * 1000, // 60s por user_id (revogação rápida)
+  ME: 30 * 1000, // 30s perfil /me por user_id (onboarding invalida na hora)
   CATALOG: 5 * 60 * 1000, // 5min catálogo ativo (escritas invalidam na hora)
   DASHBOARD: 30 * 1000, // 30s métricas admin
   USER_DIRECTORY: 10 * 60 * 1000, // 10min diretório auth

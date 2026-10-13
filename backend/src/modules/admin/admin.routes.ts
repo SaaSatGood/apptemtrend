@@ -5,6 +5,7 @@ import { requireAdmin } from '../../plugins/auth.js';
 import { RATE_LIMITS, CREATOR_STATUS } from '../../config/constants.js';
 import * as adminRepo from './admin.repository.js';
 import * as creatorRepo from '../creators/creator.repository.js';
+import { invalidateMeCache } from '../creators/creator.service.js';
 import * as productService from '../products/product.service.js';
 import { listAllProducts, createProductWithContentKit } from '../products/product.repository.js';
 import * as kitService from '../content-kits/content-kit.service.js';
@@ -77,6 +78,8 @@ async function routes(app: FastifyInstance) {
     const { id } = idParam.parse(request.params);
     const { status } = z.object({ status: z.enum([CREATOR_STATUS.ATIVO, CREATOR_STATUS.BLOQUEADO]) }).parse(request.body);
     const updated = await creatorRepo.updateCreator(id, { status });
+    // /me é cacheado 30s: bloqueio/desbloqueio precisa refletir na hora.
+    if (updated?.user_id) invalidateMeCache(updated.user_id);
     adminRepo.invalidateDashboardCache();
     return updated;
   });

@@ -12,11 +12,14 @@ import type { Product } from '../../types/index.js';
 import crypto from 'node:crypto';
 import { invalidateDashboardCache } from '../admin/admin.repository.js';
 
-const catalogCache = new TtlCache<Product[]>(1);
-const CATALOG_CACHE_KEY = 'active-searchable';
+const catalogCache = new TtlCache<Product[]>(50);
+// Namespaces distintos: catálogo pesquisável (sem filtro) nunca colide com
+// catálogo filtrado (categoria/destaque). Datasets diferentes, mesma instância.
+const SEARCHABLE_CATALOG_KEY = 'searchable:all';
+const FILTERED_CATALOG_PREFIX = 'filtered';
 
 function catalogCacheKey(filters?: { categoria?: string; destaque?: boolean }) {
-  return `${CATALOG_CACHE_KEY}:${filters?.categoria ?? '-'}:${filters?.destaque ?? '-'}`;
+  return `${FILTERED_CATALOG_PREFIX}:${filters?.categoria ?? '-'}:${filters?.destaque ?? '-'}`;
 }
 
 export async function getProducts(
@@ -55,10 +58,10 @@ export async function listSearchableCatalog(): Promise<Product[]> {
   if (process.env.NODE_ENV === 'test') {
     return listActiveProducts({ onlySearchable: true });
   }
-  const cached = catalogCache.get(CATALOG_CACHE_KEY);
+  const cached = catalogCache.get(SEARCHABLE_CATALOG_KEY);
   if (cached) return cached;
   const products = await listActiveProducts({ onlySearchable: true });
-  catalogCache.set(CATALOG_CACHE_KEY, products, CACHE_TTL_MS.CATALOG);
+  catalogCache.set(SEARCHABLE_CATALOG_KEY, products, CACHE_TTL_MS.CATALOG);
   return products;
 }
 

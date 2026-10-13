@@ -48,14 +48,31 @@ export function usePlatform(): PlatformState {
 let toastId = 0;
 
 async function fetchAllProductions(token: string): Promise<CreatorContent[]> {
-  const all: CreatorContent[] = [];
-  for (let page = 1; page <= 100; page += 1) {
-    const batch = await api<CreatorContent[]>(
-      `/creator-content?page=${page}&limit=50`,
-      token
+  const PAGE_LIMIT = 50;
+  const MAX_PAGES = 20;
+  const CONCURRENCY = 4;
+  const first = await api<CreatorContent[]>(
+    `/creator-content?page=1&limit=${PAGE_LIMIT}`,
+    token
+  );
+  if (first.length < PAGE_LIMIT) return first;
+  const all: CreatorContent[] = [...first];
+  for (let start = 2; start <= MAX_PAGES; start += CONCURRENCY) {
+    const pages = Array.from(
+      { length: Math.min(CONCURRENCY, MAX_PAGES - start + 1) },
+      (_, i) => start + i
     );
-    all.push(...batch);
-    if (batch.length < 50) break;
+    const batches = await Promise.all(
+      pages.map((page) =>
+        api<CreatorContent[]>(`/creator-content?page=${page}&limit=${PAGE_LIMIT}`, token)
+      )
+    );
+    let stop = false;
+    for (const batch of batches) {
+      all.push(...batch);
+      if (batch.length < PAGE_LIMIT) stop = true;
+    }
+    if (stop) break;
   }
   return all;
 }
@@ -65,11 +82,12 @@ function sleep(ms: number): Promise<void> {
 }
 
 function isRetryableStatus(status: number | undefined): boolean {
-  // Sem status = falha de rede/timeout: sempre tenta de novo.
-  // 401 entra na lista porque logo após o login o token pode ainda não
-  // ter propagado no Supabase; as tentativas são poucas e com backoff.
+  // 401 NÃO é retryable: token expirado/inválido se resolve com 1x
+  // refreshSession em loadMeForSession, não com retry cego (evita 3x /me).
+  // undefined = falha de rede/timeout: tenta de novo com backoff.
   if (status === undefined) return true;
-  return status === 401 || status === 408 || status === 429 || (status >= 500 && status <= 599);
+  if (status === 401) return false;
+  return status === 408 || status === 429 || (status >= 500 && status <= 599);
 }
 
 async function fetchMeWithRetry(token: string, attempts = 3): Promise<MeResponse> {
@@ -103,9 +121,11 @@ export function PlatformProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     meRef.current = me;
   }, [me]);
-  // userId para o qual já existe um carregamento de perfil em voo.
-  // Evita boot + INITIAL_SESSION dispararem dois /me em paralelo.
+  // Single-flight por userId: boot + INITIAL_SESSION + pageshow não
+  // disparam /me em paralelo; chamadas concorrentes aguardam a mesma promise.
+  // Evita rajadas de GET /me + refresh em login/OAuth/aba restaurada.
   const fetchingForRef = useRef<string | null>(null);
+  const fetchingPromiseRef = useRef<Map<string, Promise<void>>>(new Map());
 
   const toast = useCallback((message: string) => {
     const id = ++toastId;
@@ -132,11 +152,17 @@ export function PlatformProvider({ children }: { children: React.ReactNode }) {
   const loadMeForSession = useCallback(
     async (activeSession: Session, options: { force?: boolean } = {}) => {
       const userId = activeSession.user.id;
-      if (!options.force && fetchingForRef.current === userId) return;
       // Se já temos o perfil deste usuário e não é recarga forçada, nada a fazer.
       if (!options.force && meRef.current?.user_id === userId) return;
+      const inFlight = fetchingPromiseRef.current.get(userId);
+      if (!options.force && inFlight) {
+        await inFlight;
+        return;
+      }
+      if (!options.force && fetchingForRef.current === userId) return;
       fetchingForRef.current = userId;
       setMeLoading(true);
+      const task = (async () => {
       try {
         let token = activeSession.access_token;
         let profile: MeResponse;
@@ -186,6 +212,15 @@ export function PlatformProvider({ children }: { children: React.ReactNode }) {
       } finally {
         if (fetchingForRef.current === userId) fetchingForRef.current = null;
         setMeLoading(false);
+      }
+      })();
+      fetchingPromiseRef.current.set(userId, task);
+      try {
+        await task;
+      } finally {
+        if (fetchingPromiseRef.current.get(userId) === task) {
+          fetchingPromiseRef.current.delete(userId);
+        }
       }
     },
     [toast]

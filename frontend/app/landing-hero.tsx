@@ -52,7 +52,7 @@ export default function LandingHero() {
             onChange={(e) => setValue(e.target.value)}
           />
           <button className="tt-btn" type="submit">
-            Encontrar produtos <span aria-hidden="true">→</span>
+            Encontrar produtos
           </button>
         </div>
       </form>
@@ -62,7 +62,7 @@ export default function LandingHero() {
           <Link key={label} href={signupWithSearch(label)} onClick={() => rememberSearch(label)}>{label}</Link>
         ))}
       </div>
-      <Link className="tt-discover-surprise" href={SIGNUP}>Não sei o que vender →</Link>
+      <Link className="tt-discover-surprise" href={SIGNUP}>Não sei o que vender</Link>
       <p className="tt-discover-note">Produtos reais. Você escolhe a oportunidade, a TemTrend ajuda com o roteiro.</p>
       <small>Sem equipe. Sem experiência prévia. Sem começar do zero.</small>
     </div>

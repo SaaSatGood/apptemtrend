@@ -172,7 +172,7 @@ export default function Account({ onEditPreferences }: { onEditPreferences: () =
           <h1>Minha <em>conta.</em></h1>
           <p className="muted">Atualize seu perfil, personalização e segurança em um só lugar.</p>
         </div>
-        {me?.is_admin && <Link className="ghost" href="/app/admin">← Voltar ao painel</Link>}
+        {me?.is_admin && <Link className="ghost" href="/app/admin">Voltar ao painel</Link>}
       </div>
       <div className="account-summary">
         <span className="account-avatar" aria-hidden="true">{(name || account?.email || "T").trim().charAt(0).toUpperCase()}</span>
@@ -245,7 +245,7 @@ export default function Account({ onEditPreferences }: { onEditPreferences: () =
             </div>
             {preferences.length ? <div className="account-preference-list">{preferences.map((preference) => <span key={preference}>{preference}</span>)}</div> : <p className="muted">Você ainda não selecionou temas ou formatos de conteúdo.</p>}
             <button className="ghost" type="button" onClick={onEditPreferences}>
-              Editar preferências →
+              Editar preferências
             </button>
           </section>
         )}

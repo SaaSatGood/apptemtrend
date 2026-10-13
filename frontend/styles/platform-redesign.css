@@ -354,9 +354,10 @@
 #app-view .opportunity-metrics dt { color: #737e6d; font-size: 10px; }
 #app-view .opportunity-metrics dd { color: #20291d; font-size: 14px; }
 #app-view .opportunity-secondary-actions button,
-#app-view .opportunity-card .open-product { min-height: 43px; border-radius: 999px; font-size: 11px; }
+#app-view .opportunity-card .open-product { min-height: 43px; border-radius: 999px; font-size: 11px; justify-content: center; }
 #app-view .opportunity-secondary-actions .generate-script { border-color: #171d15; background: #171d15; color: #fffefa; }
-#app-view .opportunity-card.is-featured .open-product { border-color: var(--app-lime); background: var(--app-lime); color: #17200f; }
+#app-view .opportunity-card.is-featured .open-product,
+#app-view .opportunity-card.is-featured:hover .open-product { border-color: var(--app-lime); background: var(--app-lime); color: #17200f; justify-content: center; }
 #app-view .opportunity-highlight { left: 12px; top: 12px; border-radius: 999px; background: var(--app-lime); color: #17200f; box-shadow: 0 5px 16px #34451b1f; }
 
 /* Cabeçalhos e trilha de produto */

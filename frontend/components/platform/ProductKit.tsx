@@ -75,7 +75,7 @@ export default function ProductDetail({ productId, onNeedKit }: { productId: str
         <div className="empty-state">
           <h3>Não conseguimos abrir este produto.</h3>
           <p>Tente novamente em alguns instantes.</p>
-          <Link className="primary" href="/app">← Voltar para produtos</Link>
+          <Link className="primary" href="/app">Voltar para produtos</Link>
         </div>
       </section>
     );
@@ -128,15 +128,15 @@ export default function ProductDetail({ productId, onNeedKit }: { productId: str
             )}
             {product.tiktok_shop_url && (
               <a className="product-shop-link" href={product.tiktok_shop_url} target="_blank" rel="noopener noreferrer">
-                Ver produto no TikTok Shop ↗
+                Ver produto no TikTok Shop
               </a>
             )}
             <div className="product-detail-primary">
-              {kits.length ? <Link className="primary" href={`/app/produtos/${product.id}/kits/${kits.find((kit) => kit.id === production?.content_kit_id)?.id || kits[0].id}`}>Ver conteúdo →</Link> : <button className="primary" type="button" onClick={primaryAction}>Criar conteúdo →</button>}
+              {kits.length ? <Link className="primary" href={`/app/produtos/${product.id}/kits/${kits.find((kit) => kit.id === production?.content_kit_id)?.id || kits[0].id}`}>Ver conteúdo</Link> : <button className="primary" type="button" onClick={primaryAction}>Criar conteúdo</button>}
               {!saved && <button className="ghost save-product" type="button" onClick={quickSave}>Salvar produto</button>}
               {kits.length > 0 && (
                 <button className="ghost" type="button" onClick={() => onNeedKit(product.id, "kit", true)}>
-                  Gerar outro conteúdo →
+                  Gerar outro conteúdo
                 </button>
               )}
             </div>
@@ -162,7 +162,7 @@ export default function ProductDetail({ productId, onNeedKit }: { productId: str
                   <h3>{displayKitTitle(kit, product)}</h3>
                   <p>{kitContext(kit, product).summary}</p>
                   {production?.content_kit_id === kit.id && <span className="kit-card-status">{({ salvo: "Salvo", em_producao: "Em produção", gravado: "Gravado", publicado: "Publicado" })[production.status]}</span>}
-                  <strong>Abrir conteúdo →</strong>
+                  <strong>Abrir conteúdo</strong>
                 </Link>
               ))
             ) : (

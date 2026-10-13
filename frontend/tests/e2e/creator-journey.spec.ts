@@ -74,7 +74,7 @@ test("descoberta, kit e produção até publicação manual", async ({ page }, t
   await page.goto("/app");
   await expect(page.getByRole("heading", { name: /Descubra o que vale/ })).toBeVisible();
   await page.getByLabel("O que você quer vender?").fill("organizador de cozinha");
-  await page.getByRole("button", { name: "Encontrar produtos →" }).click();
+  await page.getByRole("button", { name: "Encontrar produtos" }).click();
   await expect(page.getByText("1 produto encontrado")).toBeVisible();
   await expect(page.getByRole("heading", { name: "Conheça o produto encontrado" })).toBeVisible();
   expect(await page.locator(".discovery-hero").evaluate((element) => element.getBoundingClientRect().height)).toBeLessThan(450);
@@ -82,13 +82,13 @@ test("descoberta, kit e produção até publicação manual", async ({ page }, t
   await page.screenshot({ path: testInfo.outputPath("discover-desktop.png"), fullPage: true });
   await page.getByRole("button", { name: "Ver produto Organizador de cozinha" }).click();
   await expect(page.getByRole("heading", { name: product.nome, exact: true })).toBeVisible();
-  await page.getByRole("button", { name: "Criar conteúdo →", exact: true }).click();
+  await page.getByRole("button", { name: "Criar conteúdo", exact: true }).click();
   const dialog = page.getByRole("dialog");
   await expect(dialog).toBeVisible();
   await dialog.getByRole("button", { name: "+ Sem aparecer" }).click();
   await expect(dialog.getByRole("button", { name: "✓ Sem aparecer" })).toHaveAttribute("aria-pressed", "true");
   await dialog.getByLabel("Algum detalhe importante? (opcional)").fill("Um vídeo de 15 segundos");
-  await dialog.getByRole("button", { name: "Criar conteúdo →" }).click();
+  await dialog.getByRole("button", { name: "Criar conteúdo" }).click();
   await expect(page.getByRole("heading", { name: kit.titulo })).toBeVisible();
   expect(fixture.getKitInstructions()).toContain("sem mostrar o rosto");
   expect(fixture.getKitInstructions()).toContain("Um vídeo de 15 segundos");
@@ -106,16 +106,16 @@ test("descoberta, kit e produção até publicação manual", async ({ page }, t
   await expect(guide.getByRole("heading", { name: "Pronto para publicar" })).toBeVisible();
   await expect(guide.getByText("Áudio discreto para acompanhar a demonstração.")).toBeVisible();
   await page.screenshot({ path: testInfo.outputPath("kit-desktop.png"), fullPage: true });
-  await guide.getByRole("button", { name: "Marcar como publicado →" }).click();
+  await guide.getByRole("button", { name: "Marcar como publicado" }).click();
   await expect(dialog.getByText(/Publique fora da TemTrend/)).toBeVisible();
   await page.keyboard.press("Escape");
   await expect(dialog).toBeHidden();
-  await expect(guide.getByRole("button", { name: "Marcar como publicado →" })).toBeFocused();
-  await guide.getByRole("button", { name: "Marcar como publicado →" }).click();
-  await dialog.getByRole("button", { name: "Salvar publicação →" }).click();
+  await expect(guide.getByRole("button", { name: "Marcar como publicado" })).toBeFocused();
+  await guide.getByRole("button", { name: "Marcar como publicado" }).click();
+  await dialog.getByRole("button", { name: "Salvar publicação" }).click();
   await expect(guide.getByText("Publicado", { exact: true })).toBeVisible();
   expect(fixture.getStatus()).toBe("publicado");
-  await guide.getByRole("link", { name: "Minha produção →" }).click();
+  await guide.getByRole("link", { name: "Minha produção" }).click();
   await page.getByRole("button", { name: /^Publicados/ }).click();
   await expect(page.getByRole("heading", { name: product.nome })).toBeVisible();
 });
@@ -144,7 +144,7 @@ test("salvo não avança ao abrir o kit; retomada no celular", async ({ page }, 
   await page.getByRole("button", { name: /^Em produção/ }).click();
   await expect(page.getByRole("heading", { name: "Nenhum conteúdo encontrado." })).toBeVisible();
   await page.getByRole("button", { name: /^Salvos/ }).click();
-  await page.getByRole("link", { name: "Ver conteúdo →" }).click();
+  await page.getByRole("link", { name: "Ver conteúdo" }).click();
   const guide = page.locator(".recording-guide");
   await expect(guide.getByRole("heading", { name: "Grave uma etapa de cada vez." })).toBeVisible();
   await expect(page.locator(".kit-document, .kit-actions")).toHaveCount(0);
@@ -152,7 +152,7 @@ test("salvo não avança ao abrir o kit; retomada no celular", async ({ page }, 
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await page.screenshot({ path: testInfo.outputPath("kit-mobile.png"), fullPage: true });
   await guide.getByRole("combobox", { name: "Escolher etapa do roteiro" }).selectOption("3");
-  await guide.getByRole("button", { name: "Marcar como gravado →" }).click();
+  await guide.getByRole("button", { name: "Marcar como gravado" }).click();
   await expect(guide.getByRole("heading", { name: "Pronto para publicar" })).toBeVisible();
   expect(fixture.getStatus()).toBe("gravado");
 });
@@ -161,7 +161,7 @@ test("busca preserva texto após erro e atalho busca produtos reais", async ({ p
   await setup(page, { failSearch: true });
   await page.goto("/app");
   await page.getByLabel("O que você quer vender?").fill("Produtos para casa");
-  await page.getByRole("button", { name: "Encontrar produtos →" }).click();
+  await page.getByRole("button", { name: "Encontrar produtos" }).click();
   await expect(page.getByRole("button", { name: "Tentar novamente", exact: true })).toBeVisible();
   await expect(page.getByLabel("O que você quer vender?")).toHaveValue("Produtos para casa");
   await page.getByRole("button", { name: "Tentar novamente", exact: true }).click();
@@ -175,7 +175,7 @@ test("resultados exibem cinco produtos comparáveis e ações diretas", async ({
   const fixture = await setup(page, { comparison: true });
   await page.goto("/app");
   await page.getByLabel("O que você quer vender?").fill("Produtos para casa");
-  await page.getByRole("button", { name: "Encontrar produtos →" }).click();
+  await page.getByRole("button", { name: "Encontrar produtos" }).click();
   await expect(page.getByText("5 produtos encontrados")).toBeVisible();
   const cards = page.locator(".assistant-response .opportunity-card");
   await expect(cards).toHaveCount(5);
@@ -198,7 +198,7 @@ test("resultados exibem cinco produtos comparáveis e ações diretas", async ({
   await cards.first().getByRole("button", { name: "Gerar roteiro para Organizador de cozinha" }).click();
   const dialog = page.getByRole("dialog");
   await expect(dialog).toBeVisible();
-  await dialog.getByRole("button", { name: "Criar conteúdo →" }).click();
+  await dialog.getByRole("button", { name: "Criar conteúdo" }).click();
   await expect(page.getByRole("heading", { name: kit.titulo })).toBeVisible();
 });
 
@@ -206,14 +206,14 @@ test("saudação pede uma direção antes de sugerir produtos", async ({ page })
   await setup(page);
   await page.goto("/app");
   await page.getByLabel("O que você quer vender?").fill("Olá");
-  await page.getByRole("button", { name: "Encontrar produtos →" }).click();
+  await page.getByRole("button", { name: "Encontrar produtos" }).click();
   await expect(page.getByText(/O que você quer vender\? Posso sugerir/)).toBeVisible();
   await expect(page.locator(".assistant-response .opportunity-card")).toHaveCount(0);
   await expect(page.getByText("Nenhum produto encontrado.")).toHaveCount(0);
-  await page.getByRole("button", { name: "Fáceis de gravar →" }).click();
+  await page.getByRole("button", { name: "Fáceis de gravar" }).click();
   await expect(page.getByText(/O catálogo não informa a facilidade/)).toBeVisible();
-  await expect(page.getByRole("button", { name: "Fáceis de gravar →" })).toHaveCount(0);
-  await page.getByRole("button", { name: "Por nicho →" }).click();
+  await expect(page.getByRole("button", { name: "Fáceis de gravar" })).toHaveCount(0);
+  await page.getByRole("button", { name: "Por nicho" }).click();
   await expect(page.getByRole("heading", { name: product.nome })).toBeVisible();
 });
 
@@ -222,11 +222,25 @@ test("resultados e ações cabem na largura do celular", async ({ page }, testIn
   await setup(page, { comparison: true });
   await page.goto("/app");
   await page.getByLabel("O que você quer vender?").fill("Produtos para casa");
-  await page.getByRole("button", { name: "Encontrar produtos →" }).click();
+  await page.getByRole("button", { name: "Encontrar produtos" }).click();
   const cards = page.locator(".assistant-response .opportunity-card");
   await expect(cards).toHaveCount(5);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await expect(cards.last().getByRole("button", { name: "Gerar roteiro para Garrafa térmica" })).toBeVisible();
+  for (const width of [390, 1280]) {
+    await page.setViewportSize({ width, height: 844 });
+    const actions = await cards.evaluateAll((elements) => elements.map((card) => {
+      const secondary = card.querySelector(".opportunity-secondary-actions")!.getBoundingClientRect();
+      const open = card.querySelector(".open-product")!.getBoundingClientRect();
+      const bounds = card.getBoundingClientRect();
+      return {
+        stacked: open.top >= secondary.bottom - 1,
+        inside: secondary.left >= bounds.left - 1 && secondary.right <= bounds.right + 1 && open.left >= bounds.left - 1 && open.right <= bounds.right + 1,
+      };
+    }));
+    expect(actions.every(({ stacked, inside }) => stacked && inside)).toBe(true);
+  }
+  await page.setViewportSize({ width: 390, height: 844 });
   await page.screenshot({ path: testInfo.outputPath("five-comparable-products-mobile.png"), fullPage: true });
 });
 
@@ -234,7 +248,7 @@ test("categoria sensível recebe aviso e pode ser ocultada sem falsear a contage
   await setup(page, { sensitive: true });
   await page.goto("/app");
   await page.getByLabel("O que você quer vender?").fill("produtos variados");
-  await page.getByRole("button", { name: "Encontrar produtos →" }).click();
+  await page.getByRole("button", { name: "Encontrar produtos" }).click();
   await expect(page.locator(".assistant-response .opportunity-card")).toHaveCount(5);
   await expect(page.getByText("Pode ter restrição de anúncio ou criativo no TikTok.")).toBeVisible();
   await page.getByLabel("Ocultar categorias sensíveis").check();
@@ -257,7 +271,7 @@ test("guia do roteiro conduz a gravação por etapas no celular", async ({ page 
   }
   await guide.getByRole("button", { name: "Boa luz" }).click();
   await expect(guide.getByRole("button", { name: "Boa luz" })).toHaveAttribute("aria-pressed", "true");
-  await guide.getByRole("button", { name: "Marcar como concluída →" }).click();
+  await guide.getByRole("button", { name: "Marcar como concluída" }).click();
   await expect(guide.getByRole("heading", { name: "Abertura" })).toBeVisible();
   await expect(guide.getByRole("button", { name: "Usar este hook" })).toHaveCount(3);
   expect(await guide.locator(".recording-guide-choices").evaluate((element) => element.scrollHeight <= element.clientHeight)).toBe(true);
@@ -280,8 +294,8 @@ test("guia do roteiro conduz a gravação por etapas no celular", async ({ page 
   const more = guide.locator(".recording-guide-more");
   await expect(more).not.toHaveAttribute("open");
   await more.locator("summary").click();
-  await expect(more.getByRole("button", { name: "Usar esta variação →" })).toHaveCount(5);
-  await more.getByRole("button", { name: "Usar esta variação →" }).first().click();
+  await expect(more.getByRole("button", { name: "Usar esta variação" })).toHaveCount(5);
+  await more.getByRole("button", { name: "Usar esta variação" }).first().click();
   const dialog = page.getByRole("dialog");
   await expect(dialog.getByLabel("Algum detalhe importante? (opcional)")).toHaveValue(/Antes e depois da bancada/);
   await page.keyboard.press("Escape");
@@ -304,7 +318,7 @@ test("detalhes, guia e produção mantêm o nome completo e a largura em três t
     await expect(page.getByRole("heading", { name: longName, exact: true })).toBeVisible();
     if (width === 390) expect(await page.getByRole("heading", { name: longName, exact: true }).evaluate((element) => element.getBoundingClientRect().height / parseFloat(getComputedStyle(element).lineHeight))).toBeLessThanOrEqual(2.15);
     await expect(page.getByText("Imagem do produto")).toHaveCount(0);
-    await expect(page.getByRole("link", { name: "Ver conteúdo →" })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Ver conteúdo" })).toBeVisible();
     if (width === 390) await page.screenshot({ path: testInfo.outputPath("product-detail-mobile.png"), fullPage: true });
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
     await page.goto(`/app/produtos/${productId}/kits/${kitId}`);
@@ -362,7 +376,7 @@ test("produto sem kit mostra prévia compacta e uma ação principal", async ({ 
   await page.goto(`/app/produtos/${productId}`);
   await expect(page.getByRole("heading", { name: longName, exact: true })).toBeVisible();
   await expect(page.locator(".kit-empty-preview span")).toHaveText(["Hook", "5 cenas", "Legenda", "Hashtags", "CTA"]);
-  await expect(page.getByRole("button", { name: "Criar conteúdo →" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Criar conteúdo" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Salvar produto" })).toBeVisible();
   await expect(page.locator("#product-detail .primary")).toHaveCount(1);
   await expect(page.getByText("Use os dados confirmados do produto para gerar seu roteiro.")).toHaveCount(0);
@@ -372,10 +386,10 @@ test("criação de conteúdo cabe no celular sem rolagem lateral", async ({ page
   await page.setViewportSize({ width: 390, height: 844 });
   await setup(page);
   await page.goto(`/app/produtos/${productId}`);
-  await page.getByRole("button", { name: "Criar conteúdo →", exact: true }).click();
+  await page.getByRole("button", { name: "Criar conteúdo", exact: true }).click();
   const dialog = page.getByRole("dialog");
   await expect(dialog.getByRole("heading", { name: "Seu vídeo começa aqui." })).toBeVisible();
-  await expect(dialog.getByRole("button", { name: "Criar conteúdo →" })).toBeInViewport();
+  await expect(dialog.getByRole("button", { name: "Criar conteúdo" })).toBeInViewport();
   expect(await dialog.evaluate((node) => node.scrollWidth <= node.clientWidth && node.scrollHeight <= node.clientHeight + 1)).toBe(true);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await page.screenshot({ path: testInfo.outputPath("create-content-mobile.png") });
@@ -395,8 +409,8 @@ test("produção ordena pela próxima ação e ajusta o botão ao estado", async
   await expect(cards).toHaveCount(4);
   await expect(cards.locator(".production-status")).toHaveText(["Em produção", "Salvo", "Gravado", "Publicado ✓"]);
   await expect(cards.nth(0).getByText("Gravar cena 1 de 2")).toBeVisible();
-  await expect(cards.nth(1).getByRole("link", { name: "Criar conteúdo →" })).toBeVisible();
-  await expect(cards.nth(2).getByRole("button", { name: "Publicar →" })).toBeVisible();
+  await expect(cards.nth(1).getByRole("link", { name: "Criar conteúdo" })).toBeVisible();
+  await expect(cards.nth(2).getByRole("button", { name: "Publicar" })).toBeVisible();
   await page.getByRole("combobox", { name: "Ordenação" }).selectOption("recentes");
   await expect(cards.first().getByRole("heading", { name: "Produto publicado" })).toBeVisible();
 });
@@ -406,17 +420,17 @@ test("onboarding em cinco etapas e menu acessível", async ({ page }, testInfo) 
   await setup(page, { onboarding: true });
   await page.goto("/app");
   await page.getByRole("radio", { name: /Quero começar a vender/ }).click();
-  await page.getByRole("button", { name: "Continuar →" }).click();
+  await page.getByRole("button", { name: "Continuar" }).click();
   await page.getByRole("button", { name: "Unboxing", exact: true }).click();
-  await page.getByRole("button", { name: "Continuar →" }).click();
+  await page.getByRole("button", { name: "Continuar" }).click();
   await page.getByRole("button", { name: "Casa", exact: true }).click();
   await page.screenshot({ path: testInfo.outputPath("onboarding-mobile.png"), fullPage: true });
-  await page.getByRole("button", { name: "Continuar →" }).click();
+  await page.getByRole("button", { name: "Continuar" }).click();
   await expect(page.getByRole("heading", { name: "Como você fala nos vídeos?" })).toBeVisible();
   await page.getByPlaceholder(/Gente, preciso mostrar/).fill("Falo direto, sem enrolação, e mostro o teste na hora.");
-  await page.getByRole("button", { name: "Concluir configuração →" }).click();
+  await page.getByRole("button", { name: "Concluir configuração" }).click();
   await expect(page.getByRole("heading", { name: "Pronto.", exact: true })).toBeVisible();
-  await page.getByRole("button", { name: "Ir para Descobrir →" }).click();
+  await page.getByRole("button", { name: "Ir para Descobrir" }).click();
   await page.getByLabel("Abrir menu da conta").click();
   await expect(page.getByRole("link", { name: "Minha conta", exact: true })).toBeVisible();
   await page.keyboard.press("Escape");
@@ -463,16 +477,16 @@ for (const viewport of [{ width: 320, height: 568 }, { width: 390, height: 844 }
     await fitsViewport();
     if (viewport.width === 360) await page.screenshot({ path: testInfo.outputPath("onboarding-small-mobile.png") });
     await page.getByRole("radio", { name: /Quero começar a vender/ }).click();
-    await page.getByRole("button", { name: "Continuar →" }).click();
+    await page.getByRole("button", { name: "Continuar" }).click();
     await fitsViewport();
     await page.getByRole("button", { name: "Unboxing", exact: true }).click();
-    await page.getByRole("button", { name: "Continuar →" }).click();
+    await page.getByRole("button", { name: "Continuar" }).click();
     await fitsViewport();
     await page.getByRole("button", { name: "Casa", exact: true }).click();
-    await page.getByRole("button", { name: "Continuar →" }).click();
+    await page.getByRole("button", { name: "Continuar" }).click();
     await fitsViewport();
     await page.getByPlaceholder(/Gente, preciso mostrar/).fill("Falo direto e mostro o teste na hora.");
-    await page.getByRole("button", { name: "Concluir configuração →" }).click();
+    await page.getByRole("button", { name: "Concluir configuração" }).click();
     await fitsViewport();
     if (viewport.width === 360) await page.screenshot({ path: testInfo.outputPath("onboarding-done-small-mobile.png") });
   });

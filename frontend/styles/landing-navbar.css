@@ -78,7 +78,6 @@
     font-weight: 720;
     letter-spacing: -.035em;
   }
-  .tt-home .tt-nav-links.open > a:not(.tt-mobile-login)::after { content: "↗"; color: #718b39; font-size: 18px; font-weight: 400; }
   .tt-home .tt-nav-links.open > a:not(.tt-mobile-login):hover { color: #537500; background: #f7faef; }
   .tt-home .tt-nav-links.open .tt-mobile-login {
     display: flex;
@@ -93,7 +92,6 @@
     font-size: 14px;
     font-weight: 750;
   }
-  .tt-home .tt-nav-links.open .tt-mobile-login::after { content: "↗"; font-size: 17px; font-weight: 400; }
 }
 
 @media (max-width: 720px) {

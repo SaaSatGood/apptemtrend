@@ -17,7 +17,7 @@ export default function LegalPageFrame({ eyebrow, title, updated, intro, childre
           <Link className="tt-document-logo" href="/" aria-label="TemTrend, página inicial">
             <span aria-hidden="true">T↗</span><strong>TemTrend</strong>
           </Link>
-          <Link className="tt-document-back" href="/">← Voltar ao início</Link>
+          <Link className="tt-document-back" href="/">Voltar ao início</Link>
         </nav>
       </header>
       <main id="document-content" className="tt-document-shell tt-document-main">
@@ -29,7 +29,7 @@ export default function LegalPageFrame({ eyebrow, title, updated, intro, childre
         </div>
         <div className="tt-document-body">{children}</div>
         <nav className="tt-document-actions" aria-label="Continuar navegação">
-          <Link className="tt-document-primary" href="/app">Acessar a plataforma <span aria-hidden="true">↗</span></Link>
+          <Link className="tt-document-primary" href="/app">Acessar a plataforma</Link>
           <Link className="tt-document-secondary" href="/">Voltar para a landing</Link>
         </nav>
       </main>

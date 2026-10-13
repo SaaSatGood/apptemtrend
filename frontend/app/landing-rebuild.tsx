@@ -29,7 +29,7 @@ export default function LandingRebuild() {
             <span className="tt-rd-kicker">Da dúvida ao próximo vídeo</span>
             <h2 id="opening-title">O produto é o começo. <em>O plano põe você em movimento.</em></h2>
             <p>Escolha uma oportunidade, receba uma direção de conteúdo e grave com um plano claro. A TemTrend organiza o caminho sem fingir que faz o trabalho por você.</p>
-            <a className="tt-rd-text-link" href="#content-kits">Veja o que vem no plano <span aria-hidden="true">↗</span></a>
+            <a className="tt-rd-text-link" href="#content-kits">Veja o que vem no plano</a>
           </div>
           <div className="tt-rd-opening-art" role="img" aria-label="Da pergunta sobre o produto ao plano de gravação">
             <div className="tt-rd-question">
@@ -91,7 +91,7 @@ export default function LandingRebuild() {
               ))}
             </div>
           </div>
-          <Link className="tt-rd-button tt-rd-button-lime" href="/app?mode=signup">Começar agora <span aria-hidden="true">↗</span></Link>
+          <Link className="tt-rd-button tt-rd-button-lime" href="/app?mode=signup">Começar agora</Link>
         </div>
       </section>
 
@@ -107,7 +107,7 @@ export default function LandingRebuild() {
               <article key={number}><span>{number}</span><div><small>{category}</small><h3>{name}</h3></div><p>{idea}</p></article>
             ))}
           </div>
-          <Link className="tt-rd-text-link" href="/app?mode=signup">Começar agora <span aria-hidden="true">↗</span></Link>
+          <Link className="tt-rd-text-link" href="/app?mode=signup">Começar agora</Link>
         </div>
       </section>
 
@@ -135,7 +135,7 @@ export default function LandingRebuild() {
         </div>
       </section>
 
-      <section className="tt-rd-final" aria-labelledby="final-title"><div className="tt-rd-shell tt-rd-final-inner"><span className="tt-rd-kicker">O próximo passo é seu</span><h2 id="final-title">Seu próximo vídeo começa com <em>uma decisão.</em></h2><p>Encontre um produto, pegue o plano e grave do seu jeito.</p><Link className="tt-rd-button tt-rd-button-dark" href="/app?mode=signup">Começar agora <span aria-hidden="true">↗</span></Link></div></section>
+      <section className="tt-rd-final" aria-labelledby="final-title"><div className="tt-rd-shell tt-rd-final-inner"><span className="tt-rd-kicker">O próximo passo é seu</span><h2 id="final-title">Seu próximo vídeo começa com <em>uma decisão.</em></h2><p>Encontre um produto, pegue o plano e grave do seu jeito.</p><Link className="tt-rd-button tt-rd-button-dark" href="/app?mode=signup">Começar agora</Link></div></section>
     </>
   );
 }

@@ -40,7 +40,7 @@ export default function Opportunities() {
           <p className="eyebrow">Seu próximo passo</p>
           <h2>Continue de onde parou</h2>
         </div>
-        <Link className="text-button" href="/app/producao">Ver todos ({productions.length}) →</Link>
+        <Link className="text-button" href="/app/producao">Ver todos ({productions.length})</Link>
       </div>
       <div className="resume-grid">
         {resume.map((item) => (
