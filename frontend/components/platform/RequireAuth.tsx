@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import AuthPanel from "./Auth";
 import Onboarding from "./Onboarding";
 import { usePlatform } from "./store";
@@ -19,6 +20,10 @@ export default function RequireAuth({
   allowOnboarding?: boolean;
 }) {
   const { session, me, meLoading, globalError, booted } = usePlatform();
+  const router = useRouter();
+  // Sem reload de página: sessão vive em memória e o listener do store
+  // carrega o perfil sozinho após autenticar.
+  const stayInApp = () => router.refresh();
 
   if (!booted) {
     return <AppBoot />;
@@ -29,7 +34,7 @@ export default function RequireAuth({
       <AuthPanel
         initialPanel="login"
         recoveryHint={null}
-        onAuthenticated={() => window.location.reload()}
+        onAuthenticated={stayInApp}
       />
     );
   }
@@ -39,7 +44,7 @@ export default function RequireAuth({
       <AuthPanel
         initialPanel="reset"
         recoveryHint="Se o link expirou, volte e solicite um novo link de recuperação."
-        onAuthenticated={() => window.location.reload()}
+        onAuthenticated={stayInApp}
       />
     );
   }
@@ -55,7 +60,7 @@ export default function RequireAuth({
     return (
       <main id="app-view">
         <section className="page-wrap page-wrap--onboarding">
-          <Onboarding editing={false} onDone={() => window.location.reload()} />
+          <Onboarding editing={false} onDone={() => router.push("/app/producao")} />
         </section>
       </main>
     );

@@ -138,9 +138,9 @@ export default function AuthPanel({
   }
 
   async function waitForPersistedSession(timeoutMs = 2500): Promise<boolean> {
-    // O signIn resolve antes do storage do GoTrue terminar de gravar em
-    // alguns navegadores; recarregar antes disso faz o boot não achar a
-    // sessão e cair em "conta não encontrada" mesmo logado.
+    // A sessão vive só em memória (persistSession: false): o signIn resolve
+    // antes do cliente interno disponibilizá-la em alguns navegadores.
+    // Aguarda até ela aparecer no getSession em vez de presumir login.
     const started = Date.now();
     for (;;) {
       try {

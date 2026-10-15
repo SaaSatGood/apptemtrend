@@ -47,6 +47,18 @@ export function usePlatform(): PlatformState {
 
 let toastId = 0;
 
+// Sessão ativa: em produção vem da memória (persistSession: false).
+// Em E2E (NEXT_PUBLIC_E2E=1), o spec injeta via window.__TT_E2E_SESSION__
+// porque localStorage é ignorado sem persistência.
+function e2eHookSession(): Session | null {
+  if (process.env.NEXT_PUBLIC_E2E !== "1" || typeof window === "undefined") return null;
+  return (window as unknown as { __TT_E2E_SESSION__?: Session }).__TT_E2E_SESSION__ ?? null;
+}
+
+async function resolveSession(): Promise<Session | null> {
+  return e2eHookSession() ?? (await supabase().auth.getSession()).data.session;
+}
+
 async function fetchAllProductions(token: string): Promise<CreatorContent[]> {
   const PAGE_LIMIT = 50;
   const MAX_PAGES = 20;
@@ -134,12 +146,12 @@ export function PlatformProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const loadProductions = useCallback(async () => {
-    const { data } = await supabase().auth.getSession();
-    if (!data.session) return;
+    const session = await resolveSession();
+    if (!session) return;
     setProductionsLoading(true);
     setProductionsError(false);
     try {
-      const list = await fetchAllProductions(data.session.access_token);
+      const list = await fetchAllProductions(session.access_token);
       setProductions(list);
     } catch (error) {
       setProductionsError(true);
@@ -227,11 +239,11 @@ export function PlatformProvider({ children }: { children: React.ReactNode }) {
   );
 
   const reloadMe = useCallback(async () => {
-    const { data } = await supabase().auth.getSession();
-    if (!data.session) return;
-    setSession(data.session);
+    const session = await resolveSession();
+    if (!session) return;
+    setSession(session);
     try {
-      await loadMeForSession(data.session, { force: true });
+      await loadMeForSession(session, { force: true });
     } catch (error) {
       // globalError já foi definido em loadMeForSession; propaga para o
       // chamador (AccountLoadError) exibir o erro de retry.
@@ -266,12 +278,12 @@ export function PlatformProvider({ children }: { children: React.ReactNode }) {
       ]);
     (async () => {
       try {
-        const { data } = await withTimeout(supabase().auth.getSession(), 8000);
+        const session = await withTimeout(resolveSession(), 8000);
         if (!mounted) return;
-        setSession(data.session);
-        if (data.session) {
+        setSession(session);
+        if (session) {
           try {
-            await loadMeForSession(data.session);
+            await loadMeForSession(session);
           } catch {
             // globalError já definido; a tela oferece "Tentar novamente".
           }
@@ -291,8 +303,11 @@ export function PlatformProvider({ children }: { children: React.ReactNode }) {
     // atualizava `session`, deixando `me === null` e caindo na tela
     // "Não conseguimos carregar sua conta" mesmo logado.
     const { data: listener } = supabase().auth.onAuthStateChange((event, newSession) => {
-      setSession(newSession);
-      if (event === "SIGNED_OUT" || !newSession) {
+      // Sem persistência, o cliente emite INITIAL_SESSION null mesmo com
+      // sessão ativa em memória/E2E: não derrubar o estado nesse caso.
+      const effective = newSession ?? (event === "INITIAL_SESSION" ? e2eHookSession() : null);
+      setSession(effective);
+      if (event === "SIGNED_OUT" || !effective) {
         setMe(null);
         meRef.current = null;
         setProductions([]);
@@ -305,8 +320,8 @@ export function PlatformProvider({ children }: { children: React.ReactNode }) {
         event === "TOKEN_REFRESHED" ||
         event === "USER_UPDATED"
       ) {
-        if (!meRef.current || meRef.current.user_id !== newSession.user.id) {
-          void loadMeForSession(newSession).catch(() => {
+        if (!meRef.current || meRef.current.user_id !== effective.user.id) {
+          void loadMeForSession(effective).catch(() => {
             /* globalError já definido */
           });
         }
@@ -321,17 +336,17 @@ export function PlatformProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const onPageshow = async () => {
       try {
-        const { data } = await supabase().auth.getSession();
-        setSession(data.session);
-        if (!data.session) {
+        const session = await resolveSession();
+        setSession(session);
+        if (!session) {
           setMe(null);
           meRef.current = null;
           return;
         }
         // Aba restaurada do bfcache pode ter sessão válida mas perfil
         // ausente/antigo: garante o carregamento em vez de mostrar erro.
-        if (!meRef.current || meRef.current.user_id !== data.session.user.id) {
-          void loadMeForSession(data.session).catch(() => {
+        if (!meRef.current || meRef.current.user_id !== session.user.id) {
+          void loadMeForSession(session).catch(() => {
             /* globalError já definido */
           });
         }

@@ -16,5 +16,7 @@ export default defineConfig({
     url: "http://127.0.0.1:3000",
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,
+    // Liga o hook de sessão do store (sem persistência, localStorage é ignorado).
+    env: { NEXT_PUBLIC_E2E: "1" },
   },
 });

@@ -13,14 +13,12 @@ test("admin organiza operação, catálogo e creators", async ({ page }, testInf
   await page.emulateMedia({ reducedMotion: "reduce" });
   const token = fakeJwt();
   await page.addInitScript(({ tokenValue, id }) => {
-    window.localStorage.setItem("sb-iwktyugnwtdroberoces-auth-token", JSON.stringify({
+    // Sem persistência, o store lê a sessão deste hook (localStorage é ignorado).
+    (window as unknown as { __TT_E2E_SESSION__?: unknown }).__TT_E2E_SESSION__ = {
       access_token: tokenValue,
       refresh_token: "refresh-token",
-      expires_in: 3600,
-      expires_at: Math.floor(Date.now() / 1000) + 3600,
-      token_type: "bearer",
-      user: { id, email: "admin@temtrend.test", role: "authenticated", aud: "authenticated", app_metadata: {}, user_metadata: { full_name: "Admin TemTrend" }, created_at: new Date().toISOString() },
-    }));
+      user: { id, email: "admin@temtrend.test" },
+    };
   }, { tokenValue: token, id: userId });
 
   await page.route("**/auth/v1/**", async (route) => {

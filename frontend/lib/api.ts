@@ -5,6 +5,10 @@ export interface ApiError extends Error {
   status?: number;
 }
 
+// Teto por tentativa: sem timeout, um backend adormecido (cold start)
+// deixava o boot no spinner para sempre. Estourou → erro com retry.
+const API_TIMEOUT_MS = 12000;
+
 export async function api<T>(
   path: string,
   accessToken: string | undefined,
@@ -20,11 +24,18 @@ export async function api<T>(
   }
   if (accessToken) headers.Authorization = `Bearer ${accessToken}`;
 
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), API_TIMEOUT_MS);
   let res: Response;
   try {
-    res = await fetch(requireApiUrl() + path, { ...options, headers });
-  } catch {
+    res = await fetch(requireApiUrl() + path, { ...options, headers, signal: controller.signal });
+  } catch (error) {
+    if (error instanceof DOMException && error.name === "AbortError") {
+      throw new Error("A resposta demorou demais. Tente novamente.");
+    }
     throw new Error("Não foi possível conectar. Verifique sua internet.");
+  } finally {
+    clearTimeout(timer);
   }
   const data = res.status === 204 ? null : await res.json().catch(() => null);
   if (!res.ok) {

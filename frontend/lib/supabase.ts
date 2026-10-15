@@ -27,7 +27,9 @@ function getClient(): GoTrueClient {
       headers: { apikey: SUPABASE_ANON_KEY },
       storageKey: storageKeyFor(SUPABASE_URL),
       autoRefreshToken: true,
-      persistSession: true,
+      // Sessão SOMENTE em memória: fechar a aba/recarregar exige novo login.
+      // Login, onboarding parcial e boot sempre recomeçam do zero.
+      persistSession: false,
       detectSessionInUrl: true,
     });
   }

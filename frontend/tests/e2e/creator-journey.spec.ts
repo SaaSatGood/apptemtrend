@@ -29,7 +29,8 @@ async function setup(page: Page, options: { saved?: boolean; onboarding?: boolea
   const encode = (value: object) => Buffer.from(JSON.stringify(value)).toString("base64url");
   const token = `${encode({ alg: "HS256", typ: "JWT" })}.${encode({ sub: userId, role: "authenticated", exp: Math.floor(Date.now() / 1000) + 3600 })}.signature`;
   await page.addInitScript(({ token, userId }) => {
-    localStorage.setItem("sb-iwktyugnwtdroberoces-auth-token", JSON.stringify({ access_token: token, refresh_token: "fixture", expires_at: Math.floor(Date.now() / 1000) + 3600, expires_in: 3600, token_type: "bearer", user: { id: userId, email: "creator@temtrend.test", role: "authenticated", aud: "authenticated", app_metadata: {}, user_metadata: { full_name: "Rafa" }, created_at: "2026-10-09T00:00:00Z" } }));
+    // Sem persistência, o store lê a sessão deste hook (localStorage é ignorado).
+    (window as unknown as { __TT_E2E_SESSION__?: unknown }).__TT_E2E_SESSION__ = { access_token: token, refresh_token: "fixture", user: { id: userId, email: "creator@temtrend.test" } };
   }, { token, userId });
   await page.route("**/auth/v1/**", (route) => route.fulfill({ json: { id: userId, email: "creator@temtrend.test", user_metadata: { full_name: "Rafa" } } }));
   let status = options.saved ? "salvo" : "";

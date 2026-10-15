@@ -39,7 +39,11 @@ function Discover() {
             ? "Se o link expirou, volte e solicite um novo link de recuperação."
             : null
         }
-        onAuthenticated={() => window.location.reload()}
+        onAuthenticated={() => {
+          // Sessão em memória: sem reload de página (derrubaria a sessão).
+          // O listener do store carrega /me e a UI transita sozinha.
+          router.refresh();
+        }}
       />
     );
   }
@@ -60,7 +64,11 @@ function Discover() {
       {showNav && <Topbar />}
       <section id="page-content" className={`page-wrap${showNav ? "" : " page-wrap--onboarding"}`}>
         {!me.onboarding_completo && !me.is_admin ? (
-          <Onboarding editing={false} onDone={() => window.location.reload()} />
+          <Onboarding editing={false} onDone={() => {
+            // reloadMe() já atualizou o perfil; refresh sem reload de página
+            // (sessão em memória não sobrevive a reload).
+            router.push("/app/producao");
+          }} />
         ) : me.is_admin ? (
           <Admin />
         ) : (

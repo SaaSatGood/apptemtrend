@@ -16,7 +16,8 @@ function requireApiUrl(){if(!API_URL)throw new Error('Serviço indisponível. Co
 if(!API_URL){window.addEventListener('DOMContentLoaded',()=>toast('Serviço indisponível. Tente novamente mais tarde.'))}
 if (!window.supabase) { const node = document.getElementById('toast'); if (node) { node.textContent = 'Não foi possível carregar a biblioteca de acesso. Recarregue a página.'; node.classList.remove('hidden'); } throw new Error('Supabase SDK não carregado'); }
 if (!SUPABASE_URL || !SUPABASE_ANON_KEY) { window.addEventListener('DOMContentLoaded', () => toast('Serviço indisponível. Tente novamente mais tarde.')); throw new Error('Supabase não configurado. Defina config.js ou meta temtrend-supabase-* no deploy.'); }
-const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+// Sessão somente em memória: fechar/recarregar exige novo login.
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth: { persistSession: false } });
 let session; let currentUser; let creatorProductions = []; let activeProductData = null; let activeKit = null; let onboardingStep = 1; let editingPreferences = false; let activeCreatorContentId = null; let productionFilter = 'todos'; let assistantContextProductIds = [];
 const onboardingData = { objetivo: '', estilos_conteudo: [], temas_interesse: [] };
 try{const savedOnboarding=JSON.parse(localStorage.getItem('temtrend_onboarding')||'null');if(savedOnboarding&&typeof savedOnboarding==='object'){if(typeof savedOnboarding.objetivo==='string')onboardingData.objetivo=savedOnboarding.objetivo;if(Array.isArray(savedOnboarding.estilos_conteudo))onboardingData.estilos_conteudo=savedOnboarding.estilos_conteudo;if(Array.isArray(savedOnboarding.temas_interesse))onboardingData.temas_interesse=savedOnboarding.temas_interesse;if([1,2,3].includes(savedOnboarding.step))onboardingStep=savedOnboarding.step}}catch{}
