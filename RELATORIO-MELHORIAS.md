@@ -14,13 +14,13 @@
 
 > ## ✅ Status de implementação — 18/10/2026
 >
-> O relatório foi **implementado em código** na sequência P0 → P1 → P2 viável. Nada foi commitado nem deployado ainda — o push é decisão sua. Top 12:
+> O relatório foi **implementado em código** na sequência P0 → P1 → P2 viável. **Commit `cd5c7ce` pushado e deployado** em 18/10 (backend `live` + frontend novo em produção). O go-live da cobrança aguarda só a `ABACATEPAY_API_KEY` (segredo do dono) + upgrade para Starter — detalhes em `docs/go-live-billing.md`. Top 12:
 >
 > | # | Ação | Status | Onde |
 > |---|---|---|---|
 > | 1 | Persistir a sessão | ✅ | `frontend/lib/supabase.ts` (`persistSession: true`) |
 > | 2 | Instrumentar o funil (ativação, TTV, D1/D7) | ✅ | migration `027_analytics_events` (**aplicada em produção**) + `frontend/lib/track.ts` + `POST /events` |
-> | 3 | Billing + gating por plano | ✅ (flag `BILLING_ENABLED`, padrão `false`) | `backend/src/modules/billing/*` — 150 testes verdes |
+> | 3 | Billing + gating por plano | ✅ (flag `BILLING_ENABLED` ligada em produção; falta só a `ABACATEPAY_API_KEY`) | `backend/src/modules/billing/*` — 161 testes verdes no backend |
 > | 4 | Reconciliar `DESIGN.md` ↔ código | ✅ | `styles/canonical.css` importado por último; tokens = `DESIGN.md` |
 > | 5 | Persistir o onboarding (barra > 0%) | ✅ | rascunho `temtrend_onboarding:<user_id>` + restauração |
 > | 6 | Render Starter (matar o cold start) | ⏳ passo manual | `docs/go-live-billing.md` §2.2 |
@@ -28,7 +28,7 @@
 > | 8 | Kit de exemplo antes do cadastro | ✅ | seção "Plano de gravação" da landing |
 > | 9 | `/planos` + card na conta + modal de upgrade | ✅ | `app/planos/`, `Account.tsx`, `UpgradeDialog.tsx`, `PlanBanner.tsx` |
 > | 10 | Acessibilidade (foco, 44px, contraste, tabular-nums) | ✅ | 84 ajustes + camada canônica |
-> | 11 | Linha `creator_*` na AbacatePay + arquivar legado | ✅ / ⏳ | 6 produtos `temtrend_*` de assinatura criados; arquivar avulso + legados é passo manual (guia §2.4/§3) |
+> | 11 | Linha `creator_*` na AbacatePay + arquivar legado | ✅ | 6 produtos de assinatura ativos; avulso **excluído em 18/10**; webhook v2 criado (`webh_prod_xS6hzaujufu2sQxkpYpAZ434`); produtos v1 seguem ativos (arquivar é opcional/manual) |
 > | 12 | Painel de ROI + celebração de ativação | ⏳ fase 3 | — |
 >
 > **Decisão de produto (18/10, 2ª rodada):** plano grátis e compra avulsa **removidos** — plataforma paga, com trial Pro de 7 dias sem cartão como única entrada grátis e estado "sem plano" (travado, conteúdo antigo visível) depois. Em troca, foi entregue **canal de suporte in-platform** (`/app/suporte`) conectado ao **painel admin modernizado** (abas Assinaturas e Suporte, funil 30d na visão geral).
@@ -38,6 +38,8 @@
 > **Migrations `027`, `028` e `029`:** aplicadas em produção em 18/10/2026 (verificado em `information_schema`; advisors de segurança sem alertas). A `029_support` cria o suporte (`support_tickets`/`support_messages` + RPC de funil) e remove `creators.kits_extra`. **Guia de go-live da cobrança:** `docs/go-live-billing.md`.
 >
 > **Verificações da implementação:** backend `typecheck` + 161 testes ✅ · frontend `lint` + `build` ✅ · E2E 40 testes ✅.
+>
+> **Go-live (18/10):** deploy `live` com o código novo ✅ · envs do Render 3/4 ✅ · webhook v2 criado ✅ · avulso excluído ✅ · rotas novas verificadas em produção ✅ (plans 200; webhook/support/admin 401) · **pendente: `ABACATEPAY_API_KEY` + Starter**.
 
 ---
 

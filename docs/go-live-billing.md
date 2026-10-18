@@ -1,7 +1,8 @@
 # Go-live — Billing & Planos (AbacatePay)
 
 **Atualizado em:** 18/10/2026
-**Estado do código:** completo e testado (backend 161 testes verdes + typecheck limpo; frontend lint + build + 40 E2E verdes). Nada foi commitado/pushado ainda — o deploy depende do push do trabalho atual.
+**Estado do código:** completo, testado e **no ar** — commit `cd5c7ce` (backend 161 testes verdes + typecheck limpo; frontend lint + build + 40 E2E verdes). Backend deployado em produção (`dep-dba4skajnfac73ecbiug`, live) e frontend novo servido em `https://temtrend.online`.
+**Estado do go-live:** envs do Render ✅ (3 de 4) · webhook v2 criado ✅ · produto avulso excluído ✅ · rotas novas verificadas em produção ✅ · **pendente: `ABACATEPAY_API_KEY` (segredo seu — seção 2.1) e upgrade para Starter (seção 2.2)**. Enquanto a chave não existir, `GET /billing/plans` responde `enabled: false` e o app segue em modo legado — nada quebra.
 
 > **Decisão de produto (18/10):** o plano grátis e a compra avulsa foram **removidos**. A plataforma agora é paga, com **7 dias de Pro de teste, sem cartão** como única porta de entrada grátis. Sem assinatura ativa, a conta fica no estado "sem plano": conteúdo existente continua visível, mas nada novo é gerado até assinar.
 
@@ -13,7 +14,7 @@
 |---|---|
 | Módulo de billing no backend (checkout, cancelamento, troca de plano, webhook idempotente, gating por plano) | ✅ Código pronto, atrás da flag `BILLING_ENABLED` (padrão `false`) |
 | Migrations `027_analytics_events`, `028_billing` e `029_support` | ✅ **Aplicadas em produção em 18/10/2026** (verificado via `information_schema`; advisors de segurança só com lints informativos pré-existentes) |
-| Produtos `temtrend_*` na loja de produção AbacatePay | ✅ 6 produtos de assinatura (mensal + anual de Essencial/Pro/Scale). Produto avulso legado deve ser **arquivado** (seção 2.4) |
+| Produtos `temtrend_*` na loja de produção AbacatePay | ✅ 6 produtos de assinatura ativos (mensal + anual de Essencial/Pro/Scale). Produto avulso **excluído em 18/10/2026** (seção 2.4) |
 | Página `/planos` (pública, catálogo vem da API com fallback conservador; sem coluna "Grátis" e sem faixa avulsa) | ✅ |
 | Card de plano real na conta (uso, trial, troca agendada, cancelamento, estado "sem plano" pós-trial) | ✅ |
 | Faixa de status no topo do app (trial, trial encerrado, pagamento pendente, cancelada com acesso) + modal de upgrade no limite | ✅ |
@@ -26,13 +27,13 @@
 
 ### 2.1 Variáveis de ambiente (Environment → Add)
 
-| Variável | Valor | Obrigatória |
+| Variável | Valor | Estado em 18/10 |
 |---|---|---|
-| `BILLING_ENABLED` | `true` | Sim, para ligar a cobrança |
-| `ABACATEPAY_API_KEY` | Chave de produção do painel AbacatePay (Bearer) | Sim |
-| `ABACATEPAY_WEBHOOK_SECRET` | Segredo forte que você define (mín. 8 caracteres) | Sim |
-| `FRONTEND_URL` | `https://temtrend.online` | Sim (usado no `returnUrl`/`completionUrl` do checkout: `/app/conta` e `/app/conta?checkout=ok`) |
-| `ABACATEPAY_API_URL` | `https://api.abacatepay.com/v2` | Não (padrão já é esse) |
+| `BILLING_ENABLED` | `true` | ✅ Definida (o deploy de 18/10 já rodou com ela) |
+| `ABACATEPAY_WEBHOOK_SECRET` | Segredo forte gerado em 18/10 (24 bytes em hex) | ✅ Definida (idêntica à do webhook v2) |
+| `FRONTEND_URL` | `https://temtrend.online` | ✅ Definida (usada no `returnUrl`/`completionUrl` do checkout: `/app/conta` e `/app/conta?checkout=ok`) |
+| `ABACATEPAY_API_KEY` | Chave de produção do painel AbacatePay (Bearer) | ⬜ **PENDENTE — a única ação que só você pode fazer:** Environment → Add → `ABACATEPAY_API_KEY` (a mesma chave de produção já usada nas integrações). Salvar já redeploya e liga a cobrança. |
+| `ABACATEPAY_API_URL` | `https://api.abacatepay.com/v2` | ⬜ Opcional (o padrão do código já é esse) |
 
 **Overrides de produto (opcionais).** Os IDs já estão no código como fallback (`plans.ts`); só defina se algum produto for recriado:
 
@@ -49,22 +50,26 @@
 
 ### 2.2 Render Starter (item 6 do relatório)
 
-Service `temtrend-api` → **Settings → Instance Type → Starter** (~US$ 7/mês). Isso elimina o cold start de ~30–50s que hoje afeta o primeiro acesso e o onboarding.
+**⬜ Pendente (ação manual — é cobrança no Render).** Service `temtrend-api` → **Settings → Instance Type → Starter** (~US$ 7/mês). Isso elimina o cold start de ~30–50s que hoje afeta o primeiro acesso e o onboarding.
 
 ### 2.3 Ordem do deploy
 
-1. Commit + push do trabalho atual (backend pega as rotas novas de billing + suporte; com `BILLING_ENABLED` ainda ausente/false nada muda para os usuários).
-2. Definir as envs da seção 2.1 (isso liga a cobrança).
-3. Subir para Starter (2.2).
-4. Criar o webhook (seção 3) **depois** do deploy — a rota `/billing/webhook` só existe no código novo.
-5. Arquivar o produto avulso legado (2.4).
-6. Rodar o smoke test (seção 5).
+1. ✅ Commit + push (`cd5c7ce`) — código novo no ar.
+2. ⚠️ Parcial — `BILLING_ENABLED`, `ABACATEPAY_WEBHOOK_SECRET` e `FRONTEND_URL` definidas em 18/10; falta a `ABACATEPAY_API_KEY` (2.1).
+3. ⬜ Starter (2.2) — manual.
+4. ✅ Webhook v2 criado em 18/10 — `webh_prod_xS6hzaujufu2sQxkpYpAZ434` (seção 3).
+5. ✅ Produto avulso excluído em 18/10 (2.4).
+6. ⏳ Smoke test parcialmente executado (seção 5).
+
+> ⚠️ **Auto-deploy do Render:** o push para `main` **não** disparou deploy automático — o deploy de 18/10 saiu junto com o update de envs (via API). Todos os deploys do serviço constam com `trigger: api`. Se quiser deploy automático a cada push, confira em **Settings → Build & Deploy → Auto-Deploy** (reconectar o GitHub App do Render); caso contrário, dispare manualmente (Dashboard → Deploys → Deploy latest commit).
 
 > Com `BILLING_ENABLED=false`, tudo volta ao comportamento atual (cotas globais antigas, sem trial, sem checkout, sem estado "sem plano") sem reverter migrations. O canal de suporte e o painel admin funcionam **independentes da flag**.
 
 ### 2.4 Arquivar o produto avulso legado
 
-O produto `prod_FKDSBDN4pECzrtmFgktGazXy` (R$ 19,90 — "kits extras") não é mais vendido. No painel AbacatePay, **arquivar/desativar** esse produto para não ficar disponível em links antigos. Nenhum código o referencia; a coluna `creators.kits_extra` foi removida na migration 029 (dados zerados — sem impacto em ninguém, era 0 em produção).
+✅ **Feito em 18/10/2026:** o produto `prod_FKDSBDN4pECzrtmFgktGazXy` (R$ 19,90 — "kits extras") foi **excluído** da loja — não aparece mais em `listProducts`. Nenhum código o referenciava; a coluna `creators.kits_extra` foi removida na migration 029 (era 0 em produção — sem impacto em ninguém).
+
+> **Produtos v1 legados ainda `ACTIVE` na conta** (não mexi — decida se quer arquivar; nenhum código os usa): `prod_XceU6kexeagzjrdExrUDAcBC` (Scale), `prod_nnEcHjTADLzMLkyb1LNPZPgn` (Pro), `prod_C202hdKwFjsDTHtGkFAjKWLR` (Essencial), `prod_cnLy302qRWrxncJWrdpPMaSW` (TemTrend Pro) e `prod_dLAMQ4LMFgCB121EaJh32PHP` (TemTrend Enterprise). A conta também tem produtos de outros projetos (WarHub/TrendPulse) — não mexer.
 
 ## 3. Webhook AbacatePay
 
@@ -92,6 +97,10 @@ createWebhook({
 })
 ```
 
+**Status:** ✅ criado em 18/10/2026 via MCP — id `webh_prod_xS6hzaujufu2sQxkpYpAZ434`, nome `temtrend-v2`, com o segredo na query string (idêntico à env). Verificado em produção: sem segredo → `401` (a env do segredo está ativa).
+
+> A conta AbacatePay também serve outros projetos (WarHub) — os eventos disparam para **todos** os webhooks da conta e cada endpoint filtra o que interessa. Do nosso lado, nada a fazer.
+
 **Webhook legado:** `webh_prod_mL3zBmjAFAfmAZnPaAbnFw0y` → `https://temtrend.online/` (eventos v1). Deixar como está até arquivar os produtos legados; depois remover no painel para não gerar ruído.
 
 ## 4. Migrations
@@ -106,7 +115,7 @@ As migrations `027_analytics_events`, `028_billing` e `029_support` **já estão
 
 | # | Passo | Esperado |
 |---|---|---|
-| 1 | `GET https://temtrend-api.onrender.com/billing/plans` | `enabled: true` com Essencial/Pro/Scale (mensal + anual) — **sem** chaves `free` e `avulso` |
+| 1 | `GET https://temtrend-api.onrender.com/billing/plans` | Catálogo 200 (essencial, pro, scale, enterprise; `trial_days: 7`; sem `free`/`avulso`) — **✅ já verificado**; `enabled: true` só **depois** da `ABACATEPAY_API_KEY` |
 | 2 | Conta nova (com billing ativo): concluir onboarding | Faixa "Trial Pro · 7 dias restantes"; limites de Pro valendo |
 | 3 | Aguardar fim do trial (ou forçar `plan_status` no banco) | Faixa "trial encerrado" + estado travado: gerar/buscar bloqueado com mensagem neutra de assinatura; conteúdo antigo visível |
 | 4 | `/planos` logado → Assinar Pro mensal (PIX) | Redireciona ao checkout; após pagar, webhook ativa; `/app/conta` mostra plano + "Renova em …" |
@@ -116,8 +125,13 @@ As migrations `027_analytics_events`, `028_billing` e `029_support` **já estão
 | 8 | Reenviar o mesmo webhook no painel | Resposta `duplicate`, sem efeito duplo |
 | 9 | AbacatePay: trocar o segredo do webhook por um errado e reenviar | `401` (e depois restaurar) |
 
+> **Verificado em produção em 18/10 (com o código novo, antes da chave):** `GET /health` → 200 · `GET /billing/plans` → 200 (essencial, pro, scale, enterprise; `trial_days: 7`; sem `free`/`avulso`) · `POST /billing/webhook` sem segredo → 401 (segredo ativo) · `POST /support/tickets` → 401 e `GET /admin/billing/summary` → 401 (rotas novas registradas; auth exigida) · `POST /events` com corpo vazio → 400 (validação ok) · frontend `https://temtrend.online/planos` e `/app/suporte` → 200 (build novo no ar).
+>
+> **Passos 2–8 do smoke completo só rodam com a `ABACATEPAY_API_KEY` definida** (sem ela não há trial nem checkout). O passo 9 já está coberto pelo teste do 401 acima.
+
 ## 6. Pendências conhecidas (honesto)
 
+- **⬜ Ações humanas pendentes (go-live):** (1) adicionar `ABACATEPAY_API_KEY` no Render (§2.1 — liga a cobrança no próximo redeploy; a flag já está `true`); (2) subir para Starter (§2.2); (3) opcional: arquivar os produtos v1 e o webhook `TemTrend.AI` (§2.4/§3).
 - **E-mails de trial/renovação (Resend):** não implementados — ficam para a fase 3 (Retenção & expansão). Hoje o trial é comunicado dentro do app.
 - **Notificações de suporte:** o canal é in-app (creator vê resposta na área Suporte); e-mail de "resposta nova" ainda não existe.
 - **Nota fiscal / contador:** fora do escopo do código (imposto de 6% é premissa do relatório).
