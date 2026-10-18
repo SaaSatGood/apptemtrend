@@ -13,6 +13,9 @@ import adminRoutes from './modules/admin/admin.routes.js';
 import storageRoutes from './modules/storage/storage.routes.js';
 import accountRoutes from './modules/account/account.routes.js';
 import assistantRoutes from './modules/assistant/assistant.routes.js';
+import analyticsRoutes from './modules/analytics/analytics.routes.js';
+import billingRoutes from './modules/billing/billing.routes.js';
+import supportRoutes from './modules/support/support.routes.js';
 import { UPLOAD } from './config/constants.js';
 import { supabaseAdmin } from './lib/supabase.js';
 import { aiStatus } from './modules/assistant/ai.service.js';
@@ -85,5 +88,8 @@ export function buildApp() {
   app.register(adminRoutes);
   app.register(storageRoutes);
   app.register(accountRoutes);
+  app.register(analyticsRoutes);
+  app.register(billingRoutes);
+  app.register(supportRoutes);
   return app;
 }

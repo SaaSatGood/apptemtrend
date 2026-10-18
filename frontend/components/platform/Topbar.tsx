@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { usePlatform } from "./store";
+import PlanBanner from "./PlanBanner";
 
 export default function Topbar() {
   const { me, signOut } = usePlatform();
@@ -19,33 +20,36 @@ export default function Topbar() {
   }, []);
 
   return (
-    <header className={`topbar${scrolled ? " is-scrolled" : ""}`}>
-      <a className="app-skip-link" href="#page-content">Pular para conteúdo</a>
-      <Link className="app-logo" href="/app" aria-label="TemTrend, início">
-        <span aria-hidden="true">T</span><b>TemTrend</b>
-      </Link>
-      {!admin && (
-        <nav className="app-nav" aria-label="Navegação da plataforma">
-          <Link
-            href="/app"
-            aria-current={pathname === "/app" || pathname.startsWith("/app/produtos") ? "page" : undefined}
-            className={pathname === "/app" || pathname.startsWith("/app/produtos") ? "active" : ""}
-          >
-            Descobrir
-          </Link>
-          <Link
-            href="/app/producao"
-            aria-current={pathname?.startsWith("/app/producao") ? "page" : undefined}
-            className={pathname?.startsWith("/app/producao") ? "active" : ""}
-          >
-            Produção
-          </Link>
-        </nav>
-      )}
-      {admin && <span className="admin-nav-label">Painel administrativo</span>}
-      {!admin && <Link className="app-create-link" href="/app#assistant-section"><span aria-hidden="true">+</span> Novo conteúdo</Link>}
-      <UserMenu onSignOut={() => void signOut()} active={pathname?.startsWith("/app/conta") === true} />
-    </header>
+    <>
+      <header className={`topbar${scrolled ? " is-scrolled" : ""}`}>
+        <a className="app-skip-link" href="#page-content">Pular para conteúdo</a>
+        <Link className="app-logo" href="/app" aria-label="TemTrend, início">
+          <span aria-hidden="true">T</span><b>TemTrend</b>
+        </Link>
+        {!admin && (
+          <nav className="app-nav" aria-label="Navegação da plataforma">
+            <Link
+              href="/app"
+              aria-current={pathname === "/app" || pathname.startsWith("/app/produtos") ? "page" : undefined}
+              className={pathname === "/app" || pathname.startsWith("/app/produtos") ? "active" : ""}
+            >
+              Descobrir
+            </Link>
+            <Link
+              href="/app/producao"
+              aria-current={pathname?.startsWith("/app/producao") ? "page" : undefined}
+              className={pathname?.startsWith("/app/producao") ? "active" : ""}
+            >
+              Produção
+            </Link>
+          </nav>
+        )}
+        {admin && <span className="admin-nav-label">Painel administrativo</span>}
+        {!admin && <Link className="app-create-link" href="/app#assistant-section"><span aria-hidden="true">+</span> Novo conteúdo</Link>}
+        <UserMenu onSignOut={() => void signOut()} active={pathname?.startsWith("/app/conta") === true} />
+      </header>
+      {!admin && <PlanBanner />}
+    </>
   );
 }
 
@@ -76,7 +80,9 @@ function UserMenu({ onSignOut, active }: { onSignOut: () => void; active: boolea
           <small>{session?.user.email || ""}</small>
         </div>
         <Link href="/app/conta" onClick={() => ref.current?.removeAttribute("open")}>Minha conta</Link>
+        {!admin && <Link href="/planos" onClick={() => ref.current?.removeAttribute("open")}>Planos e assinatura</Link>}
         {!admin && <Link href="/app/conta?preferencias=1" onClick={() => ref.current?.removeAttribute("open")}>Preferências</Link>}
+        {!admin && <Link href="/app/suporte" onClick={() => ref.current?.removeAttribute("open")}>Suporte</Link>}
         <button type="button" onClick={onSignOut}>
           Sair
         </button>

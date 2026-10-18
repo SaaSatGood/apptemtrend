@@ -1,15 +1,23 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import dynamic from "next/dynamic";
 import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { api, friendlyError } from "@/lib/api";
+import { track } from "@/lib/track";
 import { displayProductName } from "@/lib/format";
-import type { AssistantResponse, CreatorContent, Product } from "@/lib/types";
+import type { AssistantResponse, Product } from "@/lib/types";
 import { usePlatform } from "./store";
 import Opportunities from "./Opportunities";
-import ContentKitDialog from "./ContentKitDialog";
+import { productionForProduct } from "./production-helpers";
 import ProductImage from "./ProductImage";
+import UpgradeDialog from "./UpgradeDialog";
+
+// Diálogo carregado sob demanda: fora do bundle inicial do Descobrir.
+const ContentKitDialog = dynamic(() => import("./ContentKitDialog"), {
+  loading: () => null,
+});
 
 const EXAMPLES = [
   ["Até R$ 50", "Quero produtos com preço de até 50 reais", "Preço"],
@@ -121,6 +129,7 @@ export default function Assistant({ onOpen }: { onOpen: (id: string) => void }) 
   const [error, setError] = useState(false);
   const [savingProductId, setSavingProductId] = useState<string | null>(null);
   const [kitProductId, setKitProductId] = useState<string | null>(null);
+  const [planLimitMessage, setPlanLimitMessage] = useState("");
   const [contextIds, setContextIds] = useState<string[]>([]);
   const [hideSensitive, setHideSensitive] = useState(false);
   const hasPendingSearch = useRef(false);
@@ -265,6 +274,7 @@ export default function Assistant({ onOpen }: { onOpen: (id: string) => void }) 
       setMessage(result.message || "Nenhum produto encontrado.");
       setResults(list);
       setNeedsClarification(Boolean(result.needs_clarification));
+      track("search_performed", { q_len: trimmed.length, results: list.length, clarification: Boolean(result.needs_clarification) });
       try { sessionStorage.setItem(storageKey, JSON.stringify({
         savedAt: Date.now(),
         query: trimmed,
@@ -274,11 +284,20 @@ export default function Assistant({ onOpen }: { onOpen: (id: string) => void }) 
         contextIds: list.map((product) => product.id),
       })); } catch { /* Storage is optional. */ }
     } catch (err) {
+      const code = (err as { code?: string }).code;
       setError(true);
       setResults([]);
       setNeedsClarification(false);
-      setMessage("Não conseguimos concluir sua busca agora.");
-      toast(friendlyError(err, "Não conseguimos concluir sua busca agora."));
+      if (code === "PLAN_LIMIT") {
+        // Limite do plano: intercepta no momento do valor com CTA de upgrade.
+        const text = (err as Error).message || "Você atingiu o limite do seu plano.";
+        setMessage(text);
+        setPlanLimitMessage(text);
+        track("upgrade_cta_view", { source: "assistant_limit" });
+      } else {
+        setMessage("Não conseguimos concluir sua busca agora.");
+        toast(friendlyError(err, "Não conseguimos concluir sua busca agora."));
+      }
     } finally {
       clearTimeout(slow);
       inFlight.current = false;
@@ -450,16 +469,11 @@ export default function Assistant({ onOpen }: { onOpen: (id: string) => void }) 
           onCreated={(kit) => { setKitProductId(null); router.push(`/app/produtos/${kit.product_id}/kits/${kit.id}`); }}
         />
       )}
+      {planLimitMessage && (
+        <UpgradeDialog message={planLimitMessage} onClose={() => setPlanLimitMessage("")} />
+      )}
     </section>
   );
 }
 
-export function productionForProduct(
-  productions: CreatorContent[],
-  productId: string
-): CreatorContent | null {
-  return (
-    productions.find((item) => item.product_id === productId || item.products?.id === productId) ||
-    null
-  );
-}
+

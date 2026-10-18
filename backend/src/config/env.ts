@@ -26,6 +26,18 @@ const envSchema = z.object({
   CATALOG_FEED_TOKEN: z.string().min(1).optional(),
   RESEND_API_KEY: z.string().min(1).optional(),
   RESEND_AUDIENCE_ID: z.string().min(1).optional(),
+  // Billing (AbacatePay). Desligado por padrão: o app segue com as cotas globais.
+  BILLING_ENABLED: z.enum(['true', 'false']).default('false').transform((value) => value === 'true'),
+  ABACATEPAY_API_KEY: z.string().min(1).optional(),
+  ABACATEPAY_API_URL: z.string().url().default('https://api.abacatepay.com/v2'),
+  ABACATEPAY_WEBHOOK_SECRET: z.string().min(8).optional(),
+  // IDs dos produtos criados na loja (item 11 do relatório); sobreponíveis por env.
+  ABACATEPAY_PRODUCT_ESSENCIAL_MENSAL: z.string().min(1).optional(),
+  ABACATEPAY_PRODUCT_ESSENCIAL_ANUAL: z.string().min(1).optional(),
+  ABACATEPAY_PRODUCT_PRO_MENSAL: z.string().min(1).optional(),
+  ABACATEPAY_PRODUCT_PRO_ANUAL: z.string().min(1).optional(),
+  ABACATEPAY_PRODUCT_SCALE_MENSAL: z.string().min(1).optional(),
+  ABACATEPAY_PRODUCT_SCALE_ANUAL: z.string().min(1).optional(),
 });
 
 const parsed = envSchema.safeParse(process.env);

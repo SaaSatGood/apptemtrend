@@ -18,6 +18,7 @@ export async function dashboard() {
     ['produtos_pausados', 'products', 'pausado'], ['creators_bloqueados', 'creators', 'bloqueado'],
     ['total_content_kits', 'content_kits', undefined],
     ['oportunidades_salvas', 'creator_content', 'salvo'], ['conteudos_publicados', 'creator_content', 'publicado'],
+    ['suporte_abertos', 'support_tickets', 'open'], ['assinaturas_ativas', 'subscriptions', 'active'],
   ] as const;
   const values: Record<string, number | string> = {};
   await Promise.all(tables.map(async ([key, table, status]) => {

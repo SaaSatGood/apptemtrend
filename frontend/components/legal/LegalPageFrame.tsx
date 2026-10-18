@@ -39,6 +39,7 @@ export default function LegalPageFrame({ eyebrow, title, updated, intro, childre
           <nav aria-label="Páginas legais">
             <Link href="/termos">Termos</Link>
             <Link href="/privacidade">Privacidade</Link>
+            <Link href="/reembolso">Reembolso</Link>
           </nav>
         </div>
       </footer>

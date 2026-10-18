@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { requireAuth } from '../../plugins/auth.js';
 import { RATE_LIMITS } from '../../config/constants.js';
 import { reserveForceNew, reserveKitQuota, releaseForceNew, releaseQuota } from '../../lib/ai-metrics.js';
+import { assertKitQuota, assertVariationQuota, planLimitError, variationsPolicy, vozPersonalizadaAllowed } from '../billing/billing.gating.js';
 import { productQuerySchema } from './product.schema.js';
 import * as productService from './product.service.js';
 import { requireActiveCreator } from '../creators/creator.service.js';
@@ -76,6 +77,7 @@ async function productRoutes(fastify: FastifyInstance) {
       instructions: z.string().trim().max(1500, 'Descreva o vídeo em até 1500 caracteres.').optional(),
     }).strict().parse(request.body ?? {});
     const creator = await requireActiveCreator(request.authUser.id);
+    await assertKitQuota(creator, body.force_new ? undefined : id);
     if (!await reserveKitQuota(request.authUser.id)) {
       throw Errors.CONFLICT('Limite diário de roteiros atingido. Tente novamente amanhã.');
     }
@@ -83,16 +85,24 @@ async function productRoutes(fastify: FastifyInstance) {
     let quotaReleased = false;
     try {
       if (body.force_new) {
-        forceReserved = await reserveForceNew(creator.id, id);
+        const policy = variationsPolicy(creator);
+        if (!policy.allowed) {
+          await releaseQuota(request.authUser.id, 'kit');
+          quotaReleased = true;
+          throw planLimitError('Gerar outra versão está disponível nos planos pagos. Faça upgrade para criar variações do roteiro.');
+        }
+        await assertVariationQuota(creator, id);
+        forceReserved = await reserveForceNew(creator.id, id, policy.cooldownMs);
         if (!forceReserved) {
           await releaseQuota(request.authUser.id, 'kit');
           quotaReleased = true;
-          throw Errors.CONFLICT('Aguarde 30 segundos antes de gerar outra versão para este produto.');
+          throw Errors.CONFLICT(`Aguarde ${Math.round(policy.cooldownMs / 1000)} segundos antes de gerar outra versão para este produto.`);
         }
       }
+      const voz = vozPersonalizadaAllowed(creator) ? creator.voz_exemplo ?? null : null;
       const result = body.force_new
-        ? await productService.createFreshContentKit(id, creator.id, body.instructions, creator.voz_exemplo ?? null)
-        : await productService.ensureContentKit(id, creator.id, body.instructions, creator.voz_exemplo ?? null);
+        ? await productService.createFreshContentKit(id, creator.id, body.instructions, voz)
+        : await productService.ensureContentKit(id, creator.id, body.instructions, voz);
       if (!result.created) {
         await releaseQuota(request.authUser.id, 'kit');
         quotaReleased = true;

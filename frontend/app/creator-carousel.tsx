@@ -120,15 +120,15 @@ export default function CreatorCarousel({ videos }: { videos: ReelVideo[] }) {
               <small>0{index + 1} · IDEIA PARA TESTAR</small>
               <strong>{media.label}</strong>
               <span className="tt-rd-reel-tip">{media.tip}</span>
-              <a className="tt-reel-account" href={media.sourceUrl} target="_blank" rel="noopener noreferrer">
+              <span className="tt-reel-account">
                 <span className="tt-reel-avatar" aria-hidden="true">{media.creator.charAt(0)}</span>
-                <span><b>{media.creator}</b><small>Vídeo de acervo · Pexels ↗</small></span>
-              </a>
+                <span><b>{media.creator}</b><small>Vídeo de acervo · Pexels</small></span>
+              </span>
             </div>
           </article>
         ))}
       </div>
-      <p className="tt-carousel-note">Toque para reproduzir · vídeos sem áudio <span aria-hidden="true">↗</span></p>
+      <p className="tt-carousel-note">Toque para reproduzir · vídeos sem áudio</p>
     </div>
   );
 }

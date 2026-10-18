@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { copyText, formatUpdated, fullProductName, normalizeScenes, validTikTokUrl } from "@/lib/format";
 import { supabase } from "@/lib/supabase";
 import { api } from "@/lib/api";
+import { track } from "@/lib/track";
 import type { CreatorContent } from "@/lib/types";
 import { usePlatform } from "./store";
 import Modal from "./Modal";
@@ -300,6 +301,7 @@ export function PublicationDialog({
         body: JSON.stringify({ status: "publicado", published_url: value || null }),
       });
       onClose();
+      track("published", { with_link: Boolean(value) });
       await loadProductions().catch(() => {});
       toast(value ? "Publicado ✓ Link salvo." : "Conteúdo marcado como publicado.");
     } catch {

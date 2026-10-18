@@ -1,0 +1,105 @@
+/* ============================================================
+   TemTrend — Camada canônica (importada por ÚLTIMO em layout.tsx)
+   ------------------------------------------------------------
+   Governança: este é o único lugar para ajustes globais novos.
+   Não criar mais arquivos de "fix/polish".
+
+   Tokens canônicos (fonte: DESIGN.md):
+   --tt-ink    #10110f     --tt-lime      #c8ff2e
+   --tt-soft   #f4f6ef     --tt-line      #dce3d3
+   --tt-muted  #4f574b     --tt-deep      #385400
+   --tt-danger #a52727
+
+   Regras da casa:
+   - Foco visível: 3px solid #385400 (nunca ciano/lime em fundo claro).
+   - Alvos de toque: mínimo 44px.
+   - Métricas numéricas: font-variant-numeric: tabular-nums.
+   ============================================================ */
+
+/* ---------- 1. Movimento ---------- */
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto !important; }
+  .tt-home *,
+  #app-view *,
+  .auth-view *,
+  .onboarding * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ---------- 2. Números alinhados (grids de métrica) ---------- */
+#app-view :is(
+  .product-metrics,
+  .product-detail-metrics,
+  .production-overview,
+  .production-progress,
+  .production-sort,
+  .kit-jump-nav,
+  .account-summary,
+  .products-table
+),
+.tt-home :is(.tt-rd-kit-scenes, .tt-rd-step-index, .tt-trust-flow) {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- 3. Confirmação de e-mail (login) ---------- */
+.auth-confirm {
+  margin: 0 0 22px;
+  padding: 16px 18px;
+  border: 1px solid var(--tt-line, #dce3d3);
+  border-left: 4px solid #385400;
+  border-radius: 12px;
+  background: var(--tt-soft, #f4f6ef);
+  color: #10110f;
+  font-size: 0.88rem;
+  line-height: 1.5;
+}
+.auth-confirm p { margin: 0; }
+.auth-confirm strong { display: block; margin-bottom: 3px; }
+.auth-confirm button { margin-top: 12px; }
+
+/* ---------- 4. Hero: kicker + microcopy do CTA ---------- */
+.tt-discover-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+  padding: 7px 13px;
+  border: 1px solid var(--tt-line, #dce3d3);
+  border-radius: 999px;
+  background: var(--tt-soft, #f4f6ef);
+  color: #4f574b;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+.tt-discover-cta-note {
+  margin: 12px 0 0;
+  color: #4f574b;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+/* ---------- 5. Faixa de fatos verificáveis (landing) ---------- */
+.tt-facts {
+  border-top: 1px solid var(--tt-line, #dce3d3);
+  background: #fbfcf8;
+}
+.tt-facts-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+  padding: 26px 0 30px;
+}
+.tt-facts article { display: grid; gap: 5px; }
+.tt-facts strong { color: #10110f; font-size: 14px; letter-spacing: -0.01em; }
+.tt-facts p { margin: 0; color: #4f574b; font-size: 13px; line-height: 1.5; }
+@media (max-width: 860px) {
+  .tt-facts-grid { grid-template-columns: 1fr; gap: 16px; padding: 22px 0; }
+}
+
+/* ---------- 6. Crédito de acervo sem link externo ---------- */
+.tt-reel-account { cursor: default; }

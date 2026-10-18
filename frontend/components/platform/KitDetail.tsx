@@ -10,7 +10,7 @@ import { usePlatform } from "./store";
 import { Skeletons } from "./ProductKit";
 import ContentKitDialog from "./ContentKitDialog";
 import { PublicationDialog } from "./Production";
-import { productionForProduct } from "./Assistant";
+import { productionForProduct } from "./production-helpers";
 import { displayKitTitle, kitContext } from "./kit-presentation";
 import GuidedKit from "./GuidedKit";
 import ProductionSteps from "./ProductionSteps";

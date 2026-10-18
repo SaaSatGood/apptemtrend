@@ -5,6 +5,13 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { api, friendlyError } from "@/lib/api";
 import { FALLBACK_IMAGE } from "@/lib/format";
+import {
+  SUPPORT_CATEGORY_LABEL,
+  SUPPORT_STATUS_CLASS,
+  SUPPORT_STATUS_LABEL,
+  fmtSupportDateTime,
+} from "@/lib/support";
+import type { AdminSupportTicket, AdminSupportTicketThread, SupportMessage, SupportStatus } from "@/lib/types";
 import { usePlatform } from "./store";
 import styles from "./Admin.module.css";
 
@@ -73,7 +80,31 @@ interface ProductFormState {
   featuredOrder: string;
 }
 
-type AdminView = "overview" | "products" | "creators";
+interface AdminBillingSummary {
+  active: number;
+  trialing: number;
+  past_due: number;
+  canceled: number;
+  pending: number;
+  failed: number;
+  mrr_cents: number;
+}
+
+interface AdminSubscription {
+  id: string;
+  plan: string;
+  plan_label: string;
+  period: string;
+  status: string;
+  amount_cents: number | null;
+  current_period_end: string | null;
+  pending_plan_label: string | null;
+  created_at: string;
+  creator_nome: string | null;
+  creator_email: string | null;
+}
+
+type AdminView = "overview" | "products" | "creators" | "billing" | "support";
 type ProductSort = "ranking" | "sales" | "revenue" | "name";
 
 const PAGE_SIZE = 12;
@@ -94,7 +125,25 @@ const METRIC_LABELS: Record<string, { label: string; detail: string }> = {
   total_content_kits: { label: "Conteúdos", detail: "Conteúdos disponíveis" },
   oportunidades_salvas: { label: "Oportunidades salvas", detail: "Produtos em consideração" },
   conteudos_publicados: { label: "Publicações", detail: "Conteúdos concluídos" },
+  suporte_abertos: { label: "Suporte", detail: "Conversas aguardando resposta" },
+  assinaturas_ativas: { label: "Assinaturas", detail: "Planos pagos ativos" },
 };
+
+const SUB_STATUS_LABEL: Record<string, string> = {
+  active: "Ativa",
+  trialing: "Trial",
+  past_due: "Pendente",
+  canceled: "Cancelada",
+  pending: "Aguardando",
+  failed: "Falhou",
+};
+
+function fmtDay(iso?: string | null): string {
+  if (!iso) return "—";
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return "—";
+  return date.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" });
+}
 
 const numberFormatter = new Intl.NumberFormat("pt-BR");
 const compactFormatter = new Intl.NumberFormat("pt-BR", { notation: "compact", maximumFractionDigits: 1 });
@@ -139,7 +188,7 @@ function initials(creator: AdminCreator): string {
   return (creator.nome || creator.email || "Creator").split(/\s+/).slice(0, 2).map((part) => part[0]?.toUpperCase()).join("");
 }
 
-function AdminIcon({ name }: { name: "overview" | "box" | "users" | "refresh" | "plus" | "search" | "download" | "edit" | "external" }) {
+function AdminIcon({ name }: { name: "overview" | "box" | "users" | "refresh" | "plus" | "search" | "download" | "edit" | "external" | "card" | "message" }) {
   const paths = {
     overview: <><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/></>,
     box: <><path d="m21 8-9 5-9-5 9-5 9 5Z"/><path d="m3 8 9 5 9-5v8l-9 5-9-5V8Z"/></>,
@@ -150,6 +199,8 @@ function AdminIcon({ name }: { name: "overview" | "box" | "users" | "refresh" | 
     download: <><path d="M12 3v12M7 10l5 5 5-5"/><path d="M5 21h14"/></>,
     edit: <><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L8 18l-4 1 1-4Z"/></>,
     external: <><path d="M14 3h7v7M10 14 21 3"/><path d="M21 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5"/></>,
+    card: <><rect x="2" y="5" width="20" height="14" rx="3"/><path d="M2 10h20"/></>,
+    message: <><path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4Z"/></>,
   };
   return <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">{paths[name]}</svg>;
 }
@@ -179,6 +230,16 @@ export default function Admin() {
   const [productPage, setProductPage] = useState(1);
   const [creatorQuery, setCreatorQuery] = useState("");
   const [creatorStatus, setCreatorStatus] = useState("todos");
+  const [billingSummary, setBillingSummary] = useState<AdminBillingSummary | null>(null);
+  const [billingError, setBillingError] = useState(false);
+  const [subscriptions, setSubscriptions] = useState<AdminSubscription[] | null>(null);
+  const [funnel, setFunnel] = useState<Array<{ event_name: string; total: number }> | null>(null);
+  const [supportTickets, setSupportTickets] = useState<AdminSupportTicket[] | null>(null);
+  const [supportError, setSupportError] = useState(false);
+  const [supportStatusFilter, setSupportStatusFilter] = useState("todos");
+  const [supportThread, setSupportThread] = useState<AdminSupportTicketThread | null>(null);
+  const [supportReply, setSupportReply] = useState("");
+  const [supportBusy, setSupportBusy] = useState(false);
 
   const token = useCallback(async () => {
     const { data } = await supabase().auth.getSession();
@@ -220,18 +281,112 @@ export default function Admin() {
     } catch { setCreatorsError(true); }
   }, [token]);
 
+  const loadBilling = useCallback(async (accessToken?: string) => {
+    try {
+      setBillingError(false);
+      const authToken = accessToken ?? await token();
+      const [summary, subs] = await Promise.all([
+        api<AdminBillingSummary>("/admin/billing/summary", authToken),
+        api<{ items: AdminSubscription[] }>("/admin/billing/subscriptions?page=1&limit=100", authToken),
+      ]);
+      setBillingSummary(summary);
+      setSubscriptions(subs?.items ?? []);
+    } catch { setBillingError(true); }
+  }, [token]);
+
+  const loadSupport = useCallback(async (accessToken?: string) => {
+    try {
+      setSupportError(false);
+      const authToken = accessToken ?? await token();
+      const data = await api<{ items: AdminSupportTicket[] }>("/admin/support/tickets?page=1&limit=100", authToken);
+      setSupportTickets(data?.items ?? []);
+    } catch { setSupportError(true); }
+  }, [token]);
+
+  const loadFunnel = useCallback(async (accessToken?: string) => {
+    try {
+      const authToken = accessToken ?? await token();
+      const data = await api<{ events: Array<{ event_name: string; total: number }> }>("/admin/analytics/funnel?days=30", authToken);
+      setFunnel(data?.events ?? []);
+    } catch { setFunnel([]); }
+  }, [token]);
+
   const refreshAll = useCallback(async () => {
     setRefreshing(true);
     const accessToken = await token();
-    await Promise.all([loadDashboard(accessToken), loadProducts(accessToken), loadCreators(accessToken)]);
+    await Promise.all([
+      loadDashboard(accessToken),
+      loadProducts(accessToken),
+      loadCreators(accessToken),
+      loadBilling(accessToken),
+      loadSupport(accessToken),
+      loadFunnel(accessToken),
+    ]);
     setLastUpdated(new Date());
     setRefreshing(false);
-  }, [loadCreators, loadDashboard, loadProducts, token]);
+  }, [loadBilling, loadCreators, loadDashboard, loadFunnel, loadProducts, loadSupport, token]);
 
   useEffect(() => {
     const task = window.setTimeout(() => void refreshAll(), 0);
     return () => window.clearTimeout(task);
   }, [refreshAll]);
+
+  const openSupportThread = useCallback(async (id: string) => {
+    try {
+      const data = await api<AdminSupportTicketThread>(`/admin/support/tickets/${id}`, await token());
+      setSupportThread(data);
+      setSupportReply("");
+    } catch (err) {
+      toast(friendlyError(err, "Não conseguimos abrir esta conversa agora."));
+    }
+  }, [toast, token]);
+
+  async function sendSupportReply(event: React.FormEvent) {
+    event.preventDefault();
+    if (!supportThread || !supportReply.trim() || supportBusy) return;
+    setSupportBusy(true);
+    try {
+      const result = await api<{ status: SupportStatus; message: SupportMessage }>(
+        `/admin/support/tickets/${supportThread.id}/messages`,
+        await token(),
+        { method: "POST", body: JSON.stringify({ body: supportReply.trim() }) },
+      );
+      setSupportThread((current) =>
+        current ? { ...current, status: result.status, messages: [...current.messages, result.message] } : current,
+      );
+      setSupportTickets((current) =>
+        (current ?? []).map((ticket) =>
+          ticket.id === supportThread.id
+            ? { ...ticket, status: result.status, last_message_at: result.message.created_at }
+            : ticket,
+        ),
+      );
+      setSupportReply("");
+    } catch (err) {
+      toast(friendlyError(err, "Não conseguimos enviar a resposta agora."));
+    } finally {
+      setSupportBusy(false);
+    }
+  }
+
+  async function updateTicketStatus(status: SupportStatus) {
+    if (!supportThread || supportBusy) return;
+    setSupportBusy(true);
+    try {
+      await api<{ ok: boolean; status: SupportStatus }>(`/admin/support/tickets/${supportThread.id}`, await token(), {
+        method: "PATCH",
+        body: JSON.stringify({ status }),
+      });
+      setSupportThread((current) => (current ? { ...current, status } : current));
+      setSupportTickets((current) =>
+        (current ?? []).map((ticket) => (ticket.id === supportThread.id ? { ...ticket, status } : ticket)),
+      );
+    } catch (err) {
+      toast(friendlyError(err, "Não conseguimos atualizar o status agora."));
+    } finally {
+      setSupportBusy(false);
+    }
+  }
 
   const categories = useMemo(() => [...new Set((products ?? []).map((product) => product.categoria).filter((category): category is string => Boolean(category)))].sort((a, b) => a.localeCompare(b, "pt-BR")), [products]);
 
@@ -395,6 +550,11 @@ export default function Admin() {
     value: metricNumber(metrics, key, key === "total_creators" ? (creators ?? []).length : key === "creators_ativos" ? activeCreators : key === "total_produtos" ? (products ?? []).length : key === "produtos_ativos" ? activeProducts : 0),
   }));
 
+  const openSupportCount = (supportTickets ?? []).filter((ticket) => ticket.status === "open").length;
+  const filteredSupportTickets = (supportTickets ?? []).filter(
+    (ticket) => supportStatusFilter === "todos" || ticket.status === supportStatusFilter,
+  );
+
   return (
     <section id="admin-view" className={styles.adminShell}>
       <header className={styles.hero}>
@@ -411,11 +571,13 @@ export default function Admin() {
       </header>
 
       <nav className={styles.viewTabs} aria-label="Seções do painel">
-        {([["overview", "overview", "Visão geral"], ["products", "box", "Produtos"], ["creators", "users", "Creators"]] as const).map(([key, icon, label]) => (
+        {([["overview", "overview", "Visão geral"], ["products", "box", "Produtos"], ["creators", "users", "Creators"], ["billing", "card", "Assinaturas"], ["support", "message", "Suporte"]] as const).map(([key, icon, label]) => (
           <button key={key} type="button" className={view === key ? styles.activeTab : ""} onClick={() => setView(key)} aria-current={view === key ? "page" : undefined}>
             <AdminIcon name={icon} /> {label}
             {key === "products" && products && <span>{products.length}</span>}
             {key === "creators" && creators && <span>{creators.length}</span>}
+            {key === "billing" && billingSummary && <span>{billingSummary.active}</span>}
+            {key === "support" && supportTickets && openSupportCount > 0 && <span>{openSupportCount}</span>}
           </button>
         ))}
       </nav>
@@ -429,7 +591,7 @@ export default function Admin() {
             <div className={styles.metricGrid} aria-live="polite">
               {metrics ? metricEntries.map((metric, index) => (
                 <article key={metric.key} className={styles.metricCard}><span className={styles.metricIndex}>{String(index + 1).padStart(2, "0")}</span><strong>{formatCount(metric.value)}</strong><h3>{metric.label}</h3><p>{metric.detail}</p></article>
-              )) : Array.from({ length: 7 }).map((_, index) => <div className={styles.metricSkeleton} key={index} aria-hidden="true" />)}
+              )) : Array.from({ length: 9 }).map((_, index) => <div className={styles.metricSkeleton} key={index} aria-hidden="true" />)}
             </div>
           )}
           <div className={styles.overviewGrid}>
@@ -446,6 +608,25 @@ export default function Admin() {
             <article className={`${styles.healthCard} ${styles.aiCard}`}>
               <div className={styles.cardHeading}><div><span>Uso de IA</span><h2>Consumo operacional</h2></div><i>Gemini</i></div>
               <dl className={styles.aiMetrics}><div><dt>Classificações</dt><dd>{formatCount(metrics?.ai_classify_calls)}</dd></div><div><dt>Gerações</dt><dd>{formatCount(metrics?.ai_generate_calls)}</dd></div><div><dt>Tokens de classificação</dt><dd>{formatCount(metrics?.ai_classify_tokens, true)}</dd></div><div><dt>Tokens de geração</dt><dd>{formatCount(metrics?.ai_generate_tokens, true)}</dd></div></dl>
+            </article>
+            <article className={styles.healthCard}>
+              <div className={styles.cardHeading}><div><span>Funil · 30 dias</span><h2>Eventos de produto</h2></div><button type="button" onClick={() => void loadFunnel()}>Atualizar</button></div>
+              {funnel === null ? (
+                <p className={styles.mutedText}>Carregando eventos…</p>
+              ) : funnel.length === 0 ? (
+                <p className={styles.mutedText}>Sem eventos no período — o funil aparece quando houver navegação registrada.</p>
+              ) : (
+                <dl className={styles.funnelList}>
+                  {funnel.slice(0, 6).map((event) => (
+                    <div key={event.event_name}><dt>{event.event_name}</dt><dd>{formatCount(event.total)}</dd></div>
+                  ))}
+                </dl>
+              )}
+            </article>
+            <article className={styles.healthCard}>
+              <div className={styles.cardHeading}><div><span>Atendimento</span><h2>Suporte</h2></div><button type="button" onClick={() => setView("support")}>Abrir fila</button></div>
+              <div className={styles.progressBlock}><div><strong>{openSupportCount}</strong><span>{openSupportCount === 1 ? "conversa aguardando resposta" : "conversas aguardando resposta"}</span></div></div>
+              <dl className={styles.healthList}><div><dt>Respondidas</dt><dd>{(supportTickets ?? []).filter((ticket) => ticket.status === "answered").length}</dd></div><div><dt>Resolvidas</dt><dd>{(supportTickets ?? []).filter((ticket) => ticket.status === "resolved").length}</dd></div><div><dt>Encerradas</dt><dd>{(supportTickets ?? []).filter((ticket) => ticket.status === "closed").length}</dd></div></dl>
             </article>
           </div>
         </div>
@@ -560,6 +741,133 @@ export default function Admin() {
             ))}</div>
           ) : (
             <div className={styles.emptyState}><strong>Nenhum creator corresponde aos filtros.</strong><p>Tente outro nome, email ou status.</p><button type="button" onClick={() => { setCreatorQuery(""); setCreatorStatus("todos"); }}>Limpar filtros</button></div>
+          )}
+        </div>
+      )}
+
+      {view === "billing" && (
+        <div className={styles.viewPanel}>
+          <div className={styles.sectionHeading}><div><span>Receita</span><h2>Assinaturas</h2></div><p>Planos ativos, trials e mudanças agendadas — espelho do provedor de pagamento.</p></div>
+          {billingError && !billingSummary ? (
+            <div className={styles.errorState}><strong>Não foi possível carregar as assinaturas.</strong><button type="button" onClick={() => void loadBilling()}>Tentar novamente</button></div>
+          ) : (
+            <>
+              <div className={styles.creatorSummary}>
+                <div><span>Assinaturas ativas</span><strong>{billingSummary?.active ?? 0}</strong></div>
+                <div><span>Em trial</span><strong>{billingSummary?.trialing ?? 0}</strong></div>
+                <div><span>Pagamento pendente</span><strong>{billingSummary?.past_due ?? 0}</strong></div>
+                <div><span>MRR estimado</span><strong>{billingSummary ? formatCurrency((billingSummary.mrr_cents ?? 0) / 100) : "—"}</strong></div>
+              </div>
+              <div className={styles.listMeta}><p><strong>{subscriptions?.length ?? 0}</strong> {subscriptions?.length === 1 ? "assinatura registrada" : "assinaturas registradas"}</p></div>
+              {subscriptions === null ? (
+                <div className={styles.listSkeleton}>{Array.from({ length: 4 }).map((_, index) => <i key={index} />)}</div>
+              ) : subscriptions.length === 0 ? (
+                <div className={styles.emptyState}><strong>Nenhuma assinatura ainda.</strong><p>Quando um creator assinar, o plano aparece aqui com status, valor e próxima cobrança.</p></div>
+              ) : (
+                <div className={styles.tableWrap}>
+                  <table className={styles.subsTable}>
+                    <thead>
+                      <tr><th scope="col">Creator</th><th scope="col">Plano</th><th scope="col">Período</th><th scope="col">Status</th><th scope="col">Valor</th><th scope="col">Próxima cobrança</th><th scope="col">Agendado</th></tr>
+                    </thead>
+                    <tbody>
+                      {subscriptions.map((sub) => (
+                        <tr key={sub.id}>
+                          <td><strong>{sub.creator_nome || "Creator sem nome"}</strong><span className={styles.subMeta}>{sub.creator_email || ""}</span></td>
+                          <td>{sub.plan_label}</td>
+                          <td>{sub.period === "annual" ? "Anual" : "Mensal"}</td>
+                          <td><span className={sub.status === "active" ? styles.statusActive : sub.status === "past_due" ? styles.statusBlocked : styles.subNeutral}>{SUB_STATUS_LABEL[sub.status] ?? sub.status}</span></td>
+                          <td>{sub.amount_cents != null ? formatCurrency(sub.amount_cents / 100) : "—"}</td>
+                          <td>{fmtDay(sub.current_period_end)}</td>
+                          <td>{sub.pending_plan_label ?? "—"}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      )}
+
+      {view === "support" && (
+        <div className={styles.viewPanel}>
+          <div className={styles.sectionHeading}><div><span>Atendimento</span><h2>Conversas do suporte</h2></div><p>Responda por aqui — o creator vê a resposta na área Suporte, dentro da plataforma.</p></div>
+          <div className={`${styles.toolbar} ${styles.supportToolbar}`}>
+            <select aria-label="Filtrar conversas por status" value={supportStatusFilter} onChange={(event) => setSupportStatusFilter(event.target.value)}>
+              <option value="todos">Todos os status</option>
+              <option value="open">Aguardando suporte</option>
+              <option value="answered">Respondidas</option>
+              <option value="resolved">Resolvidas</option>
+              <option value="closed">Encerradas</option>
+            </select>
+            <button type="button" className={styles.secondaryButton} onClick={() => void loadSupport()}><AdminIcon name="refresh" /> Atualizar fila</button>
+          </div>
+          {supportError && supportTickets === null ? (
+            <div className={styles.errorState}><strong>Não foi possível carregar a fila de suporte.</strong><button type="button" onClick={() => void loadSupport()}>Tentar novamente</button></div>
+          ) : (
+            <div className="support-layout">
+              <section className="card support-list">
+                <h2>{openSupportCount > 0 ? `${openSupportCount} aguardando resposta` : "Fila em ordem"}</h2>
+                {supportTickets === null ? (
+                  <p className="muted">Carregando conversas…</p>
+                ) : filteredSupportTickets.length === 0 ? (
+                  <p className="muted">Nenhuma conversa{supportStatusFilter !== "todos" ? " com este status" : ""} no momento.</p>
+                ) : (
+                  <ul className="support-ticket-list">
+                    {filteredSupportTickets.map((ticket) => (
+                      <li key={ticket.id}>
+                        <button type="button" className={`support-ticket${supportThread?.id === ticket.id ? " is-active" : ""}`} onClick={() => void openSupportThread(ticket.id)}>
+                          <span className="support-ticket-top"><strong>{ticket.subject}</strong><span className={`support-status ${SUPPORT_STATUS_CLASS[ticket.status]}`}>{SUPPORT_STATUS_LABEL[ticket.status]}</span></span>
+                          <span className="support-ticket-meta">{ticket.creator_nome || ticket.creator_email || "Creator"} · {SUPPORT_CATEGORY_LABEL[ticket.category] ?? ticket.category} · {fmtSupportDateTime(ticket.last_message_at)}</span>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </section>
+              <section className="card support-thread">
+                {!supportThread ? (
+                  <p className="muted support-thread-empty">Escolha uma conversa ao lado para ver as mensagens e responder.</p>
+                ) : (
+                  <>
+                    <header className="support-thread-head">
+                      <div>
+                        <h2>{supportThread.subject}</h2>
+                        <span className="support-ticket-meta">{supportThread.creator_nome || supportThread.creator_email || "Creator"} · {SUPPORT_CATEGORY_LABEL[supportThread.category] ?? supportThread.category} · aberta em {fmtSupportDateTime(supportThread.created_at)}</span>
+                      </div>
+                      <span className={`support-status ${SUPPORT_STATUS_CLASS[supportThread.status]}`}>{SUPPORT_STATUS_LABEL[supportThread.status]}</span>
+                    </header>
+                    <ol className="support-messages">
+                      {supportThread.messages.map((msg) => (
+                        <li key={msg.id} className={msg.author === "support" ? "is-creator" : "is-support"}>
+                          <div className="support-bubble">
+                            <p>{msg.body}</p>
+                            <small>{msg.author === "support" ? "Suporte TemTrend" : supportThread.creator_nome || "Creator"} · {fmtSupportDateTime(msg.created_at)}</small>
+                          </div>
+                        </li>
+                      ))}
+                    </ol>
+                    {supportThread.status === "closed" ? (
+                      <div className="support-reply-actions">
+                        <p className="muted">Conversa encerrada pelo creator. Precisa de algo? É só reabrir.</p>
+                        <button className="ghost" type="button" disabled={supportBusy} onClick={() => void updateTicketStatus("open")}>Reabrir</button>
+                      </div>
+                    ) : (
+                      <form className="support-reply" onSubmit={sendSupportReply}>
+                        <label className="sr-only" htmlFor="admin-support-reply">Resposta</label>
+                        <textarea id="admin-support-reply" value={supportReply} onChange={(event) => setSupportReply(event.target.value)} rows={3} maxLength={2000} placeholder="Escreva a resposta para o creator…" />
+                        <div className="support-reply-actions">
+                          <button className="primary" type="submit" disabled={supportBusy || !supportReply.trim()}>{supportBusy ? "Enviando…" : "Responder"}</button>
+                          <button className="ghost" type="button" disabled={supportBusy} onClick={() => void updateTicketStatus("resolved")}>Marcar resolvida</button>
+                          <button className="ghost" type="button" disabled={supportBusy} onClick={() => void updateTicketStatus("closed")}>Encerrar</button>
+                        </div>
+                      </form>
+                    )}
+                  </>
+                )}
+              </section>
+            </div>
           )}
         </div>
       )}

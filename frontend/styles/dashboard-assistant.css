@@ -12,7 +12,7 @@
 .assistant-response{max-width:1180px;margin-top:34px;padding-top:28px;border-top:1px solid #ddd;text-align:left}
 .assistant-message{display:grid;grid-template-columns:36px 1fr auto;align-items:center;gap:12px;margin-bottom:20px}
 .assistant-message p{margin:0;font-weight:700}
-.assistant-mark{display:grid;width:34px;height:34px;place-items:center;border-radius:9px;background:#000;color:#fff;font-weight:900;box-shadow:-2px 2px 0 #25f4ee,2px -2px 0 #fe2c55}
+.assistant-mark{display:grid;width:34px;height:34px;place-items:center;border-radius:9px;background:#000;color:#fff;font-weight:900;box-shadow:-2px 2px 0 #c8ff2e}
 .assistant-response .product-grid{margin-top:0}
 .assistant-loading{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
 .product-detail-primary{display:flex;flex-wrap:wrap;gap:10px;margin-top:24px}

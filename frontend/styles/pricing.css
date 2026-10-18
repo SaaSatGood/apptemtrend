@@ -1,0 +1,662 @@
+/* pricing.css — página pública /planos ("Meu plano" quando logado).
+   Tokens canônicos: #385400 (acento), #dce3d3 (borda), #f4f6ef (fundo),
+   #4f574b (texto secundário), #1c1f1a (texto). Foco único 3px #385400. */
+
+.tt-pricing {
+  min-height: 100vh;
+  background: #f4f6ef;
+  color: #1c1f1a;
+  font-family: var(--font-manrope), system-ui, sans-serif;
+}
+
+.tt-pricing-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 18px clamp(16px, 4vw, 48px);
+}
+
+.tt-pricing-logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  color: #1c1f1a;
+  font-weight: 800;
+  font-size: 18px;
+}
+
+.tt-pricing-logo span {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  background: #385400;
+  color: #fff;
+  font-weight: 800;
+}
+
+.tt-pricing-nav-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.tt-pricing-login {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 14px;
+  border-radius: 999px;
+  color: #385400;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.tt-pricing-signup {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 18px;
+  border-radius: 999px;
+  background: #385400;
+  color: #fff;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.tt-pricing-hero {
+  max-width: 860px;
+  margin: 0 auto;
+  text-align: center;
+  padding: clamp(28px, 6vw, 64px) 20px 4px;
+}
+
+.tt-pricing-eyebrow {
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  font-size: 12px;
+  font-weight: 800;
+  color: #4f574b;
+  margin: 0 0 12px;
+}
+
+.tt-pricing-hero h1 {
+  font-size: clamp(32px, 5.2vw, 56px);
+  line-height: 1.04;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  margin: 0 0 16px;
+}
+
+.tt-pricing-hero h1 em {
+  font-family: var(--font-instrument-serif), Georgia, serif;
+  font-style: italic;
+  font-weight: 400;
+}
+
+.tt-pricing-sub {
+  max-width: 620px;
+  margin: 0 auto 18px;
+  color: #4f574b;
+  font-size: 17px;
+  line-height: 1.55;
+}
+
+.tt-pricing-trial-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #ecf7d4;
+  color: #385400;
+  border: 1px solid #dce3d3;
+  border-radius: 999px;
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 700;
+  margin: 0;
+}
+
+.tt-pricing-current {
+  max-width: 1000px;
+  margin: 24px auto 0;
+  padding: 16px 20px;
+  background: #fff;
+  border: 1px solid #dce3d3;
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.tt-pricing-current strong {
+  display: block;
+  font-size: 16px;
+}
+
+.tt-pricing-current span {
+  display: block;
+  color: #4f574b;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
+.tt-pricing-current-pending {
+  color: #385400 !important;
+  font-weight: 700;
+}
+
+.tt-pricing-manage {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 18px;
+  border-radius: 999px;
+  border: 1px solid #385400;
+  color: #385400;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.tt-pricing-toggle {
+  display: flex;
+  justify-content: center;
+  padding: 26px 16px 6px;
+}
+
+.tt-pricing-toggle-inner {
+  display: inline-flex;
+  gap: 4px;
+  background: #fff;
+  border: 1px solid #dce3d3;
+  border-radius: 999px;
+  padding: 5px;
+}
+
+.tt-pricing-toggle-inner button {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 20px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: #4f574b;
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.tt-pricing-toggle-inner button.active {
+  background: #385400;
+  color: #fff;
+}
+
+.tt-pricing-badge {
+  background: #ecf7d4;
+  color: #385400;
+  border-radius: 999px;
+  padding: 3px 9px;
+  font-size: 11px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.tt-pricing-toggle-inner button.active .tt-pricing-badge {
+  background: #fff;
+}
+
+.tt-pricing-feedback {
+  max-width: 760px;
+  margin: 18px auto 0;
+  padding: 12px 18px;
+  border-radius: 14px;
+  background: #ecf7d4;
+  border: 1px solid #dce3d3;
+  color: #385400;
+  font-weight: 600;
+  font-size: 14px;
+  text-align: center;
+}
+
+.tt-pricing-feedback.is-error {
+  background: #fdecec;
+  border-color: #f2c9c9;
+  color: #a52727;
+}
+
+.tt-pricing-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 28px clamp(16px, 4vw, 48px) 8px;
+}
+
+@media (max-width: 940px) {
+  .tt-pricing-grid {
+    grid-template-columns: 1fr;
+    max-width: 560px;
+  }
+}
+
+.tt-price-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  background: #fff;
+  border: 1px solid #dce3d3;
+  border-radius: 22px;
+  padding: 26px 24px;
+}
+
+.tt-price-card.is-featured {
+  border: 2px solid #385400;
+  box-shadow: 0 24px 48px -30px rgba(56, 84, 0, 0.45);
+}
+
+.tt-price-seal {
+  position: absolute;
+  top: -14px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #385400;
+  color: #fff;
+  border-radius: 999px;
+  padding: 6px 14px;
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.tt-price-card header h2 {
+  margin: 0 0 4px;
+  font-size: 22px;
+}
+
+.tt-price-card header p {
+  margin: 0;
+  color: #4f574b;
+  font-size: 13px;
+}
+
+.tt-price-amount {
+  font-size: 38px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+}
+
+.tt-price-amount small {
+  font-size: 14px;
+  font-weight: 600;
+  color: #4f574b;
+  margin-left: 4px;
+}
+
+.tt-price-equivalent {
+  margin: -6px 0 0;
+  font-size: 13px;
+  color: #4f574b;
+  font-variant-numeric: tabular-nums;
+}
+
+.tt-price-bullets {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 9px;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.tt-price-bullets li {
+  display: flex;
+  gap: 8px;
+}
+
+.tt-price-bullets li::before {
+  content: "✓";
+  color: #385400;
+  font-weight: 800;
+  flex: none;
+}
+
+.tt-price-cta {
+  margin-top: auto;
+  min-height: 48px;
+  border: 0;
+  border-radius: 999px;
+  background: #385400;
+  color: #fff;
+  font-weight: 800;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.tt-price-cta.is-ghost {
+  background: #fff;
+  color: #385400;
+  border: 1px solid #385400;
+}
+
+.tt-price-cta:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.tt-enterprise-band {
+  max-width: 1084px;
+  margin: 18px auto 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  flex-wrap: wrap;
+  background: #20251d;
+  color: #f4f6ef;
+  border-radius: 22px;
+  padding: 24px;
+}
+
+.tt-enterprise-band strong {
+  font-size: 18px;
+}
+
+.tt-enterprise-band p {
+  margin: 6px 0 0;
+  color: #c8cdbf;
+  font-size: 13px;
+}
+
+.tt-enterprise-cta {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 20px;
+  border-radius: 999px;
+  background: #ecf7d4;
+  color: #385400;
+  font-weight: 800;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.tt-compare,
+.tt-faq-pricing {
+  max-width: 1084px;
+  margin: 28px auto 0;
+  padding: 0 clamp(16px, 4vw, 0px);
+}
+
+.tt-compare details,
+.tt-faq-pricing details {
+  background: #fff;
+  border: 1px solid #dce3d3;
+  border-radius: 16px;
+}
+
+.tt-compare summary,
+.tt-faq-pricing summary {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 20px;
+  cursor: pointer;
+  font-weight: 700;
+  list-style: none;
+}
+
+.tt-compare summary::-webkit-details-marker,
+.tt-faq-pricing summary::-webkit-details-marker {
+  display: none;
+}
+
+.tt-compare summary::after,
+.tt-faq-pricing summary::after {
+  content: "＋";
+  color: #385400;
+  font-weight: 800;
+}
+
+.tt-compare details[open] summary::after,
+.tt-faq-pricing details[open] summary::after {
+  content: "－";
+}
+
+.tt-compare-scroll {
+  overflow-x: auto;
+  padding: 0 20px 20px;
+}
+
+.tt-compare table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13.5px;
+  min-width: 640px;
+}
+
+.tt-compare th,
+.tt-compare td {
+  text-align: left;
+  padding: 10px 12px;
+  border-bottom: 1px solid #dce3d3;
+  font-variant-numeric: tabular-nums;
+}
+
+.tt-compare thead th {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #4f574b;
+}
+
+.tt-compare tbody th {
+  font-weight: 700;
+}
+
+.tt-faq-pricing h2 {
+  font-size: 26px;
+  margin: 0 0 14px;
+}
+
+.tt-faq-pricing-list {
+  display: grid;
+  gap: 10px;
+}
+
+.tt-faq-pricing details p {
+  margin: 0;
+  padding: 0 20px 16px;
+  color: #4f574b;
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.tt-pricing-trust {
+  max-width: 1084px;
+  margin: 30px auto 0;
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 0 clamp(16px, 4vw, 0px);
+}
+
+.tt-pricing-trust span {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #fff;
+  border: 1px solid #dce3d3;
+  border-radius: 999px;
+  padding: 9px 16px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #385400;
+}
+
+.tt-pricing-trust span::before {
+  content: "✓";
+  font-weight: 800;
+}
+
+.tt-pricing-footer {
+  max-width: 1180px;
+  margin: 44px auto 0;
+  padding: 22px clamp(16px, 4vw, 48px) 30px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  border-top: 1px solid #dce3d3;
+  font-size: 13px;
+  color: #4f574b;
+}
+
+.tt-pricing-footer nav {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.tt-pricing-footer a {
+  color: #4f574b;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.tt-pricing :is(a, button, summary):focus-visible {
+  outline: 3px solid #385400;
+  outline-offset: 3px;
+  border-radius: 999px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tt-pricing * {
+    transition: none !important;
+    animation: none !important;
+  }
+}
+
+/* —— Componentes de plano na plataforma (banner, card da conta, upgrade) —— */
+
+.plan-banner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  background: #ecf7d4;
+  border-bottom: 1px solid #dce3d3;
+  color: #385400;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 9px 16px;
+  text-align: center;
+}
+
+.plan-banner a {
+  color: #385400;
+  font-weight: 800;
+}
+
+.plan-banner.is-warn {
+  background: #fdecec;
+  border-color: #f2c9c9;
+  color: #a52727;
+}
+
+.plan-banner.is-warn a {
+  color: #a52727;
+}
+
+.plan-status-line {
+  margin: 0;
+  font-size: 13px;
+  color: #4f574b;
+  line-height: 1.5;
+}
+
+.plan-status-line.is-accent {
+  color: #385400;
+  font-weight: 600;
+}
+
+.plan-usage {
+  display: grid;
+  gap: 12px;
+}
+
+.plan-usage-row {
+  display: grid;
+  gap: 6px;
+  font-size: 13px;
+}
+
+.plan-usage-row .row {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.plan-usage-bar {
+  display: block;
+  height: 8px;
+  background: #e7ebdd;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.plan-usage-bar i {
+  display: block;
+  height: 100%;
+  background: #385400;
+  border-radius: 999px;
+}
+
+.plan-plan-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.plan-plan-actions .primary,
+.plan-plan-actions .ghost {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+}
+
+.upgrade-dialog-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.upgrade-dialog-actions .primary,
+.upgrade-dialog-actions .ghost {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+}

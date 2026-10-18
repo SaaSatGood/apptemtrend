@@ -10,7 +10,7 @@ import {
   useState,
 } from "react";
 import type { Session } from "@/lib/supabase";
-import { supabase } from "@/lib/supabase";
+import { e2eHookSession, resolveSession, supabase } from "@/lib/supabase";
 import { api, friendlyError } from "@/lib/api";
 import type { CreatorContent, MeResponse } from "@/lib/types";
 
@@ -46,18 +46,6 @@ export function usePlatform(): PlatformState {
 }
 
 let toastId = 0;
-
-// Sessão ativa: em produção vem da memória (persistSession: false).
-// Em E2E (NEXT_PUBLIC_E2E=1), o spec injeta via window.__TT_E2E_SESSION__
-// porque localStorage é ignorado sem persistência.
-function e2eHookSession(): Session | null {
-  if (process.env.NEXT_PUBLIC_E2E !== "1" || typeof window === "undefined") return null;
-  return (window as unknown as { __TT_E2E_SESSION__?: Session }).__TT_E2E_SESSION__ ?? null;
-}
-
-async function resolveSession(): Promise<Session | null> {
-  return e2eHookSession() ?? (await supabase().auth.getSession()).data.session;
-}
 
 async function fetchAllProductions(token: string): Promise<CreatorContent[]> {
   const PAGE_LIMIT = 50;
@@ -175,9 +163,9 @@ export function PlatformProvider({ children }: { children: React.ReactNode }) {
       fetchingForRef.current = userId;
       setMeLoading(true);
       const task = (async () => {
+      let token = activeSession.access_token;
+      let profile: MeResponse | null = null;
       try {
-        let token = activeSession.access_token;
-        let profile: MeResponse;
         try {
           profile = await fetchMeWithRetry(token);
         } catch (error) {
@@ -204,26 +192,29 @@ export function PlatformProvider({ children }: { children: React.ReactNode }) {
         setMe(profile!);
         meRef.current = profile!;
         setGlobalError(null);
-        if (!profile!.is_admin && profile!.onboarding_completo) {
-          setProductionsLoading(true);
-          try {
-            const list = await fetchAllProductions(token);
-            setProductions(list);
-          } catch {
-            setProductionsError(true);
-            toast("Sua conta abriu, mas a produção não pôde ser atualizada.");
-          } finally {
-            setProductionsLoading(false);
-          }
-        } else {
-          setProductions([]);
-        }
       } catch (error) {
         setGlobalError(friendlyError(error, "Não conseguimos carregar sua conta. Tente novamente."));
         throw error;
       } finally {
         if (fetchingForRef.current === userId) fetchingForRef.current = null;
         setMeLoading(false);
+      }
+      // Produção carrega em segundo plano: a primeira tela aparece logo
+      // após o /me, sem esperar a paginação completa.
+      if (!profile || profile.is_admin || !profile.onboarding_completo) {
+        setProductions([]);
+        return;
+      }
+      setProductionsLoading(true);
+      try {
+        const list = await fetchAllProductions(token);
+        // Evita trocar a lista se o usuário saiu/entrou no meio do fetch.
+        if (meRef.current?.user_id === userId) setProductions(list);
+      } catch {
+        setProductionsError(true);
+        toast("Sua conta abriu, mas a produção não pôde ser atualizada.");
+      } finally {
+        setProductionsLoading(false);
       }
       })();
       fetchingPromiseRef.current.set(userId, task);
@@ -277,6 +268,18 @@ export function PlatformProvider({ children }: { children: React.ReactNode }) {
         new Promise<T>((_, reject) => setTimeout(() => reject(new Error("timeout")), ms)),
       ]);
     (async () => {
+      // Warmup best-effort: acorda o backend (cold start) enquanto o usuário
+      // ainda está no boot/login, sem segurar nenhuma tela.
+      try {
+        const { requireApiUrl } = await import("@/lib/config");
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), 8000);
+        fetch(requireApiUrl() + "/health", { signal: controller.signal, cache: "no-store" })
+          .catch(() => {})
+          .finally(() => clearTimeout(timer));
+      } catch {
+        /* sem API configurada: nada a aquecer */
+      }
       try {
         const session = await withTimeout(resolveSession(), 8000);
         if (!mounted) return;
@@ -303,8 +306,8 @@ export function PlatformProvider({ children }: { children: React.ReactNode }) {
     // atualizava `session`, deixando `me === null` e caindo na tela
     // "Não conseguimos carregar sua conta" mesmo logado.
     const { data: listener } = supabase().auth.onAuthStateChange((event, newSession) => {
-      // Sem persistência, o cliente emite INITIAL_SESSION null mesmo com
-      // sessão ativa em memória/E2E: não derrubar o estado nesse caso.
+      // No boot, o cliente pode emitir INITIAL_SESSION null antes de ler o
+      // storage (ou no E2E, onde a sessão vem do hook): não derrubar o estado.
       const effective = newSession ?? (event === "INITIAL_SESSION" ? e2eHookSession() : null);
       setSession(effective);
       if (event === "SIGNED_OUT" || !effective) {

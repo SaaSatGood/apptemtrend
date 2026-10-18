@@ -20,6 +20,10 @@ Env obrigatórias: `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `PORT`,
 o código faz trim), `FRONTEND_URL`, `GEMINI_API_KEY` (opcional; sem ela o
 assistant usa fallback local e a geração retorna 503 amigável), `GEMINI_MODEL`.
 
+**Billing (planos/assinaturas):** flag `BILLING_ENABLED` (padrão `false`),
+`ABACATEPAY_API_KEY`, `ABACATEPAY_WEBHOOK_SECRET` e webhook — passo a passo
+completo em [`docs/go-live-billing.md`](../../docs/go-live-billing.md).
+
 ## 2.1 IA — diagnóstico de "não gera Content Kit"
 - `GET /ready` informa a configuração da IA. Sem `GEMINI_API_KEY`, a geração
   usa um roteiro-base validado e responde com `fallback: true`. Defina a chave
@@ -44,6 +48,11 @@ assistant usa fallback local e a geração retorna 503 amigável), `GEMINI_MODEL
 - Se o banco de staging já aplicou os TikTok antigos: resete o staging ou
   marque como revertidas antes do push. Em banco novo, apenas `supabase db push`.
 - Valide com `supabase db push --dry-run` antes da produção.
+- `027_analytics_events`, `028_billing` e `029_support` **já estão aplicadas em
+  produção** (18/10/2026). RLS sem policies = acesso só pela API (service role).
+  A `029` cria o canal de suporte (`support_tickets`/`support_messages` + RPC
+  `analytics_funnel` restrita ao service role) e remove `creators.kits_extra`.
+  Detalhes em [`docs/go-live-billing.md`](../../docs/go-live-billing.md).
 
 ## 4. Custo IA
 - `GET /admin/ai-usage` (admin) mostra chamadas, tokens, cache hits e cotas.

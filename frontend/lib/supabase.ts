@@ -27,9 +27,10 @@ function getClient(): GoTrueClient {
       headers: { apikey: SUPABASE_ANON_KEY },
       storageKey: storageKeyFor(SUPABASE_URL),
       autoRefreshToken: true,
-      // Sessão SOMENTE em memória: fechar a aba/recarregar exige novo login.
-      // Login, onboarding parcial e boot sempre recomeçam do zero.
-      persistSession: false,
+      // Sessão persistida (localStorage) com refresh automático: recarregar a
+      // página ou voltar depois NÃO desloga e não reinicia o onboarding.
+      // E2E injeta a sessão via window.__TT_E2E_SESSION__ e ignora o storage.
+      persistSession: true,
       detectSessionInUrl: true,
     });
   }
@@ -39,4 +40,16 @@ function getClient(): GoTrueClient {
 // Mesma forma de uso do supabase-js (só Auth é usado no app).
 export function supabase(): { auth: GoTrueClient } {
   return { auth: getClient() };
+}
+
+// Sessão ativa: em produção vem do storage persistente (persistSession: true).
+// Em E2E (NEXT_PUBLIC_E2E=1), o spec injeta via window.__TT_E2E_SESSION__,
+// que tem prioridade sobre o storage para manter os testes herméticos.
+export function e2eHookSession(): Session | null {
+  if (process.env.NEXT_PUBLIC_E2E !== "1" || typeof window === "undefined") return null;
+  return (window as unknown as { __TT_E2E_SESSION__?: Session }).__TT_E2E_SESSION__ ?? null;
+}
+
+export async function resolveSession(): Promise<Session | null> {
+  return e2eHookSession() ?? (await getClient().getSession()).data.session;
 }

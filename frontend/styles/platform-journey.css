@@ -24,7 +24,7 @@
   background: #bbed28; border-color: #bbed28; color: var(--tt-ink); transform: translateY(-1px);
 }
 #app-view :is(button, summary, .ghost, .text-button, .detail-back, .app-nav a), .auth-view :is(button, .back-home), .onboarding button, .publication-dialog button { min-height: 44px; }
-#app-view :where(a, button, input, textarea, select, summary):focus-visible, .auth-view :where(a, button, input):focus-visible, .onboarding :where(a, button):focus-visible, .publication-dialog :where(button, input, textarea):focus-visible { outline: 2px solid #385400; outline-offset: 4px; }
+#app-view :where(a, button, input, textarea, select, summary):focus-visible, .auth-view :where(a, button, input):focus-visible, .onboarding :where(a, button):focus-visible, .publication-dialog :where(button, input, textarea):focus-visible { outline: 3px solid #385400; outline-offset: 3px; }
 #app-view :is(button, input, select):disabled, .auth-view button:disabled, .publication-dialog button:disabled { opacity: .55; cursor: not-allowed; }
 #app-view h1 em, #app-view h2 em { font-family: var(--font-instrument-serif), Georgia, serif; font-style: italic; font-weight: 400; color: #4f7a00; letter-spacing: -0.04em; }
 #app-view .topbar { box-shadow: 0 6px 25px #10110f08; border-color: #e9e9e3; }

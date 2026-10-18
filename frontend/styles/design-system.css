@@ -18,8 +18,8 @@
 
 :root {
   --ink: #10110f;
-  --muted: #62665d;
-  --line: #deded8;
+  --muted: #4f574b;
+  --line: #dce3d3;
   --tt-radius-btn: 999px;
   --tt-radius-input: 12px;
   --tt-radius-card: 20px;
@@ -30,8 +30,8 @@
 
 /* Foco e feedback consistentes em toda a aplicação */
 :where(a, button, input, textarea, select, summary):focus-visible {
-  outline: 2px solid #385400;
-  outline-offset: 4px;
+  outline: 3px solid #385400;
+  outline-offset: 3px;
 }
 button:disabled { cursor: not-allowed; opacity: .72; }
 .publication-dialog {
@@ -296,6 +296,10 @@ button.production-action:not(.continue-production):hover {
   line-height: 1;
   cursor: pointer;
   border-radius: 8px;
+  min-width: 44px;
+  min-height: 44px;
+  display: inline-grid;
+  place-items: center;
   padding: 6px 10px;
 }
 
@@ -418,7 +422,7 @@ label {
   border-bottom-width: 2px;
   border-radius: 6px;
   background: #fff;
-  color: #777;
+  color: #6b705f;
   font-size: 11px;
   font-weight: 800;
 }
@@ -574,7 +578,7 @@ select {
 }
 .production-overview > div:last-child { border-right: 0; }
 .production-overview strong { font-size: 1.8rem; line-height: 1; letter-spacing: -.05em; }
-.production-overview span { color: #777; font-size: .76rem; font-weight: 700; }
+.production-overview span { color: #6b705f; font-size: .76rem; font-weight: 700; }
 
 .production-toolbar {
   display: flex;
@@ -588,7 +592,7 @@ select {
 .production-search input {
   width: 100%;
   min-height: 44px;
-  padding: 10px 42px 10px 15px;
+  padding: 10px 48px 10px 15px;
   background: #fff;
   font-size: .82rem;
 }
@@ -596,9 +600,9 @@ select {
 .production-search button {
   position: absolute;
   top: 50%;
-  right: 7px;
-  width: 30px;
-  height: 30px;
+  right: 2px;
+  width: 44px;
+  height: 44px;
   padding: 0;
   border: 0;
   border-radius: 8px;
@@ -610,7 +614,7 @@ select {
 }
 .production-search button:hover { background: #e5e5e5; color: #000; }
 .production-sort { display: grid; gap: 5px; }
-.production-sort span { color: #777; font-size: .62rem; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; }
+.production-sort span { color: #6b705f; font-size: .62rem; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; }
 .production-sort select { max-width: none; min-height: 44px; padding: 9px 34px 9px 12px; background: #fff; font-size: .75rem; font-weight: 750; }
 .production-filters { margin: 0; padding: 0; }
 .production-filters button { min-height: 42px; padding: 9px 14px; }
@@ -675,7 +679,7 @@ select {
 }
 .production-info { display: flex; min-height: 210px; flex-direction: column; }
 .production-card-topline { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
-.production-card-topline > small { color: #888; font-size: .66rem; white-space: nowrap; }
+.production-card-topline > small { color: #6b705f; font-size: .66rem; white-space: nowrap; }
 .production-info h3 {
   margin: 15px 0 6px;
   font-size: 1.1rem;
@@ -790,7 +794,7 @@ select {
 }
 .user-menu-heading { display: grid; gap: 3px; padding: 12px 12px 14px; border-bottom: 1px solid #ececec; margin-bottom: 5px; }
 .user-menu-heading strong { font-size: .82rem; }
-.user-menu-heading small { overflow: hidden; color: #777; font-size: .68rem; text-overflow: ellipsis; }
+.user-menu-heading small { overflow: hidden; color: #6b705f; font-size: .68rem; text-overflow: ellipsis; }
 .user-menu-panel a, .user-menu-panel button {
   display: flex;
   align-items: center;
@@ -807,7 +811,7 @@ select {
   text-decoration: none;
 }
 .user-menu-panel a:hover, .user-menu-panel button:hover { background: #f3f3f3; }
-.admin-nav-label { margin-left: auto; margin-right: 20px; color: #777; font-size: .72rem; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; }
+.admin-nav-label { margin-left: auto; margin-right: 20px; color: #6b705f; font-size: .72rem; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; }
 
 /* ---------- Conta e preferências ---------- */
 .account-view { padding: 32px 0 30px; }
@@ -827,7 +831,7 @@ select {
 .account-avatar { display: grid; width: 48px; height: 48px; flex: 0 0 auto; place-items: center; border-radius: 50%; background: #10110f; color: #fff; font-weight: 900; box-shadow: none; }
 .account-summary > div { display: grid; gap: 3px; min-width: 0; }
 .account-summary > div strong { font-size: .95rem; }
-.account-summary > div span { overflow: hidden; color: #777; font-size: .74rem; text-overflow: ellipsis; }
+.account-summary > div span { overflow: hidden; color: #6b705f; font-size: .74rem; text-overflow: ellipsis; }
 .account-plan-pill { margin-left: auto; padding: 8px 11px; border-radius: 999px; background: #f1f1f1; font-size: .7rem; font-weight: 800; }
 .account-layout { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(280px, .75fr); gap: 20px; align-items: start; }
 .account-main, .account-sidebar { display: grid; gap: 20px; }
@@ -835,11 +839,11 @@ select {
 .account-card-heading { display: flex; gap: 14px; margin-bottom: 24px; }
 .account-card-heading > span { display: grid; width: 34px; height: 34px; flex: 0 0 auto; place-items: center; border-radius: 9px; background: #111; color: #fff; font-size: .66rem; font-weight: 900; }
 .account-card-heading h2 { margin: 0 0 5px; font-size: 1.35rem; letter-spacing: -.03em; }
-.account-card-heading p { margin: 0; color: #777; font-size: .76rem; line-height: 1.45; }
+.account-card-heading p { margin: 0; color: #6b705f; font-size: .76rem; line-height: 1.45; }
 .account-card-heading.compact { margin-bottom: 18px; }
-.account-card label small { display: block; margin-top: 7px; color: #888; font-size: .66rem; font-weight: 500; line-height: 1.4; }
+.account-card label small { display: block; margin-top: 7px; color: #6b705f; font-size: .66rem; font-weight: 500; line-height: 1.4; }
 .account-save { width: auto; min-width: 190px; justify-self: start; }
-.account-save:disabled { background: #ededed; border-color: #ededed; color: #777; }
+.account-save:disabled { background: #ededed; border-color: #ededed; color: #6b705f; }
 .account-password-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .account-plan-card .eyebrow { margin-bottom: 14px; }
 .account-plan-card .plan-card { padding: 0; background: transparent; }
@@ -866,7 +870,7 @@ select {
   .app-logo { font-size: 0; gap: 0; }
   .app-logo span { font-size: .82rem; }
   .app-nav { gap: 2px; margin: 0 auto; padding: 3px; }
-  .app-nav a { min-height: 36px; padding: 7px 10px; font-size: .7rem; }
+  .app-nav a { min-height: 44px; padding: 7px 10px; font-size: .7rem; }
   .app-nav a span { display: none; }
   .user-avatar { width: 36px; height: 36px; }
   .user-menu > summary { padding: 3px; }
@@ -911,7 +915,7 @@ select {
 }
 .product-detail-metrics > div { padding: 14px 12px; border-right: 1px solid #dedede; }
 .product-detail-metrics > div:last-child { border-right: 0; }
-.product-detail-metrics span { display: block; margin-bottom: 5px; color: #888; font-size: .62rem; font-weight: 850; text-transform: uppercase; }
+.product-detail-metrics span { display: block; margin-bottom: 5px; color: #6b705f; font-size: .62rem; font-weight: 850; text-transform: uppercase; }
 .product-detail-metrics strong { display: block; overflow: hidden; font-size: .86rem; text-overflow: ellipsis; white-space: nowrap; }
 .product-detail-primary { display: grid; grid-template-columns: 1fr 1fr; }
 .product-detail-primary > * { width: 100%; }
@@ -921,7 +925,7 @@ select {
 .kits-section-heading h2 { margin: 0; font-size: clamp(2rem, 4vw, 3.4rem); }
 .kits-section-heading > span { padding: 8px 11px; border-radius: 999px; background: #f0f0f0; color: #555; font-size: .7rem; font-weight: 800; white-space: nowrap; }
 .kit-card { border-radius: 14px; }
-.detail-breadcrumb { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 32px; color: #888; font-size: .72rem; }
+.detail-breadcrumb { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 32px; color: #6b705f; font-size: .72rem; }
 .detail-breadcrumb a { color: #666; text-decoration: none; }
 .detail-breadcrumb a:hover { color: #000; text-decoration: underline; text-underline-offset: 3px; }
 .detail-breadcrumb strong { color: #111; }
@@ -955,7 +959,7 @@ select {
 .assistant-examples { max-width: 980px; align-items: center; margin-top: 14px; }
 .assistant-examples > span {
   margin-right: 2px;
-  color: #777;
+  color: #6b705f;
   font-size: .72rem;
   font-weight: 700;
   white-space: nowrap;
@@ -979,14 +983,14 @@ select {
 .discover-results-heading span {
   display: block;
   margin-bottom: 5px;
-  color: #777;
+  color: #6b705f;
   font-size: .72rem;
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: .08em;
 }
 .discover-results-heading h2 { margin: 0; font-size: clamp(1.8rem, 3vw, 2.6rem); letter-spacing: -.045em; }
-.discover-results-heading small { color: #888; font-size: .72rem; white-space: nowrap; }
+.discover-results-heading small { color: #6b705f; font-size: .72rem; white-space: nowrap; }
 
 .assistant-response .product-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }
 .assistant-response .product-card {
@@ -1032,9 +1036,9 @@ select {
 }
 .product-metrics > div { min-width: 0; padding: 11px 9px; border-right: 1px solid #e4e4e4; }
 .product-metrics > div:last-child { border-right: 0; }
-.product-metrics span { display: block; margin-bottom: 4px; color: #888; font-size: .6rem; font-weight: 800; text-transform: uppercase; }
+.product-metrics span { display: block; margin-bottom: 4px; color: #6b705f; font-size: .6rem; font-weight: 800; text-transform: uppercase; }
 .product-metrics strong { display: block; overflow: hidden; font-size: .74rem; text-overflow: ellipsis; white-space: nowrap; }
-.assistant-response .product-id { margin: 0 0 16px !important; color: #888 !important; }
+.assistant-response .product-id { margin: 0 0 16px !important; color: #6b705f !important; }
 .assistant-response .product-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: auto; }
 .assistant-response .product-actions .primary,
 .assistant-response .product-actions .ghost { width: 100%; min-height: 44px; padding: 10px; font-size: .72rem; }
@@ -1161,7 +1165,7 @@ select {
   .hook-block h2 { font-size: 1.65rem; overflow-wrap: anywhere; }
   .scene-card { padding-block: 18px; }
   .block-heading { align-items: flex-start; }
-  .block-heading button { min-height: 34px; padding: 7px 9px; border-radius: 8px; background: #f1f1f1; }
+  .block-heading button { min-height: 44px; padding: 7px 9px; border-radius: 8px; background: #f1f1f1; }
 
   .publication-dialog {
     inset: auto 0 0;

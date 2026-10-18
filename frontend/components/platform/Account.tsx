@@ -2,15 +2,46 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
-import { supabase } from "@/lib/supabase";
+import { resolveSession, supabase } from "@/lib/supabase";
 import { api, friendlyError } from "@/lib/api";
 import { usePlatform } from "./store";
 import Modal from "./Modal";
+import type { BillingSubscriptionSummary } from "@/lib/types";
 
 interface AccountData {
   nome: string;
   email: string | null;
-  plan?: { nome?: string; status?: string };
+  plan?: {
+    nome?: string;
+    status?: string;
+    billing?: boolean;
+    trial_ends_at?: string | null;
+    current_period_end?: string | null;
+  };
+}
+
+const PLAN_STATUS_LABEL: Record<string, string> = {
+  active: "Ativo",
+  trialing: "Trial Pro",
+  canceled: "Cancelado",
+  past_due: "Pagamento pendente",
+  inactive: "Sem plano",
+};
+
+function planStatusLabel(status?: string): string {
+  return PLAN_STATUS_LABEL[status ?? ""] ?? "Ativo";
+}
+
+function fmtDate(iso?: string | null): string {
+  if (!iso) return "";
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" });
+}
+
+function pct(used: number, limit: number | null | undefined): number | null {
+  if (!limit || limit <= 0) return null;
+  return Math.min(100, Math.round((used / limit) * 100));
 }
 
 export default function Account({ onEditPreferences }: { onEditPreferences: () => void }) {
@@ -26,15 +57,30 @@ export default function Account({ onEditPreferences }: { onEditPreferences: () =
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState("");
+  const [billing, setBilling] = useState<BillingSubscriptionSummary | null>(null);
+  const [cancelOpen, setCancelOpen] = useState(false);
+  const [cancelBusy, setCancelBusy] = useState(false);
+  const [cancelError, setCancelError] = useState("");
 
   const loadAccount = useCallback(async () => {
     setLoadingAccount(true);
     setAccountError(false);
     try {
-      const { data } = await supabase().auth.getSession();
-      const loaded = await api<AccountData>("/account", data.session?.access_token);
+      const session = await resolveSession();
+      const loaded = await api<AccountData>("/account", session?.access_token);
       setAccount(loaded);
       setName(loaded.nome || "");
+      if (loaded.plan?.billing) {
+        try {
+          const summary = await api<BillingSubscriptionSummary>(
+            "/billing/subscription",
+            session?.access_token
+          );
+          if (summary?.enabled) setBilling(summary);
+        } catch {
+          /* card cai no estado estático */
+        }
+      }
     } catch {
       setAccountError(true);
     } finally {
@@ -157,6 +203,24 @@ export default function Account({ onEditPreferences }: { onEditPreferences: () =
     }
   }
 
+  async function confirmCancelPlan() {
+    if (cancelBusy) return;
+    setCancelBusy(true);
+    setCancelError("");
+    try {
+      const { data } = await supabase().auth.getSession();
+      await api("/billing/cancel", data.session?.access_token, { method: "POST" });
+      toast("Assinatura cancelada. Você mantém o acesso até o fim do período pago.");
+      setCancelOpen(false);
+      await loadAccount();
+      await reloadMe();
+    } catch (error) {
+      setCancelError(friendlyError(error, "Não conseguimos cancelar agora. Tente novamente."));
+    } finally {
+      setCancelBusy(false);
+    }
+  }
+
   if (!account) {
     return <section id="account-view" className="account-view">
       <div className="account-heading"><div><p className="eyebrow">Minha conta</p><h1>Minha <em>conta.</em></h1></div></div>
@@ -180,7 +244,7 @@ export default function Account({ onEditPreferences }: { onEditPreferences: () =
           <strong>{account?.nome || "Carregando seu perfil..."}</strong>
           <span>{account?.email || ""}</span>
         </div>
-        <span className="account-plan-pill">{account?.plan?.nome || "Plano gratuito"}</span>
+        <span className="account-plan-pill">{account?.plan?.nome || "Sem plano"}</span>
       </div>
       <div className="account-layout">
         <div className="account-main">
@@ -231,13 +295,86 @@ export default function Account({ onEditPreferences }: { onEditPreferences: () =
         </section>
         </div>
         <aside className="account-sidebar">
-        {account?.plan?.nome && <section className="card account-card account-plan-card">
-          <p className="eyebrow">Plano atual</p>
-          <div className="plan-card">
-            <div><strong>{account?.plan?.nome || "Plano gratuito"}</strong><span className="status">{account?.plan?.status === "ativo" ? "Ativo" : "Inativo"}</span></div>
-            <p className="muted">Acesso à descoberta de produtos e criação de conteúdo, sem cobrança recorrente.</p>
-          </div>
-        </section>}
+        {account?.plan?.nome && (() => {
+          const usage = billing?.usage;
+          const locked = billing?.enabled === true && billing.plan === "free";
+          const kitsUsed = usage ? usage.kits_month : 0;
+          const kitsPct = usage ? pct(kitsUsed, usage.kits_limit) : null;
+          const searchPct = usage ? pct(usage.searches_today, usage.searches_limit) : null;
+          return (
+            <section className="card account-card account-plan-card">
+              <p className="eyebrow">Plano atual</p>
+              <div className="plan-card">
+                <div>
+                  <strong>{account?.plan?.nome || "Sem plano"}</strong>
+                  <span className="status">{planStatusLabel(account?.plan?.status)}</span>
+                </div>
+                {locked ? (
+                  <>
+                    <p className="plan-status-line">
+                      Sua conta está sem plano ativo — assine para voltar a buscar produtos e criar roteiros.
+                      Tudo o que você já fez continua salvo.
+                    </p>
+                    <div className="plan-plan-actions">
+                      <Link className="primary" href="/planos">Ver planos</Link>
+                    </div>
+                  </>
+                ) : billing?.enabled && usage ? (
+                  <>
+                    <p className="plan-status-line">
+                      {billing.status === "trialing" && billing.trial_ends_at
+                        ? <>Trial Pro até <b>{fmtDate(billing.trial_ends_at)}</b> — tudo liberado, sem cartão.</>
+                        : billing.current_period_end && billing.has_active_subscription
+                          ? <>{billing.cancel_at_period_end ? "Cancelado · acesso até" : "Renova em"} <b>{fmtDate(billing.current_period_end)}</b>.</>
+                          : "Sem cobrança recorrente no momento."}
+                    </p>
+                    <div className="plan-usage">
+                      <div className="plan-usage-row">
+                        <span className="row">
+                          <span>Kits este mês</span>
+                          <span>{kitsUsed}/{usage.kits_limit}</span>
+                        </span>
+                        <span className="plan-usage-bar" aria-hidden="true">
+                          <i style={{ width: `${kitsPct ?? 0}%` }} />
+                        </span>
+                      </div>
+                      <div className="plan-usage-row">
+                        <span className="row">
+                          <span>Buscas hoje</span>
+                          <span>{usage.searches_today}{usage.searches_limit ? `/${usage.searches_limit}` : " · fair use"}</span>
+                        </span>
+                        <span className="plan-usage-bar" aria-hidden="true">
+                          <i style={{ width: `${searchPct ?? 0}%` }} />
+                        </span>
+                      </div>
+                    </div>
+                    {billing.pending_plan_label && (
+                      <p className="plan-status-line is-accent">
+                        Mudança para <b>{billing.pending_plan_label}</b> agendada para o próximo ciclo.
+                      </p>
+                    )}
+                    <div className="plan-plan-actions">
+                      <Link className="primary" href="/planos">
+                        {billing.plan === "scale" ? "Ver planos" : "Fazer upgrade"}
+                      </Link>
+                      {billing.has_active_subscription && !billing.cancel_at_period_end && (
+                        <button className="ghost" type="button" onClick={() => { setCancelError(""); setCancelOpen(true); }}>
+                          Cancelar assinatura
+                        </button>
+                      )}
+                    </div>
+                  </>
+                ) : (
+                  <p className="muted">
+                    {account?.plan?.billing
+                      ? "Assinaturas abrem em breve — seu acesso continua completo."
+                      : "Acesso completo durante o pré-lançamento, sem cobrança recorrente."}
+                  </p>
+                )}
+              </div>
+            </section>
+          );
+        })()}
         {!me?.is_admin && (
           <section id="preferencias" className="card account-card account-preferences">
             <div className="account-card-heading compact">
@@ -294,6 +431,32 @@ export default function Account({ onEditPreferences }: { onEditPreferences: () =
               </button>
               <button className="ghost" type="button" disabled={deleting} onClick={() => setConfirmOpen(false)}>
                 Cancelar
+              </button>
+            </div>
+          </div>
+        </Modal>
+      )}
+      {cancelOpen && (
+        <Modal titleId="cancel-plan-title" busy={cancelBusy} onClose={() => setCancelOpen(false)}>
+          <div className="stack">
+            <p className="eyebrow">Cancelar assinatura</p>
+            <h2 id="cancel-plan-title">Cancelar seu plano?</h2>
+            <p className="muted">
+              Você mantém tudo liberado até o fim do período já pago
+              {billing?.current_period_end ? <> (<b>{fmtDate(billing.current_period_end)}</b>)</> : ""}. Depois, para voltar
+              a criar, é só reassinar — nada é apagado.
+            </p>
+            <p className="muted">
+              Se a primeira compra foi feita há menos de 7 dias, você pode exercer o direito de arrependimento e
+              receber o valor de volta — veja a <Link href="/reembolso">Política de Reembolso</Link>.
+            </p>
+            {cancelError && <p className="form-message error" role="alert">{cancelError}</p>}
+            <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+              <button className="danger-button" type="button" disabled={cancelBusy} onClick={confirmCancelPlan}>
+                {cancelBusy ? "Cancelando..." : "Confirmar cancelamento"}
+              </button>
+              <button className="ghost" type="button" disabled={cancelBusy} onClick={() => setCancelOpen(false)}>
+                Manter assinatura
               </button>
             </div>
           </div>

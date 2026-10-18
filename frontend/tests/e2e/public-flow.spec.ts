@@ -42,7 +42,7 @@ test("login, termos e privacidade estão acessíveis", async ({ page }) => {
   // Cadastro com email
   await page.getByRole("tab", { name: /criar conta/i }).click();
   await expect(page.getByPlaceholder("Como podemos chamar você?")).toBeVisible();
-  await expect(page.getByRole("button", { name: /começar agora/i })).toBeVisible();
+  await expect(page.getByRole("button", { name: /criar conta grátis/i })).toBeVisible();
   await page.goto("/termos");
   await expect(page.getByRole("heading", { name: /termos de uso/i })).toBeVisible();
   await expect(page.getByRole("link", { name: "Voltar ao início" })).toBeVisible();
@@ -70,7 +70,7 @@ for (const viewport of [{ width: 320, height: 568 }, { width: 390, height: 844 }
   test(`criar conta cabe em ${viewport.width}x${viewport.height}`, async ({ page }, testInfo) => {
     await page.setViewportSize(viewport);
     await page.goto("/app?mode=signup");
-    await expect(page.getByRole("button", { name: /começar agora/i })).toBeVisible();
+    await expect(page.getByRole("button", { name: /criar conta grátis/i })).toBeVisible();
     const size = await page.evaluate(() => ({
       width: document.documentElement.scrollWidth,
       height: document.documentElement.scrollHeight,

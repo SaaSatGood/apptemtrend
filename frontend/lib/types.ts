@@ -59,9 +59,100 @@ export interface MeResponse {
     estilos_conteudo?: string[];
     temas_interesse?: string[];
     voz_exemplo?: string | null;
+    plan?: string | null;
+    plan_status?: string | null;
+    plan_period?: string | null;
+    trial_ends_at?: string | null;
+    current_period_end?: string | null;
+    cancel_at_period_end?: boolean | null;
   } | null;
   onboarding_completo: boolean;
   is_admin: boolean;
+}
+
+export interface BillingLimits {
+  searchesPerDay: number | null;
+  kitsPerMonth: number | null;
+  variations: boolean;
+  variationCooldownSeconds: number;
+  vozPersonalizada: boolean;
+  kitsPerProduct: number | null;
+  productionItems: number | null;
+}
+
+export interface BillingPlanMeta {
+  id: string;
+  nome: string;
+  resumo: string;
+  precoMensalCents: number | null;
+  precoAnualCents: number | null;
+  precoMensal: string | null;
+  precoAnual: string | null;
+  bullets: string[];
+  destaque: boolean;
+  limits: BillingLimits;
+}
+
+export interface BillingCatalogResponse {
+  enabled: boolean;
+  trial_days: number;
+  plans: BillingPlanMeta[];
+}
+
+export interface BillingSubscriptionSummary {
+  enabled: boolean;
+  plan?: string;
+  plan_label?: string;
+  status?: string;
+  period?: string | null;
+  trial_ends_at?: string | null;
+  current_period_end?: string | null;
+  cancel_at_period_end?: boolean;
+  has_active_subscription?: boolean;
+  pending_plan?: string | null;
+  pending_plan_label?: string | null;
+  pending_period?: string | null;
+  limits?: BillingLimits;
+  usage?: {
+    kits_total: number;
+    kits_month: number;
+    kits_limit: number;
+    kits_limit_period: "month";
+    searches_today: number;
+    searches_limit: number | null;
+  };
+}
+
+export type SupportStatus = "open" | "answered" | "resolved" | "closed";
+
+export interface SupportTicket {
+  id: string;
+  subject: string;
+  category: string;
+  status: SupportStatus;
+  last_message_at: string;
+  created_at: string;
+}
+
+export interface SupportMessage {
+  id: string;
+  author: "creator" | "support";
+  body: string;
+  created_at: string;
+}
+
+export interface SupportTicketThread extends SupportTicket {
+  messages: SupportMessage[];
+}
+
+export interface AdminSupportTicket extends SupportTicket {
+  creator_id: string;
+  creator_email: string | null;
+  creator_nome: string | null;
+}
+
+export interface AdminSupportTicketThread extends AdminSupportTicket {
+  messages: SupportMessage[];
 }
 
 export interface AssistantResponse {

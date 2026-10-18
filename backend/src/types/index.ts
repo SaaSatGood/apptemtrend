@@ -37,6 +37,13 @@ export interface Creator {
   voz_exemplo?: string | null;
   onboarding_completo?: boolean;
   status: string;
+  // Billing (migration 028): presentes só quando o billing está ativo.
+  plan?: string | null;
+  plan_status?: string | null;
+  plan_period?: string | null;
+  trial_ends_at?: string | null;
+  current_period_end?: string | null;
+  cancel_at_period_end?: boolean | null;
   criado_em: string;
   atualizado_em: string;
 }

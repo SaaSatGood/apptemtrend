@@ -17,7 +17,7 @@
 .tt-home .tt-nav-links a:focus-visible,
 .tt-home .tt-logo:focus-visible,
 .tt-home .tt-nav-actions a:focus-visible,
-.tt-home .tt-nav-actions button:focus-visible { outline: 3px solid #80b300; outline-offset: 4px; }
+.tt-home .tt-nav-actions button:focus-visible { outline: 3px solid #385400; outline-offset: 3px; }
 .tt-home .tt-menu-kicker { display: none; }
 .tt-home .tt-login { min-width: 96px; min-height: 48px; font-size: 14px; }
 .tt-home .tt-nav-actions .tt-btn-small { min-height: 48px; padding-inline: 23px; font-size: 14px; }

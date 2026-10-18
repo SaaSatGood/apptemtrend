@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { api, friendlyError } from "@/lib/api";
+import { track } from "@/lib/track";
 import { usePlatform } from "./store";
 
 const OBJECTIVES = [
@@ -24,21 +25,87 @@ const STEP_LABELS = ["Objetivo", "Estilos", "Temas", "Sua voz", "Pronto"];
 
 const VOZ_MAX = 500;
 
+// Rascunho local do onboarding por usuário: permite retomar de onde parou
+// sem tocar no backend antes do POST final em /creators/onboarding.
+const DRAFT_PREFIX = "temtrend_onboarding";
+
+type OnboardingDraft = {
+  step: number;
+  objetivo: string;
+  estilos: string[];
+  temas: string[];
+  voz: string;
+  updatedAt: string;
+};
+
+function draftKey(userId: string | undefined): string {
+  return userId ? `${DRAFT_PREFIX}:${userId}` : DRAFT_PREFIX;
+}
+
+function readDraft(userId: string | undefined): OnboardingDraft | null {
+  try {
+    const raw = window.localStorage.getItem(draftKey(userId));
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as Partial<OnboardingDraft>;
+    if (!parsed || typeof parsed.step !== "number") return null;
+    return {
+      step: Math.min(Math.max(1, Math.round(parsed.step)), 5),
+      objetivo: typeof parsed.objetivo === "string" ? parsed.objetivo : "",
+      estilos: Array.isArray(parsed.estilos) ? parsed.estilos.filter((v): v is string => typeof v === "string") : [],
+      temas: Array.isArray(parsed.temas) ? parsed.temas.filter((v): v is string => typeof v === "string") : [],
+      voz: typeof parsed.voz === "string" ? parsed.voz.slice(0, VOZ_MAX) : "",
+      updatedAt: typeof parsed.updatedAt === "string" ? parsed.updatedAt : new Date().toISOString(),
+    };
+  } catch {
+    return null;
+  }
+}
+
 export default function Onboarding({ editing, onDone }: { editing: boolean; onDone: () => void }) {
   const { toast, reloadMe, me } = usePlatform();
-  // O progresso intermediário NÃO é persistido (nem localStorage, nem
-  // backend). Só o POST final em /creators/onboarding salva na plataforma.
-  // Entrar com conta já cadastrada cai direto no app quando
-  // me.onboarding_completo é true; senão começa sempre da etapa 1.
+  // O progresso intermediário é salvo em localStorage (por usuário) e
+  // retomado ao voltar. O backend só recebe o POST final em
+  // /creators/onboarding. Entrar com conta já cadastrada cai direto no app
+  // quando me.onboarding_completo é true.
   const [step, setStep] = useState(1);
   const [objetivo, setObjetivo] = useState(me?.creator?.objetivo || "");
   const [estilos, setEstilos] = useState<string[]>(me?.creator?.estilos_conteudo || []);
   const [temas, setTemas] = useState<string[]>(me?.creator?.temas_interesse || []);
   const [voz, setVoz] = useState(me?.creator?.voz_exemplo || "");
   const [saving, setSaving] = useState(false);
+  const restoredRef = useRef(false);
+
+  // Retoma o rascunho salvo (uma vez) quando o usuário volta no meio do fluxo.
+  // Precisa rodar pós-montagem: localStorage não existe no SSR e a hidratação
+  // deve ver a etapa 1 para bater com o HTML do servidor.
+  /* eslint-disable react-hooks/set-state-in-effect -- restauração única de rascunho local pós-hidratação */
+  useEffect(() => {
+    if (editing || restoredRef.current || !me?.user_id) return;
+    restoredRef.current = true;
+    const draft = readDraft(me.user_id);
+    if (!draft || draft.step <= 1) return;
+    setStep(draft.step);
+    setObjetivo((current) => current || draft.objetivo);
+    setEstilos((current) => (current.length ? current : draft.estilos));
+    setTemas((current) => (current.length ? current : draft.temas));
+    setVoz((current) => current || draft.voz);
+    toast("Retomamos de onde você parou.");
+  }, [editing, me?.user_id, toast]);
+  /* eslint-enable react-hooks/set-state-in-effect */
+
+  // Salva o rascunho a cada mudança relevante; some quando o fluxo conclui.
+  useEffect(() => {
+    if (editing || !me?.user_id || step >= 5) return;
+    const draft: OnboardingDraft = { step, objetivo, estilos, temas, voz, updatedAt: new Date().toISOString() };
+    try {
+      window.localStorage.setItem(draftKey(me.user_id), JSON.stringify(draft));
+    } catch {
+      /* armazenamento indisponível: segue sem rascunho */
+    }
+  }, [editing, me?.user_id, step, objetivo, estilos, temas, voz]);
 
   function clearStaleDraft() {
-    // Limpa rascunhos de versões antigas que salvavam etapa parcial.
+    // Limpa o rascunho local depois de concluir (ou ao sair da edição).
     try {
       window.localStorage.removeItem("temtrend_onboarding");
       if (me?.user_id) window.localStorage.removeItem(`temtrend_onboarding:${me.user_id}`);
@@ -54,6 +121,7 @@ export default function Onboarding({ editing, onDone }: { editing: boolean; onDo
   async function advance(skip: boolean) {
     if (saving) return;
     if (step === 1 && !objetivo) return;
+    track("onboarding_step", { step, skip: skip ? 1 : 0 });
     if (step === 2) {
       if (skip && !editing) setEstilos([]);
       setStep(3);
@@ -79,6 +147,7 @@ export default function Onboarding({ editing, onDone }: { editing: boolean; onDo
           method: "POST",
           body: JSON.stringify(payload),
         });
+        track("onboarding_completed");
         setStep(5);
       } catch (error) {
         toast(friendlyError(error, "Não conseguimos salvar suas preferências. Tente novamente."));

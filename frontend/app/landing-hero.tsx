@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { track } from "@/lib/track";
 
 const SIGNUP = "/app?mode=signup";
 
@@ -29,13 +30,15 @@ export default function LandingHero() {
 
   return (
     <div className="tt-discover-hero">
+      <span className="tt-discover-kicker">Para criadores de afiliado no TikTok Shop</span>
       <h1><span>Descubra o que</span><span>vale a pena</span><em>vender.</em></h1>
-      <p className="tt-discover-sub">Encontre produtos para vender e transforme cada escolha em um plano de gravação.</p>
+      <p className="tt-discover-sub">Encontre produtos com comissão de verdade e receba um plano de gravação pronto — mesmo sem saber o que falar.</p>
       <form
         className="tt-discover-form"
         onSubmit={(e) => {
           e.preventDefault();
           rememberSearch(value);
+          track("landing_search", { source: "form", q_len: value.trim().length });
           router.push(signupWithSearch(value));
         }}
       >
@@ -56,13 +59,14 @@ export default function LandingHero() {
           </button>
         </div>
       </form>
+      <p className="tt-discover-cta-note">7 dias de Pro por nossa conta · Sem cartão de crédito</p>
       <div className="tt-discover-chips" role="group" aria-label="Exemplos de busca">
         <span>Experimente:</span>
         {EXAMPLES.map((label) => (
-          <Link key={label} href={signupWithSearch(label)} onClick={() => rememberSearch(label)}>{label}</Link>
+          <Link key={label} href={signupWithSearch(label)} onClick={() => { rememberSearch(label); track("landing_search", { source: "chip" }); }}>{label}</Link>
         ))}
       </div>
-      <Link className="tt-discover-surprise" href={SIGNUP}>Não sei o que vender</Link>
+      <Link className="tt-discover-surprise" href={SIGNUP} onClick={() => track("landing_search", { source: "surprise" })}>Não sei o que vender</Link>
       <p className="tt-discover-note">Produtos reais. Você escolhe a oportunidade, a TemTrend ajuda com o roteiro.</p>
       <small>Sem equipe. Sem experiência prévia. Sem começar do zero.</small>
     </div>

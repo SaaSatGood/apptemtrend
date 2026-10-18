@@ -435,7 +435,7 @@
   text-align: left;
   backdrop-filter: blur(8px);
 }
-.tt-home .tt-reel-account:hover { background: #243b19; border-color: var(--tt-lime); }
+.tt-home a.tt-reel-account:hover { background: #243b19; border-color: var(--tt-lime); }
 .tt-home .tt-reel-avatar { display: grid; place-items: center; flex: 0 0 28px; width: 28px; height: 28px; border-radius: 50%; background: var(--tt-lime); color: #17210d; font-size: 12px; font-weight: 850; }
 .tt-home .tt-reel-account > span:last-child { display: grid; min-width: 0; gap: 1px; }
 .tt-home .tt-reel-account b { overflow: hidden; font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }

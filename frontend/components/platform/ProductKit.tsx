@@ -8,7 +8,7 @@ import { copyText, fullProductName, formatUpdated, normalizeScenes, type Scene }
 import type { ContentKit, Product } from "@/lib/types";
 import { usePlatform } from "./store";
 import { displayKitTitle, kitContext } from "./kit-presentation";
-import { productionForProduct } from "./Assistant";
+import { productionForProduct } from "./production-helpers";
 import ProductImage from "./ProductImage";
 import EmphasizedTitle from "./EmphasizedTitle";
 

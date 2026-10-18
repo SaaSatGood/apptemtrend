@@ -20,7 +20,7 @@
 .auth-view .auth-form .primary:hover:not(:disabled) { background: #b8ef16; }
 .auth-view .auth-form .primary:focus-visible,
 .auth-view .auth-tabs button:focus-visible,
-.auth-view .auth-providers button:focus-visible { outline: 3px solid #80ae31; outline-offset: 3px; }
+.auth-view .auth-providers button:focus-visible { outline: 3px solid #385400; outline-offset: 3px; }
 .auth-view .auth-value-intro > p:last-child { max-width: 37ch; margin: 0; color: #4d5c3c; font-size: 15px; line-height: 1.6; }
 .auth-view .auth-value h2 em { font-family: var(--font-instrument-serif), Georgia, serif; font-weight: 400; color: #5b861b; }
 .auth-view .auth-value > small span { color: #739d20; }
@@ -126,12 +126,12 @@
 
 /* O onboarding conserva a sequência; aqui reforçamos legibilidade e estado. */
 .onboarding .onboarding-progress { overflow: hidden; border-radius: 999px; }
-.onboarding .onboarding-progress > div { background: #8cc11f; }
+.onboarding .onboarding-progress > div { background: #385400; }
 .onboarding .selection-card.selected,
 .onboarding .chip-grid button.selected { border-color: #6f9e20; background: #f2fadd; box-shadow: inset 4px 0 0 #a8e52b; }
 .onboarding .selection-card:focus-visible,
 .onboarding .chip-grid button:focus-visible,
-.onboarding .onboarding-actions button:focus-visible { outline: 3px solid #7dae28; outline-offset: 3px; }
+.onboarding .onboarding-actions button:focus-visible { outline: 3px solid #385400; outline-offset: 3px; }
 .onboarding .onboarding-actions .primary { border-radius: 999px; }
 
 @media (min-width: 851px) {

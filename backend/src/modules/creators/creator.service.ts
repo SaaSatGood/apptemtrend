@@ -3,6 +3,9 @@ import { isAdminUser } from '../../plugins/auth.js';
 import { CACHE_TTL_MS } from '../../config/constants.js';
 import { TtlCache } from '../../lib/cache.js';
 import { Errors } from '../../types/index.js';
+import { logger } from '../../lib/logger.js';
+import { billingActive } from '../billing/billing.gating.js';
+import { TRIAL_DAYS } from '../billing/plans.js';
 import { trackContatoCriadoOnce, trackOnboardingConcluido } from '../marketing/marketing.service.js';
 import type { Creator } from '../../types/index.js';
 import type { OnboardingInput } from './creator.schema.js';
@@ -61,9 +64,23 @@ export async function onboarding(userId: string, data: OnboardingInput, meta?: {
 
   const existing = await findCreatorByUserId(userId);
 
-  const creator = existing
+  let creator = existing
     ? await updateCreator(existing.id, preferences)
     : await createCreator({ user_id: userId, ...preferences });
+
+  // Contas novas ganham 7 dias de Pro sem cartão (só com billing ativo).
+  // Ao expirar, effectivePlan derruba para grátis sem apagar nada.
+  if (!existing && billingActive()) {
+    try {
+      creator = await updateCreator(creator.id, {
+        plan: 'pro',
+        plan_status: 'trialing',
+        trial_ends_at: new Date(Date.now() + TRIAL_DAYS * 24 * 60 * 60 * 1000).toISOString(),
+      });
+    } catch (error) {
+      logger.error({ err: error }, 'Failed to grant Pro trial to new creator');
+    }
+  }
 
   invalidateMeCache(userId);
 

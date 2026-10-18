@@ -1,22 +1,10 @@
-export const problems = ['Qual produto eu escolho?', 'O que eu gravo?', 'O que eu falo?', 'Como começo o vídeo?', 'Como faço alguém parar para assistir?'];
-export const transformation = ['PRODUTO', 'IDEIA', 'CONTENT KIT', 'VÍDEO', 'TIKTOK SHOP', 'VENDA'];
-export const profiles: Array<[string, string, string]> = [['01', 'Pessoa comum', 'Zero experiência, zero audiência. Só vontade de vender — e isso basta para começar.'], ['02', 'Creator iniciante', 'Cansou de travar no “o que eu falo?”. Aqui cada vídeo já nasce roteirizado.'], ['03', 'Creator profissional', 'Quer volume sem refazer tudo do zero. Pegue o plano, grave, publique, repita.']];
-export const products = [
-  { category: 'Beleza', name: 'Sérum facial', image: 'https://images.unsplash.com/photo-1556228578-8c89e6adf883?auto=format&fit=crop&w=700&q=82' },
-  { category: 'Tecnologia', name: 'Fone sem fio', image: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=700&q=82' },
-  { category: 'Casa', name: 'Luminária de mesa', image: 'https://images.unsplash.com/photo-1507473885765-e6ed057f782c?auto=format&fit=crop&w=700&q=82' },
-  { category: 'Fitness', name: 'Corda de treino', image: 'https://images.unsplash.com/photo-1599058917212-d750089bc07e?auto=format&fit=crop&w=700&q=82' },
-  { category: 'Tecnologia', name: 'Smartphone', image: 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=700&q=82' },
-  { category: 'Lifestyle', name: 'Garrafa térmica', image: 'https://images.unsplash.com/photo-1602143407151-7111542de6e8?auto=format&fit=crop&w=700&q=82' },
-];
-export const workflow: Array<[string, string, string]> = [['01', 'ENCONTRE', 'Encontre um produto.'], ['02', 'ESCOLHA', 'Veja o que gravar.'], ['03', 'GRAVE', 'Grave.'], ['04', 'PUBLIQUE', 'Publique.'], ['05', 'VENDA', 'Venda.']];
-export const benefits: Array<[string, string]> = [['↗', 'Encontre produtos.'], ['✦', 'Saiba o que gravar.'], ['≡', 'Receba o roteiro.'], ['●', 'Publique seu vídeo.'], ['→', 'Pare de começar do zero.'], ['◎', 'Comece sem ser influencer.']];
 export const peoplePhotos = [
   { src: 'https://images.pexels.com/photos/8370744/pexels-photo-8370744.jpeg?auto=compress&fit=crop&w=900&q=82', alt: 'Pessoa gravando conteúdo vertical com celular e ring light' },
   { src: 'https://images.pexels.com/photos/6954092/pexels-photo-6954092.jpeg?auto=compress&fit=crop&w=900&q=82', alt: 'Criadora preparando o celular para gravar um vídeo' },
   { src: 'https://images.pexels.com/photos/8993746/pexels-photo-8993746.jpeg?auto=compress&fit=crop&w=900&q=82', alt: 'Pessoa sorrindo enquanto grava conteúdo com ring light' },
 ];
 export type ReelVideo = { src: string; poster: string; label: string; tip: string; creator: string; sourceUrl: string; tiktokHandle?: string; tiktokUrl?: string };
+// sourceUrl mantém a atribuição do acervo (Pexels) sem link externo na página.
 export const reelMedia: ReelVideo[] = [
   { src: 'https://videos.pexels.com/video-files/8357560/8357560-hd_1080_2048_25fps.mp4', poster: peoplePhotos[1].src, label: 'Comece com uma tomada simples', tip: 'Apoie o celular e encontre um enquadramento.', creator: 'Ron Lach', sourceUrl: 'https://www.pexels.com/video/person-recording-herself-on-her-cellphone-8357560/' },
   { src: 'https://videos.pexels.com/video-files/8993486/8993486-hd_1080_1920_30fps.mp4', poster: 'https://images.pexels.com/photos/12432850/pexels-photo-12432850.jpeg?auto=compress&fit=crop&w=700&q=82', label: 'Use a luz que você tem', tip: 'Teste um lugar claro antes de gravar.', creator: 'Hanna Pad', sourceUrl: 'https://www.pexels.com/video/a-woman-recording-herself-with-a-smartphone-8993486/' },

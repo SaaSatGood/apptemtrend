@@ -474,3 +474,35 @@
   .viewPanel, .metricSkeleton, .listSkeleton i { animation: none; }
   .progressTrack i { transition: none; }
 }
+
+/* --- Aba Assinaturas --- */
+.tableWrap { overflow-x: auto; border: 1px solid var(--admin-line); border-radius: 18px; background: #fff; }
+
+.subsTable { width: 100%; border-collapse: collapse; font-size: .78rem; }
+
+.subsTable th, .subsTable td { padding: 13px 16px; text-align: left; border-bottom: 1px solid var(--admin-soft); white-space: nowrap; }
+
+.subsTable thead th { color: var(--admin-muted); font-size: .64rem; text-transform: uppercase; letter-spacing: .09em; font-weight: 850; }
+
+.subsTable tbody tr:last-child td { border-bottom: 0; }
+
+.subsTable tbody tr:hover td { background: var(--admin-soft); }
+
+.subMeta { display: block; margin-top: 3px; color: var(--admin-muted); font-size: .7rem; }
+
+.subNeutral { display: inline-flex; align-items: center; padding: 4px 9px; border-radius: 999px; border: 1px solid var(--admin-line); background: var(--admin-soft); color: var(--admin-muted); font-size: .66rem; font-weight: 850; }
+
+/* --- Aba Suporte / funil --- */
+.supportToolbar { grid-template-columns: minmax(200px, 260px) auto; justify-content: start; }
+
+.mutedText { margin: 0; color: var(--admin-muted); font-size: .82rem; }
+
+.funnelList { margin: 4px 0 0; }
+
+.funnelList > div { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 0; border-top: 1px solid var(--admin-soft); }
+
+.funnelList > div:first-child { border-top: 0; }
+
+.funnelList dt { color: var(--admin-muted); font-size: .74rem; }
+
+.funnelList dd { margin: 0; font-size: .84rem; font-weight: 850; }

@@ -2,7 +2,9 @@ import type { FastifyInstance } from 'fastify';
 import fp from 'fastify-plugin';
 import { requireAuth } from '../../plugins/auth.js';
 import { requireActiveCreator } from '../creators/creator.service.js';
-import { reserveAssistantQuota, releaseQuota } from '../../lib/ai-metrics.js';
+import { reserveAssistantQuota, releaseQuota, AI_QUOTA } from '../../lib/ai-metrics.js';
+import { billingActive, planContextForCreator, planLimitError, searchUpgradeHint } from '../billing/billing.gating.js';
+import { planLabel } from '../billing/plans.js';
 import { RATE_LIMITS } from '../../config/constants.js';
 import { Errors } from '../../types/index.js';
 import { logger } from '../../lib/logger.js';
@@ -18,7 +20,22 @@ async function assistantRoutes(app: FastifyInstance) {
 
     try {
       const creator = await requireActiveCreator(request.authUser.id);
-      if (!await reserveAssistantQuota(request.authUser.id)) {
+      // Cota por plano quando o billing está ativo; cotas globais quando não.
+      if (billingActive()) {
+        const { plan, limits } = planContextForCreator(creator);
+        const limit = limits.searchesPerDay;
+        if (limit === 0) {
+          throw planLimitError(
+            `Sua conta está sem plano ativo — assine para buscar produtos.${searchUpgradeHint(plan)}`,
+          );
+        }
+        const dailyLimit = limit ?? AI_QUOTA.ASSISTANT_PER_DAY;
+        if (!await reserveAssistantQuota(request.authUser.id, dailyLimit)) {
+          throw planLimitError(
+            `Você atingiu o limite de ${dailyLimit} buscas por dia do plano ${planLabel(plan)}.${searchUpgradeHint(plan)}`,
+          );
+        }
+      } else if (!await reserveAssistantQuota(request.authUser.id)) {
         throw Errors.CONFLICT('Limite diário de buscas atingido. Tente novamente amanhã.');
       }
       try {

@@ -1,8 +1,10 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { api, friendlyError, type ApiError } from "@/lib/api";
+import { track, ttvMs } from "@/lib/track";
 import { usePlatform } from "./store";
 
 const SUGGESTIONS = [
@@ -33,6 +35,7 @@ export default function ContentKitDialog({
   const [briefing, setBriefing] = useState(initialBriefing);
   const [selected, setSelected] = useState<string[]>([]);
   const [error, setError] = useState("");
+  const [planLimit, setPlanLimit] = useState(false);
   const [busy, setBusy] = useState(false);
   const selectedInstructions = SUGGESTIONS.filter((item) => selected.includes(item.label)).map((item) => item.instruction);
   const customLimit = Math.max(0, 1500 - selectedInstructions.join(" ").length - (selectedInstructions.length ? 1 : 0));
@@ -62,6 +65,7 @@ export default function ContentKitDialog({
       return;
     }
     setError("");
+    setPlanLimit(false);
     setBusy(true);
     try {
       const { data } = await supabase().auth.getSession();
@@ -83,6 +87,7 @@ export default function ContentKitDialog({
         await loadProductions().catch(() => {});
         onClose();
         if (result?.content_kit) {
+          track("kit_created", { fallback: Boolean(result.fallback), force_new: forceNew ? 1 : 0, ttv_ms: ttvMs() ?? 0 });
           onCreated(result.content_kit, Boolean(result.fallback));
         }
         toast(
@@ -95,6 +100,7 @@ export default function ContentKitDialog({
       }
     } catch (err) {
       const code = (err as ApiError).code;
+      setPlanLimit(code === "PLAN_LIMIT");
       setError(
         code === "AI_UNAVAILABLE"
           ? "A IA está indisponível agora. Tente novamente em alguns minutos."
@@ -169,6 +175,11 @@ export default function ContentKitDialog({
             </label>
             <small className={`content-kit-count${tooLong ? " is-over-limit" : ""}`}>{briefing.length}/{customLimit}{tooLong ? ". Resuma os detalhes para continuar" : ""}</small>
             {error && <p className="form-message error" role="alert">{error}</p>}
+            {planLimit && (
+              <p className="form-message">
+                <Link href="/planos" onClick={onClose}>Ver planos e limites →</Link>
+              </p>
+            )}
           </div>
         </div>
         <footer className="content-kit-footer">

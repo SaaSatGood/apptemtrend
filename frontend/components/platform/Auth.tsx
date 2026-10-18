@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { humanAuthError } from "@/lib/api";
+import { track } from "@/lib/track";
 
 type Panel = "login" | "signup" | "recovery" | "reset";
 type OAuthProvider = "google" | "facebook" | "apple";
@@ -115,6 +116,8 @@ export default function AuthPanel({
   const [notice, setNotice] = useState("");
   const [busyProvider, setBusyProvider] = useState<OAuthProvider | null>(null);
   const [signupPassword, setSignupPassword] = useState("");
+  const [pendingEmail, setPendingEmail] = useState("");
+  const [resendState, setResendState] = useState<"idle" | "sending" | "sent" | "error">("idle");
 
   const [eyebrow, title, sub] = COPY[panel];
 
@@ -135,6 +138,13 @@ export default function AuthPanel({
       setError(humanAuthError(error));
       setBusyProvider(null);
     }
+  }
+
+  async function resendConfirmation() {
+    if (!pendingEmail || resendState === "sending") return;
+    setResendState("sending");
+    const { error } = await supabase().auth.resend({ type: "signup", email: pendingEmail });
+    setResendState(error ? "error" : "sent");
   }
 
   async function waitForPersistedSession(timeoutMs = 2500): Promise<boolean> {
@@ -178,9 +188,11 @@ export default function AuthPanel({
     const persisted = await waitForPersistedSession();
     setBusy(false);
     if (!persisted) {
-      setError("Entramos na sua conta, mas o navegador ainda não salvou a sessão. Recarregue a página para continuar.");
+      setError("Entramos na sua conta, mas o navegador ainda não confirmou a sessão. Recarregue a página para continuar.");
       return;
     }
+    setPendingEmail("");
+    track("login_complete", { method: "password" });
     onAuthenticated();
   }
 
@@ -213,15 +225,18 @@ export default function AuthPanel({
       const persisted = await waitForPersistedSession();
       setBusy(false);
       if (!persisted) {
-        setError("Conta criada, mas o navegador ainda não salvou a sessão. Recarregue a página para continuar.");
+        setError("Conta criada, mas o navegador ainda não confirmou a sessão. Recarregue a página para continuar.");
         return;
       }
+      track("signup_complete");
       onAuthenticated();
       return;
     }
     setBusy(false);
+    track("signup_confirm_email");
+    setPendingEmail(String(form.get("signup-email")).trim().toLowerCase());
     switchPanel("login");
-    setNotice("Conta criada. Confira seu email para confirmar e entrar.");
+    setNotice("Conta criada. Falta confirmar seu e-mail.");
   }
 
   async function handleRecovery(e: React.FormEvent<HTMLFormElement>) {
@@ -310,6 +325,25 @@ export default function AuthPanel({
           <p>{sub}</p>
         </div>
 
+        {panel === "login" && pendingEmail && (
+          <div className="auth-confirm" role="status">
+            <p>
+              <strong>Falta confirmar seu e-mail.</strong> Enviamos o link para <b>{pendingEmail}</b>. Confira a caixa de entrada e o spam.
+            </p>
+            <button
+              className="ghost"
+              type="button"
+              onClick={() => void resendConfirmation()}
+              disabled={resendState === "sending"}
+            >
+              {resendState === "sending" ? "Reenviando..." : resendState === "sent" ? "E-mail reenviado ✓" : "Reenviar e-mail"}
+            </button>
+            {resendState === "error" && (
+              <p className="form-message error" role="alert">Não conseguimos reenviar agora. Tente de novo em alguns instantes.</p>
+            )}
+          </div>
+        )}
+
         {panel === "login" && (
           <form className="stack auth-form" onSubmit={handleLogin}>
             <ProviderButtons dividerLabel="ou entre com email" busy={busy} busyProvider={busyProvider} onSelect={(id) => void continueWithProvider(id)} />
@@ -360,7 +394,7 @@ export default function AuthPanel({
               </span>
             </label>
             <button className="primary" type="submit" disabled={busy || busyProvider !== null}>
-              {busy ? busyLabel : "Começar agora"}
+              {busy ? busyLabel : "Criar conta grátis"}
             </button>
             <p className="legal-note">
               Ao continuar, você concorda com nossos <Link href="/termos" target="_blank" rel="noopener">Termos</Link> e{" "}

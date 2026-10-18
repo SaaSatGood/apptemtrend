@@ -1,7 +1,12 @@
 import Image from "next/image";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { faqs, reelMedia } from "../lib/landing-data";
-import CreatorCarousel from "./creator-carousel";
+
+// Carrossel abaixo da dobra: JS separado, fora do bundle inicial.
+const CreatorCarousel = dynamic(() => import("./creator-carousel"), {
+  loading: () => <div className="tt-carousel" aria-hidden="true" />,
+});
 
 const planParts = [
   ["01", "Conceito", "O ângulo que dá sentido ao vídeo."],
@@ -142,6 +147,6 @@ export default function LandingRebuild() {
 
 export function LandingFooter() {
   return (
-    <footer className="tt-rd-footer"><div className="tt-rd-shell tt-rd-footer-main"><div><a className="tt-rd-footer-logo" href="#top" aria-label="TemTrend, voltar ao início"><span aria-hidden="true">T</span><strong>TemTrend</strong></a><p>Produto vira conteúdo.<br />Conteúdo vira oportunidade.</p></div><nav aria-label="Links do rodapé"><a href="#como-funciona">Como funciona</a><a href="#content-kits">Plano de gravação</a><a href="#produtos">Produtos</a><a href="#faq">FAQ</a></nav><div className="tt-rd-footer-legal"><Link href="/app">Entrar</Link><Link href="/termos">Termos de uso</Link><Link href="/privacidade">Privacidade</Link></div></div><div className="tt-rd-shell tt-rd-footer-bottom"><span>© 2026 TemTrend</span><span>Feito para quem cria e executa.</span></div></footer>
+    <footer className="tt-rd-footer"><div className="tt-rd-shell tt-rd-footer-main"><div><a className="tt-rd-footer-logo" href="#top" aria-label="TemTrend, voltar ao início"><span aria-hidden="true">T</span><strong>TemTrend</strong></a><p>Produto vira conteúdo.<br />Conteúdo vira oportunidade.</p></div><nav aria-label="Links do rodapé"><a href="#como-funciona">Como funciona</a><a href="#content-kits">Plano de gravação</a><a href="#produtos">Produtos</a><Link href="/planos">Planos</Link><a href="#faq">FAQ</a></nav><div className="tt-rd-footer-legal"><Link href="/app">Entrar</Link><Link href="/termos">Termos de uso</Link><Link href="/privacidade">Privacidade</Link><Link href="/reembolso">Reembolso</Link></div></div><div className="tt-rd-shell tt-rd-footer-bottom"><span>© 2026 TemTrend</span><span>Feito para quem cria e executa.</span></div></footer>
   );
 }

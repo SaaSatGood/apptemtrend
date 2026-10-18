@@ -22,6 +22,13 @@ export const RATE_LIMITS = {
   // Rotas caras de IA: limites próprios para proteger custo/latência.
   ASSISTANT_SEARCH: { max: 10, timeWindow: '1 minute' },
   CONTENT_KIT_GENERATE: { max: 5, timeWindow: '1 minute' },
+  // Telemetria de funil: folgado para rajadas legítimas, finito contra spam.
+  EVENTS: { max: 60, timeWindow: '1 minute' },
+  // Checkout de assinatura e webhooks do provedor de pagamento.
+  BILLING_CHECKOUT: { max: 10, timeWindow: '1 minute' },
+  BILLING_WEBHOOK: { max: 300, timeWindow: '1 minute' },
+  // Canal de suporte (abrir conversa, responder, encerrar).
+  SUPPORT: { max: 20, timeWindow: '1 minute' },
   GLOBAL: { max: 200, timeWindow: '1 minute' },
 } as const;
 

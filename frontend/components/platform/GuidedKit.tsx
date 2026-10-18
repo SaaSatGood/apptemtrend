@@ -7,6 +7,7 @@ import type { ContentKit, CreatorContent, Product } from "@/lib/types";
 import { sceneParts } from "./kit-text";
 import { directCta, displayKitTitle, finalSceneLine, strategyFrom } from "./kit-presentation";
 import { readGuideProgress, saveGuideProgress } from "./guide-progress";
+import { track } from "@/lib/track";
 import { usePlatform } from "./store";
 
 type Detail = { label: string; text: string };
@@ -75,6 +76,7 @@ export default function GuidedKit({ kit, product, status, readyLabel, readyDisab
   function toggleScene(index: number) {
     if (allRecorded) return;
     const next = recordedScenes.includes(index) ? recordedScenes.filter((item) => item !== index) : [...recordedScenes, index];
+    if (!recordedScenes.includes(index)) track("scene_recorded", { count: next.length });
     setRecordedScenes(next);
     saveGuideProgress(kit.id, { hook: selectedHook, scenes: next });
     if (scenes.length > 0 && next.length === scenes.length) onAllScenesRecorded();

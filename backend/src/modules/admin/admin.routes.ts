@@ -3,12 +3,16 @@ import fp from 'fastify-plugin';
 import { z } from 'zod';
 import { requireAdmin } from '../../plugins/auth.js';
 import { RATE_LIMITS, CREATOR_STATUS } from '../../config/constants.js';
+import { supabaseAdmin } from '../../lib/supabase.js';
 import * as adminRepo from './admin.repository.js';
 import * as creatorRepo from '../creators/creator.repository.js';
 import { invalidateMeCache } from '../creators/creator.service.js';
 import * as productService from '../products/product.service.js';
 import { listAllProducts, createProductWithContentKit } from '../products/product.repository.js';
 import * as kitService from '../content-kits/content-kit.service.js';
+import * as billingService from '../billing/billing.service.js';
+import * as supportService from '../support/support.service.js';
+import { SUPPORT_STATUSES } from '../support/support.service.js';
 import { createProductSchema, updateProductSchema } from '../products/product.schema.js';
 import { createContentKitSchema, updateContentKitSchema } from '../content-kits/content-kit.schema.js';
 
@@ -24,6 +28,24 @@ const creatorsQuerySchema = z.object({
 const listQuerySchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
   limit: z.coerce.number().int().min(1).max(100).default(50),
+});
+
+const supportQuerySchema = z.object({
+  status: z.enum(SUPPORT_STATUSES).optional(),
+  page: z.coerce.number().int().min(1).default(1),
+  limit: z.coerce.number().int().min(1).max(100).default(50),
+});
+
+const supportMessageSchema = z.object({
+  body: z.string().trim().min(1).max(2000),
+}).strict();
+
+const supportStatusSchema = z.object({
+  status: z.enum(SUPPORT_STATUSES),
+}).strict();
+
+const funnelQuerySchema = z.object({
+  days: z.coerce.number().int().min(1).max(365).default(30),
 });
 
 function range(page: number, limit?: number) {
@@ -111,6 +133,48 @@ async function routes(app: FastifyInstance) {
   app.patch('/admin/content-kits/:id', admin, async (request) => {
     const { id } = idParam.parse(request.params);
     return kitService.updateContentKitById(id, updateContentKitSchema.parse(request.body));
+  });
+
+  // ---- Assinaturas (billing) ----
+  app.get('/admin/billing/summary', admin, async () => billingService.adminBillingSummary());
+
+  app.get('/admin/billing/subscriptions', admin, async (request) => {
+    const q = listQuerySchema.parse(request.query);
+    return billingService.adminListSubscriptions(q);
+  });
+
+  // ---- Funil de eventos (analytics_events via RPC) ----
+  app.get('/admin/analytics/funnel', admin, async (request) => {
+    const q = funnelQuerySchema.parse(request.query);
+    const { data, error } = await supabaseAdmin.rpc('analytics_funnel', { p_days: q.days });
+    if (error) {
+      request.log.error({ err: error }, 'Failed to load analytics funnel');
+      throw error;
+    }
+    return { days: q.days, events: (data ?? []) as Array<{ event_name: string; total: number }> };
+  });
+
+  // ---- Canal de suporte ----
+  app.get('/admin/support/tickets', admin, async (request) => {
+    const q = supportQuerySchema.parse(request.query);
+    return supportService.listAdminTickets(q);
+  });
+
+  app.get('/admin/support/tickets/:id', admin, async (request) => {
+    const { id } = idParam.parse(request.params);
+    return supportService.getAdminTicket(id);
+  });
+
+  app.post('/admin/support/tickets/:id/messages', admin, async (request) => {
+    const { id } = idParam.parse(request.params);
+    const { body } = supportMessageSchema.parse(request.body);
+    return supportService.replyAsSupport(id, body, request.authUser.id);
+  });
+
+  app.patch('/admin/support/tickets/:id', admin, async (request) => {
+    const { id } = idParam.parse(request.params);
+    const { status } = supportStatusSchema.parse(request.body);
+    return supportService.setAdminTicketStatus(id, status);
   });
 }
 export default fp(routes, { name: 'admin-routes' });

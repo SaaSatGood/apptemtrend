@@ -45,22 +45,28 @@ async function reserveDatabaseQuota(userId: string, kind: QuotaKind, limit: numb
   return data === true;
 }
 
-export async function reserveAssistantQuota(userId: string): Promise<boolean> {
+export async function reserveAssistantQuota(
+  userId: string,
+  dailyLimit: number = AI_QUOTA.ASSISTANT_PER_DAY,
+): Promise<boolean> {
   if (process.env.NODE_ENV === 'test') return true;
   if (usesDatabaseStore()) {
-    return reserveDatabaseQuota(userId, 'assistant', AI_QUOTA.ASSISTANT_PER_DAY);
+    return reserveDatabaseQuota(userId, 'assistant', dailyLimit);
   }
-  if (!checkAssistantQuota(userId)) return false;
+  if (!checkAssistantQuota(userId, dailyLimit)) return false;
   incrementAssistantQuota(userId);
   return true;
 }
 
-export async function reserveKitQuota(userId: string): Promise<boolean> {
+export async function reserveKitQuota(
+  userId: string,
+  dailyLimit: number = AI_QUOTA.KIT_PER_DAY,
+): Promise<boolean> {
   if (process.env.NODE_ENV === 'test') return true;
   if (usesDatabaseStore()) {
-    return reserveDatabaseQuota(userId, 'kit', AI_QUOTA.KIT_PER_DAY);
+    return reserveDatabaseQuota(userId, 'kit', dailyLimit);
   }
-  if (!checkKitQuota(userId)) return false;
+  if (!checkKitQuota(userId, dailyLimit)) return false;
   incrementKitQuota(userId);
   return true;
 }
@@ -79,17 +85,21 @@ export async function releaseQuota(userId: string, kind: QuotaKind): Promise<voi
   if (error) logger.error({ err: error, kind }, 'Persistent AI quota release failed');
 }
 
-export async function reserveForceNew(creatorId: string, productId: string): Promise<boolean> {
+export async function reserveForceNew(
+  creatorId: string,
+  productId: string,
+  cooldownMs: number = AI_QUOTA.FORCE_NEW_COOLDOWN_MS,
+): Promise<boolean> {
   if (process.env.NODE_ENV === 'test') return true;
   if (!usesDatabaseStore()) {
-    if (!checkForceNewCooldown(creatorId, productId)) return false;
+    if (!checkForceNewCooldown(creatorId, productId, cooldownMs)) return false;
     markForceNew(creatorId, productId);
     return true;
   }
   const { data, error } = await supabaseAdmin.rpc('reserve_force_new', {
     p_creator_id: creatorId,
     p_product_id: productId,
-    p_cooldown_seconds: Math.ceil(AI_QUOTA.FORCE_NEW_COOLDOWN_MS / 1000),
+    p_cooldown_seconds: Math.ceil(cooldownMs / 1000),
   });
   if (error) {
     logger.error({ err: error }, 'Persistent force-new cooldown reservation failed');
@@ -129,22 +139,26 @@ function userCounters(userId: string): DayCounters {
   return fresh;
 }
 
-export function checkAssistantQuota(userId: string): boolean {
+export function checkAssistantQuota(userId: string, dailyLimit: number = AI_QUOTA.ASSISTANT_PER_DAY): boolean {
   if (process.env.NODE_ENV === 'test') return true;
-  return userCounters(userId).assistantCalls < AI_QUOTA.ASSISTANT_PER_DAY;
+  return userCounters(userId).assistantCalls < dailyLimit;
 }
 
-export function checkKitQuota(userId: string): boolean {
+export function checkKitQuota(userId: string, dailyLimit: number = AI_QUOTA.KIT_PER_DAY): boolean {
   if (process.env.NODE_ENV === 'test') return true;
-  return userCounters(userId).kitCalls < AI_QUOTA.KIT_PER_DAY;
+  return userCounters(userId).kitCalls < dailyLimit;
 }
 
-export function checkForceNewCooldown(creatorId: string, productId: string): boolean {
+export function checkForceNewCooldown(
+  creatorId: string,
+  productId: string,
+  cooldownMs: number = AI_QUOTA.FORCE_NEW_COOLDOWN_MS,
+): boolean {
   if (process.env.NODE_ENV === 'test') return true;
   const key = `${creatorId}:${productId}`;
   const last = forceNewCooldown.get(key);
   if (!last) return true;
-  return Date.now() - last > AI_QUOTA.FORCE_NEW_COOLDOWN_MS;
+  return Date.now() - last > cooldownMs;
 }
 
 export function markForceNew(creatorId: string, productId: string) {
