@@ -1,14 +1,14 @@
 /* Plataforma TemTrend: sistema visual unificado com a landing page. */
 #app-view {
-  --app-ink: #141b12;
+  --app-ink: var(--tt-ink, #10110f);
   --app-muted: #657060;
-  --app-line: #dbe3d4;
+  --app-line: var(--tt-line, #dce3d3);
   --app-line-strong: #c8d4bd;
-  --app-paper: #fffefa;
-  --app-canvas: #f6f8f1;
+  --app-paper: var(--tt-paper, #fffefa);
+  --app-canvas: var(--tt-canvas, #fbfcf8);
   --app-soft: #edf5df;
   --app-soft-2: #e2efcd;
-  --app-lime: #c8ff2e;
+  --app-lime: var(--tt-lime, #c8ff2e);
   --app-lime-hover: #b8ef1b;
   --app-green: #416314;
   min-height: 100svh;
@@ -129,20 +129,20 @@
 
 /* Navegação */
 #app-view .topbar {
-  top: 14px;
-  width: min(1120px, calc(100% - 36px));
-  min-height: 70px;
+  top: 18px;
+  width: min(1320px, calc(100% - 48px));
+  min-height: 76px;
   padding: 9px 12px 9px 16px;
   border: 1px solid #dce3d5;
-  border-radius: 22px;
-  background: #fffefaf2;
-  box-shadow: 0 12px 34px #26351a12;
-  backdrop-filter: blur(16px);
+  border-radius: 999px;
+  background: #fffffff5;
+  box-shadow: 0 12px 38px #2c3d1714;
+  backdrop-filter: blur(18px);
 }
 
 #app-view .topbar.is-scrolled {
-  top: 9px;
-  min-height: 62px;
+  top: 10px;
+  min-height: 68px;
   border-color: #ccd8c2;
   box-shadow: 0 14px 38px #26351a1b;
 }
@@ -173,6 +173,7 @@
 }
 
 #app-view .app-nav a.active { background: var(--app-ink); color: #fffefa; box-shadow: none; }
+#app-view .app-nav a:hover:not(.active) { background: #fffefa; color: var(--tt-deep, #385400); }
 #app-view .user-menu > summary { min-height: 46px; border-radius: 999px; }
 #app-view .user-avatar { width: 38px; height: 38px; background: var(--app-ink); color: #fffefa; }
 #app-view .user-menu-panel { top: calc(100% + 12px); border-color: var(--app-line); border-radius: 16px; box-shadow: 0 20px 54px #26351a24; }
@@ -618,7 +619,7 @@
   #app-view .page-wrap { width: calc(100% - 28px); padding-top: 96px; padding-bottom: 48px; }
   #app-view::before { width: 260px; height: 260px; right: -190px; top: 140px; }
   #app-view::after { display: none; }
-  #app-view .topbar { top: 8px; width: calc(100% - 20px); min-height: 64px; padding: 7px 9px; border-radius: 20px; }
+  #app-view .topbar { top: 8px; width: calc(100% - 20px); min-height: 64px; padding: 7px 9px; border-radius: 999px; }
   #app-view .topbar.is-scrolled { top: 8px; min-height: 60px; }
   #app-view .app-logo > span { width: 36px; height: 36px; }
   #app-view .app-logo b,

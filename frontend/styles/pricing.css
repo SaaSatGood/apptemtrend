@@ -3,9 +3,9 @@
    #4f574b (texto secundário), #1c1f1a (texto). Foco único 3px #385400. */
 
 .tt-pricing {
-  min-height: 100vh;
-  background: #f4f6ef;
-  color: #1c1f1a;
+  min-height: 100dvh;
+  background: var(--tt-canvas, #fbfcf8);
+  color: var(--tt-ink, #10110f);
   font-family: var(--font-manrope), system-ui, sans-serif;
 }
 
@@ -14,9 +14,14 @@
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  max-width: 1180px;
-  margin: 0 auto;
-  padding: 18px clamp(16px, 4vw, 48px);
+  width: min(1320px, calc(100% - 48px));
+  min-height: 82px;
+  margin: 18px auto 0;
+  padding: 10px 22px;
+  border: 1px solid #e9eee3;
+  border-radius: 999px;
+  background: #fffffff5;
+  box-shadow: 0 12px 38px #2c3d1714;
 }
 
 .tt-pricing-logo {
@@ -24,20 +29,21 @@
   align-items: center;
   gap: 10px;
   text-decoration: none;
-  color: #1c1f1a;
+  color: var(--tt-ink, #10110f);
   font-weight: 800;
-  font-size: 18px;
+  font-size: 22px;
+  letter-spacing: -.055em;
 }
 
 .tt-pricing-logo span {
   display: grid;
   place-items: center;
-  width: 34px;
-  height: 34px;
-  border-radius: 999px;
-  background: #385400;
-  color: #fff;
-  font-weight: 800;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: url("/temtrend-mark.svg") center / contain no-repeat;
+  color: transparent;
+  font-size: 0;
 }
 
 .tt-pricing-nav-actions {
@@ -47,33 +53,34 @@
 }
 
 .tt-pricing-login {
-  min-height: 44px;
+  min-height: 48px;
   display: inline-flex;
   align-items: center;
   padding: 0 14px;
   border-radius: 999px;
-  color: #385400;
-  font-weight: 700;
+  background: var(--tt-lime, #c8ff2e);
+  color: var(--tt-ink, #10110f);
+  font-weight: 800;
   text-decoration: none;
 }
 
 .tt-pricing-signup {
-  min-height: 44px;
+  min-height: 48px;
   display: inline-flex;
   align-items: center;
   padding: 0 18px;
   border-radius: 999px;
-  background: #385400;
+  background: var(--tt-ink, #10110f);
   color: #fff;
-  font-weight: 700;
+  font-weight: 800;
   text-decoration: none;
 }
 
 .tt-pricing-hero {
-  max-width: 860px;
+  max-width: 950px;
   margin: 0 auto;
   text-align: center;
-  padding: clamp(28px, 6vw, 64px) 20px 4px;
+  padding: clamp(60px, 7vw, 100px) 20px 12px;
 }
 
 .tt-pricing-eyebrow {
@@ -86,10 +93,10 @@
 }
 
 .tt-pricing-hero h1 {
-  font-size: clamp(32px, 5.2vw, 56px);
-  line-height: 1.04;
-  font-weight: 600;
-  letter-spacing: -0.02em;
+  font-size: clamp(42px, 5.6vw, 72px);
+  line-height: .99;
+  font-weight: 750;
+  letter-spacing: -.065em;
   margin: 0 0 16px;
 }
 
@@ -97,6 +104,8 @@
   font-family: var(--font-instrument-serif), Georgia, serif;
   font-style: italic;
   font-weight: 400;
+  color: #78a91a;
+  white-space: nowrap;
 }
 
 .tt-pricing-sub {
@@ -261,8 +270,9 @@
 }
 
 .tt-price-card.is-featured {
-  border: 2px solid #385400;
-  box-shadow: 0 24px 48px -30px rgba(56, 84, 0, 0.45);
+  border: 2px solid #8fb92f;
+  background: #f8fcef;
+  box-shadow: 0 24px 48px -30px rgba(56, 84, 0, 0.28);
 }
 
 .tt-price-seal {
@@ -270,8 +280,8 @@
   top: -14px;
   left: 50%;
   transform: translateX(-50%);
-  background: #385400;
-  color: #fff;
+  background: var(--tt-lime, #c8ff2e);
+  color: var(--tt-ink, #10110f);
   border-radius: 999px;
   padding: 6px 14px;
   font-size: 12px;
@@ -339,8 +349,8 @@
   min-height: 48px;
   border: 0;
   border-radius: 999px;
-  background: #385400;
-  color: #fff;
+  background: var(--tt-lime, #c8ff2e);
+  color: var(--tt-ink, #10110f);
   font-weight: 800;
   font-size: 14px;
   cursor: pointer;
@@ -348,9 +358,14 @@
 
 .tt-price-cta.is-ghost {
   background: #fff;
-  color: #385400;
-  border: 1px solid #385400;
+  color: var(--tt-ink, #10110f);
+  border: 1px solid var(--tt-line, #dce3d3);
 }
+
+.tt-pricing-login:hover,
+.tt-price-cta:not(.is-ghost):hover:not(:disabled) { background: #ddff75; }
+.tt-pricing-signup:hover { background: #303b26; }
+.tt-price-cta.is-ghost:hover:not(:disabled) { background: #f0f7e5; border-color: #9fbd77; }
 
 .tt-price-cta:disabled {
   opacity: 0.55;
@@ -365,7 +380,7 @@
   justify-content: space-between;
   gap: 18px;
   flex-wrap: wrap;
-  background: #20251d;
+  background: #151913;
   color: #f4f6ef;
   border-radius: 22px;
   padding: 24px;
@@ -387,8 +402,8 @@
   align-items: center;
   padding: 0 20px;
   border-radius: 999px;
-  background: #ecf7d4;
-  color: #385400;
+  background: var(--tt-lime, #c8ff2e);
+  color: var(--tt-ink, #10110f);
   font-weight: 800;
   text-decoration: none;
   white-space: nowrap;
@@ -539,6 +554,22 @@
   color: #4f574b;
   text-decoration: none;
   font-weight: 600;
+}
+
+@media (max-width: 700px) {
+  .tt-pricing-nav { width: calc(100% - 24px); min-height: 64px; margin-top: 8px; padding: 7px 10px; }
+  .tt-pricing-logo { gap: 7px; font-size: 18px; }
+  .tt-pricing-logo span { width: 36px; height: 36px; }
+  .tt-pricing-nav-actions { gap: 5px; }
+  .tt-pricing-login, .tt-pricing-signup { min-height: 40px; padding-inline: 12px; font-size: 12px; }
+  .tt-pricing-hero { padding-top: 62px; }
+  .tt-pricing-hero h1 { font-size: clamp(36px, 9.5vw, 58px); }
+}
+
+@media (max-width: 380px) {
+  .tt-pricing-logo { font-size: 16px; }
+  .tt-pricing-nav-actions { gap: 4px; }
+  .tt-pricing-login, .tt-pricing-signup { padding-inline: 10px; font-size: 11px; white-space: nowrap; }
 }
 
 .tt-pricing :is(a, button, summary):focus-visible {

@@ -16,6 +16,52 @@
    - Métricas numéricas: font-variant-numeric: tabular-nums.
    ============================================================ */
 
+:root {
+  --tt-ink: #10110f;
+  --tt-lime: #c8ff2e;
+  --tt-canvas: #fbfcf8;
+  --tt-soft: #f4f6ef;
+  --tt-line: #dce3d3;
+  --tt-muted: #4f574b;
+  --tt-deep: #385400;
+  --tt-paper: #fffefa;
+  --tt-danger: #a52727;
+}
+
+/* A mesma base visual acompanha a pessoa da landing às áreas de trabalho. */
+#app-view,
+.auth-view,
+.onboarding,
+.tt-pricing {
+  font-family: var(--font-manrope), Arial, sans-serif;
+  color: var(--tt-ink);
+}
+
+#app-view :is(.primary, .ghost, .app-nav a, .app-create-link),
+.tt-pricing :is(.tt-pricing-login, .tt-pricing-signup, .tt-price-cta, .tt-pricing-manage) {
+  transition: background-color .2s ease, border-color .2s ease, color .2s ease, transform .2s ease;
+}
+
+#app-view :is(.primary, .ghost, .app-create-link):active:not(:disabled),
+.tt-pricing :is(.tt-pricing-signup, .tt-price-cta):active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+#app-view :is(.account-card, .production-card, .opportunity-card, .kits-section, .support-compose, .support-list, .support-thread) {
+  background: var(--tt-paper);
+  border-color: var(--tt-line);
+}
+
+#app-view :is(.production-heading, .account-heading, .support-hero) h1 {
+  font-weight: 750;
+  letter-spacing: -.065em;
+  line-height: 1.02;
+}
+
+#app-view :is(.account-card-heading, .support-compose, .support-list, .support-thread) h2 {
+  letter-spacing: -.035em;
+}
+
 /* ---------- 1. Movimento ---------- */
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto !important; }

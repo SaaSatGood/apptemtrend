@@ -1,10 +1,10 @@
 .adminShell {
-  --admin-ink: #10110f;
-  --admin-muted: #62665d;
-  --admin-line: #dfe5d8;
-  --admin-soft: #f5f6f1;
-  --admin-lime: #c8ff2e;
-  --admin-deep: #739b00;
+  --admin-ink: var(--tt-ink, #10110f);
+  --admin-muted: var(--tt-muted, #4f574b);
+  --admin-line: var(--tt-line, #dce3d3);
+  --admin-soft: var(--tt-soft, #f4f6ef);
+  --admin-lime: var(--tt-lime, #c8ff2e);
+  --admin-deep: var(--tt-deep, #385400);
   padding-top: 68px;
   color: var(--admin-ink);
 }

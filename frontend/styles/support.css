@@ -4,34 +4,41 @@
 
 .support-shell {
   display: grid;
-  gap: 22px;
+  gap: 20px;
 }
 
 .support-hero {
+  position: relative;
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
   gap: 18px;
   flex-wrap: wrap;
+  padding: clamp(28px, 4vw, 44px);
+  overflow: hidden;
+  border: 1px solid #d0dfba;
+  border-radius: 28px;
+  background: #eaf4d8;
 }
 
 .support-hero h1 {
   margin: 6px 0 8px;
-  font-size: clamp(1.6rem, 3vw, 2.2rem);
-  line-height: 1.1;
-  color: #1c1f1a;
+  font-size: clamp(2.5rem, 5vw, 4.5rem);
+  line-height: 1;
+  color: var(--tt-ink, #10110f);
 }
 
 .support-hero h1 em {
   font-family: var(--font-instrument-serif), serif;
   font-style: italic;
-  color: #385400;
+  color: #5f8d1d;
 }
 
 .support-hero-copy {
   max-width: 560px;
   margin: 0;
-  color: #4f574b;
+  color: #47523f;
+  line-height: 1.6;
 }
 
 .support-new {
@@ -80,6 +87,15 @@
 .support-list,
 .support-thread {
   padding: 20px 22px;
+  border: 1px solid var(--tt-line, #dce3d3);
+  border-radius: 20px;
+  background: var(--tt-paper, #fffefa);
+}
+
+.support-compose {
+  border: 1px solid var(--tt-line, #dce3d3);
+  border-radius: 20px;
+  background: var(--tt-paper, #fffefa);
 }
 
 .support-list h2 {
@@ -113,8 +129,8 @@
 }
 
 .support-ticket.is-active {
-  border-color: #385400;
-  background: #f4f6ef;
+  border-color: #9fbd77;
+  background: #f0f7e5;
 }
 
 .support-ticket-top {
@@ -235,8 +251,8 @@
 }
 
 .support-messages li.is-creator .support-bubble {
-  background: #385400;
-  border-color: #385400;
+  background: #172015;
+  border-color: #172015;
 }
 
 .support-messages li.is-creator .support-bubble p {
@@ -290,4 +306,9 @@
   .support-compose-grid {
     grid-template-columns: 1fr;
   }
+}
+
+@media (max-width: 700px) {
+  .support-hero { padding: 26px 20px; border-radius: 22px; }
+  .support-list, .support-thread, .support-compose { padding: 20px 16px; }
 }
