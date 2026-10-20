@@ -5,10 +5,12 @@ Frontend principal em Next.js App Router. O front estático anterior foi preserv
 
 ## Rotas
 
-- `/` — landing (igual à anterior, com menu mobile e FAQ)
+- `/` — landing (hero editorial, prova social honesta, FAQ)
+- `/planos` — página pública de planos (catálogo vem da API com fallback; sem plano grátis e sem compra avulsa)
 - `/app` — plataforma (login, cadastro, recovery, onboarding, descoberta, produto,
-  Content Kit, produção, conta, admin). `?mode=signup` abre o cadastro.
+  Content Kit, produção, conta, suporte, admin). `?mode=signup` abre o cadastro.
 - `/termos`, `/privacidade` — páginas legais mínimas (LGPD).
+- `/emconstrucao` — página de funcionalidade futura.
 
 ## Configuração
 
@@ -40,20 +42,36 @@ npm run build    # valida tsc + build de produção
 
 ## Estrutura
 
-- `app/` — `layout.tsx` (fontes + CSS global portado do frontend legado),
-  `page.tsx` (landing), `app/page.tsx` (plataforma), `termos/`, `privacidade/`.
-- `components/platform/` — `store.tsx` (sessão, perfil, produção, toasts),
-  `Auth`, `Onboarding`, `Assistant`, `ProductKit` (produto + documento do kit),
-  `KitDetail`, `Production`, `Account`, `Admin`, `ContentKitDialog`.
-- `lib/` — `config`, `supabase`, `api` (Bearer JWT + `code` do erro),
-  `format` (nome de exibição, datas, TikTok, clipboard, cenas), `types`.
-- `styles/` — CSS original copiado sem redesign.
+- `app/` — `layout.tsx` (fontes + CSS global; `canonical.css` por último = fonte
+  única dos tokens), `page.tsx` (landing), `planos/`, `app/page.tsx`
+  (plataforma), `app/suporte/page.tsx`, `termos/`, `privacidade/`,
+  `emconstrucao/`.
+- `components/platform/` — `store.tsx` (sessão persistida, perfil, produção, toasts),
+  `Auth`, `Onboarding` (trial Pro 7d quando billing ativo), `Assistant`,
+  `ProductKit`, `KitDetail`, `Production`, `Account` (card de plano real),
+  `PlanBanner` (faixa: trial, trial encerrado, past_due, cancelada com acesso),
+  `UpgradeDialog`, `Support` (canal de suporte), `ApiWarmup`, `TrackView`,
+  `Admin` (visão geral, Catálogo+IA, Assinaturas, Suporte).
+- `components/pricing/PricingPage.tsx` — `/planos`.
+- `lib/` — `config`, `supabase` (`persistSession: true`), `api` (Bearer JWT +
+  `code` do erro), `format`, `track` (analytics de funil), `support`, `types`.
+- `styles/` — `canonical.css` (tokens/contratos, é importado por último),
+  `design-system.css`, `platform-*`, `pricing.css`, `support.css`.
+- `tests/e2e/` — Playwright (40 testes; mocks de API; `NEXT_PUBLIC_E2E=1`).
 - `legacy-static/` — implementação anterior, preservada para referência e testes legados.
 
 ## Regras preservadas do front antigo
 
-- Auth Supabase no browser; senha nunca vai para a API.
-- Onboarding obrigatório com rascunho em `localStorage`.
+- Auth Supabase no browser; senha nunca vai para a API; sessão persistida.
+- Onboarding obrigatório com rascunho em `localStorage` + restauração.
 - Pipeline `salvo → em_producao → gravado → publicado` validado no backend.
 - `force_new` com cooldown, cotas e `fallback: true` tratados com toasts dedicados.
 - Nenhum vídeo é armazenado ou publicado automaticamente.
+
+## Barras de plano (billing)
+
+- `PlanBanner.tsx` cobre 4 estados: trialing, trial encerrado ("sem plano",
+  travado), past_due e cancelada com acesso até o fim do período.
+- Limites exibidos no card da conta vêm de `/me`; quando o billing está
+  desativado (`enabled: false` em `GET /billing/plans`), a conta usa as cotas
+  globais antigas (100 buscas/dia + 30 kits/dia).

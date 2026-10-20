@@ -14,15 +14,19 @@ Ordem de configuração da API:
 Em produção, preencha **um** dos três primeiros. Sem isso o app mostra
 "Serviço indisponível" em vez de quebrar silenciosamente.
 
-## 2. Backend (`backend`)
+## 2. Backend (`backend`) — deployado no Render (`temtrend-api`)
 Env obrigatórias: `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `PORT`,
 `NODE_ENV=production`, `CORS_ORIGIN` (separadas por vírgula, sem espaço extra —
-o código faz trim), `FRONTEND_URL`, `GEMINI_API_KEY` (opcional; sem ela o
-assistant usa fallback local e a geração retorna 503 amigável), `GEMINI_MODEL`.
+o código faz trim), `FRONTEND_URL` (`https://temtrend.online`), `GEMINI_API_KEY`
+(opcional; sem ela o assistant usa fallback local e a geração retorna 503
+amigável), `GEMINI_MODEL`.
 
-**Billing (planos/assinaturas):** flag `BILLING_ENABLED` (padrão `false`),
-`ABACATEPAY_API_KEY`, `ABACATEPAY_WEBHOOK_SECRET` e webhook — passo a passo
-completo em [`docs/go-live-billing.md`](../../docs/go-live-billing.md).
+**Billing (em 20/10/2026):** `BILLING_ENABLED=true`, `ABACATEPAY_WEBHOOK_SECRET`
+e `FRONTEND_URL` **já definidas no Render**; falta a **`ABACATEPAY_API_KEY`**
+(segredo do dono — enquanto não existir, `billingActive()` fica `false` e o app
+roda em modo legado, sem trial nem checkout). Webhook v2 criado
+(`webh_prod_xS6hzaujufu2sQxkpYpAZ434`). Passo a passo em
+[`docs/go-live-billing.md`](../../docs/go-live-billing.md).
 
 ## 2.1 IA — diagnóstico de "não gera Content Kit"
 - `GET /ready` informa a configuração da IA. Sem `GEMINI_API_KEY`, a geração
@@ -35,6 +39,10 @@ completo em [`docs/go-live-billing.md`](../../docs/go-live-billing.md).
   cooldown `force_new` 30s. Com fallback ativo, a geração raramente erra.
 - `GEMINI_MODEL` padrão `gemini-3.1-flash-lite`; se a Google desligar o modelo,
   a geração falha em todas as tentativas — troque a env, sem deploy de código.
+- Com billing ativo, os limites vêm do plano (`PLAN_LIMITS` em
+  `src/modules/billing/plans.ts`: essencial 50/dia · 30 kits/mês, pro 200/100,
+  scale 500/300, enterprise ilimitado/1000); sem billing, valem as cotas
+  globais abaixo. Estado "sem plano" (sem assinatura pós-trial) trava geração.
 
 ## 3. Migrations Supabase
 - `019_performance_indexes.sql`, `020_rls_hardening.sql` e `021_rls_content_kits_fix.sql`
@@ -72,4 +80,17 @@ teste físico mobile/tablet, carga Gemini real.
 - Configure `REDIS_URL` em ambientes com mais de uma instância para compartilhar o rate limit HTTP.
 - Configure `CATALOG_FEED_URL` e, se necessário, `CATALOG_FEED_TOKEN`; agende `npm run catalog:sync` no provedor para atualizar o catálogo.
 - `/ready` retorna 503 quando o banco não responde; use-o como readiness probe. `/health` continua sendo apenas liveness.
-- Rode `npm run test:e2e` no frontend para os smoke tests do navegador.
+- Rode `npm run test:e2e` no frontend para os smoke tests do navegador
+  (`$env:NEXT_PUBLIC_E2E=1` em dev; CI usa `retries: 2`).
+
+## 7. Estado real de produção (20/10/2026)
+- Backend: Render `temtrend-api` (`https://temtrend-api.onrender.com`), plano
+  **free** (Starter pendente), última versão live = commit `cd5c7ce` ou
+  posterior. **Auto-deploy não dispara a cada push** — todos os deploys têm
+  `trigger: api`; dispare manualmente ou reconecte o GitHub App.
+- Rotas novas verificadas em produção: `GET /billing/plans` 200, `GET /health`
+  200, webhook/support/admin 401 sem auth, `POST /events` 400 sem corpo.
+- Frontend: `https://temtrend.online` (`/planos`, `/app/suporte` no ar).
+- Falta para o go-live da cobrança: `ABACATEPAY_API_KEY` no Render +
+  upgrade para Starter (guia completo em
+  [`docs/go-live-billing.md`](../../docs/go-live-billing.md)).

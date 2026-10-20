@@ -40,6 +40,8 @@
 > **Verificações da implementação:** backend `typecheck` + 161 testes ✅ · frontend `lint` + `build` ✅ · E2E 40 testes ✅.
 >
 > **Go-live (18/10):** deploy `live` com o código novo ✅ · envs do Render 3/4 ✅ · webhook v2 criado ✅ · avulso excluído ✅ · rotas novas verificadas em produção ✅ (plans 200; webhook/support/admin 401) · **pendente: `ABACATEPAY_API_KEY` + Starter**.
+>
+> **Doc & skills refresh (20/10):** README, `backend/docs/DEPLOY.md`, READMEs do frontend e o relatório de precificação (v1.1, seção 0) atualizados ao estado real · agente auditor `revisor-fluxos` revisitado · skill `design-taste-frontend` sincronizada na v2 via `npx skills update` (as demais skills do mesmo repositório foram descontinuadas upstream — cópias locais preservadas).
 
 ---
 

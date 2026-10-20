@@ -1,15 +1,29 @@
 # Relatório de Precificação — TemTrend
 
-**Data:** 17/10/2026 · **Versão:** 1.0 · **Escopo:** estudo de precificação, custos e monetização da plataforma TemTrend
+**Data:** 17/10/2026 · **Versão:** 1.1 (atualizada em 20/10/2026 — ver seção 0) · **Escopo:** estudo de precificação, custos e monetização da plataforma TemTrend
 **Premissa central:** 100% da primeira receita é reinvestida na própria plataforma (infra, IA, aquisição e reserva).
+
+---
+
+## 0. Atualização de implementação (20/10/2026)
+
+O estudo abaixo foi **implementado em 18/10/2026** (commit `cd5c7ce`), com as decisões da 2ª rodada de produto. Linhas marcadas com **[20/10]** refletem o estado atual:
+
+- **Implementado conforme o estudo:** escada Essencial/Pro/Scale + Enterprise com os mesmos preços; trial Pro de 7 dias sem cartão; checkout PIX mensal/anual; webhook idempotente; gating por plano com limites exatos; catálogo organizado (6 produtos de assinatura ativos).
+- **Desvios conscientes (decisão de produto, 2ª rodada):**
+  1. Pós-trial **não há "amostra de 3 kits"** — a conta fica no estado **"sem plano"** (travada: 0 kits novos, 0 buscas; conteúdo antigo continua visível em modo leitura).
+  2. O **avulso não virou decoy — foi removido** da plataforma (código, catálogo e coluna `kits_extra`) e o produto foi excluído da loja AbacatePay.
+  3. O **plano grátis deixou de existir** em qualquer formato (também removido).
+- **Discrepância do estudo corrigida no código:** sessão persistida (`persistSession: true`); card de plano real na conta; limites por plano ativos — cotas globais (100/30) só valem quando o billing está desligado.
+- **Estado da cobrança (20/10):** flag `BILLING_ENABLED=true` e webhook v2 criados no deploy; falta a **`ABACATEPAY_API_KEY`** no Render (ação do dono) + upgrade para Starter. Até lá, `enabled: false` e app em modo legado. Guia completo: `docs/go-live-billing.md`.
 
 ---
 
 ## 1. Sumário executivo
 
-A TemTrend já tem produto pronto para cobrar: descoberta de produtos com IA, geração de roteiro completo, guia de gravação passo a passo e gestão de produção. Hoje **nada é cobrado** — o "Plano gratuito" é um texto fixo no código (`backend/src/modules/account/account.routes.ts:35`), sem assinatura, trial ou paywall.
+A TemTrend já tem produto pronto para cobrar: descoberta de produtos com IA, geração de roteiro completo, guia de gravação passo a passo e gestão de produção. Hoje **nada é cobrado** — o "Plano gratuito" é um texto fixo no código (`backend/src/modules/account/account.routes.ts:35`), sem assinatura, trial ou paywall. **[20/10: implementado — plano grátis removido, trial 7d + checkout + gating no ar atrás da `ABACATEPAY_API_KEY`]**
 
-O custo marginal por usuário é **muito baixo** (IA ≈ R$ 0,03 por roteiro; infra atual ≈ R$ 40/mês no modo enxuto), o que permite preço de entrada acessível com margem alta. O risco não é custo — é **posicionamento e catálogo**: a loja AbacatePay tem 11 produtos legados, duplicados e de outra fase do produto (marketplace), que precisam ser organizados antes de cobrar.
+O custo marginal por usuário é **muito baixo** (IA ≈ R$ 0,03 por roteiro; infra atual ≈ R$ 40/mês no modo enxuto), o que permite preço de entrada acessível com margem alta. O risco não é custo — é **posicionamento e catálogo**: a loja AbacatePay tem 11 produtos legados, duplicados e de outra fase do produto (marketplace), que precisam ser organizados antes de cobrar. **[20/10: catálogo organizado — 6 produtos de assinatura ativos; avulso excluído; 5 produtos v1 legados/agência ainda a arquivar]**
 
 ### Recomendação em uma tabela
 
@@ -19,12 +33,12 @@ O custo marginal por usuário é **muito baixo** (IA ≈ R$ 0,03 por roteiro; in
 | **Pro** | R$ 59,90 | R$ 599 | **Plano-alvo (~50% dos clientes)** |
 | **Scale** | R$ 149 | R$ 1.490 | Âncora para agências/duplas |
 | **Enterprise** | R$ 499+ | sob consulta | Âncora de preço |
-| Avulso (experimento) | R$ 19,90 / 10 kits | — | Decoy que empurra a assinatura |
+| ~~Avulso (experimento)~~ | ~~R$ 19,90 / 10 kits~~ | — | **Removido em 18/10** — sem compra avulsa na plataforma (2ª rodada) |
 
-- **Trial:** 7 dias de Pro sem cartão; ao fim, amostra gratuita de 3 kits (não um plano free permanente).
+- **Trial:** 7 dias de Pro sem cartão; ao fim, **[20/10: atualizado — não há amostra de 3 kits; a conta fica travada no estado "sem plano" (conteúdo antigo visível, nada novo gerado)]**.
 - **Break-even:** 6 assinantes no modo "sério" (infra paga) ou 1 no modo enxuto. Com pró-labore de R$ 3.000: ~57 assinantes.
 - **Margem de contribuição:** ~89–90% em qualquer cenário acima de 50 assinantes.
-- **Primeira ação:** limpar o catálogo da AbacatePay, criar a linha "TemTrend Creator" e implementar billing + gating por plano.
+- **Primeira ação:** limpar o catálogo da AbacatePay, criar a linha "TemTrend Creator" e implementar billing + gating por plano. **[20/10: feita — 6 produtos de assinatura ativos na loja; billing implementado]**
 
 ---
 
@@ -35,13 +49,13 @@ O custo marginal por usuário é **muito baixo** (IA ≈ R$ 0,03 por roteiro; in
 | Etapa | O que o usuário faz | O que a plataforma entrega |
 |---|---|---|
 | **Landing** | Busca um produto ou clica em "Não sei o que vender" | Hero com busca, exemplos, seção "como funciona", as 8 partes do plano, carrossel de exemplos, FAQ. A busca sobrevive ao login. |
-| **Cadastro/login** | Email/senha ou Google/Facebook/Apple | Conta grátis, recuperação de senha. Sessão só em memória (login a cada visita). |
+| **Cadastro/login** | Email/senha ou Google/Facebook/Apple | Recuperação de senha; reenvio de confirmação de e-mail. **[20/10: sem "conta grátis" como plano (seção 0); sessão persistida]** |
 | **Onboarding (5 etapas)** | Objetivo, estilos, temas, "sua voz" (opcional) | Personalização que alimenta a IA: temas entram na busca; a voz entra no roteiro. |
 | **Descobrir** | Descreve o que quer vender | IA interpreta o pedido e devolve **até 5 produtos reais** do catálogo com motivo, preço, comissão estimada em R$, vendas e badges ("maior comissão", "mais vendido"). Filtro de categorias sensíveis. |
 | **Kit de conteúdo** | Escolhe direções prontas (5) ou escreve um briefing | Gera um plano completo em 8 partes: **conceito, abertura/hook, cenas (3–8), roteiro, legenda, CTA, hashtags, áudio/duração** — com 3 variações de hook, versão sem aparecer, dica de publicação e 5 variações de roteiro. |
 | **Guia de gravação** | Marca cena a cena o que já gravou | Checklist "antes de gravar", escolha de hook, "Mostre / Fale / Ação ou edição" por cena, progresso, cópia por etapa ou do plano inteiro. |
 | **Minha produção** | Acompanha o funil | Status **salvo → em produção → gravado → publicado**, filtros, busca, ordenação por próxima ação, progresso (2/4), link do vídeo publicado (TikTok, opcional). |
-| **Conta** | Edita perfil, preferências, voz, senha | "Sua voz" (até 500 caracteres) personaliza todos os roteiros; exclusão de conta; plano atual (hoje fixo em "gratuito"). |
+| **Conta** | Edita perfil, preferências, voz, senha | "Sua voz" (até 500 caracteres) personaliza todos os roteiros; exclusão de conta; plano atual **[20/10: card de plano real — trial, renovação, troca agendada, cancelamento e estado "sem plano"]**. |
 | **Admin (interno)** | Opera catálogo e comunidade | Dashboard (creators, produtos, kits, publicações, uso de IA), CRUD de produtos, upload de imagem, gestão de kits, bloqueio/reativação de creators, export CSV. |
 
 ### 2.2 O que a IA faz (e custa)
@@ -163,7 +177,7 @@ O Pro a R$ 59,90 é **~5–10% do custo de uma agência** e menos que **1 roteir
 ## 6. Estratégia de precificação (racional)
 
 1. **Good-Better-Best (GBB):** três planos visíveis + Enterprise como âncora. O Essencial é a isca: tem limite que dói (sem voz personalizada, sem "gerar outra versão"), faz o Pro parecer óbvio por +R$ 30.
-2. **Sem plano gratuito permanente:** free ancora o preço em zero e destrói a percepção de valor. No lugar: **trial de 7 dias** + amostra de 3 kits. O custo de um free user é baixo, mas o custo de *posicionamento* é alto.
+2. **Sem plano gratuito permanente:** free ancora o preço em zero e destrói a percepção de valor. No lugar: **trial de 7 dias** de Pro, sem cartão. O custo de um free user é baixo, mas o custo de *posicionamento* é alto. **[20/10: adotado — e o fim do trial cai direto no estado "sem plano" (travado), sem amostra permanente]**
 3. **Uma única escada de valor:** volume de kits/mês (30 → 100 → 300 → fair use). Não misturar "10.000 tokens" com "suporte prioritário" na mesma comparação.
 4. **Anual com desconto de 2 meses:** melhora caixa, reduz churn e a taxa PIX cai para centavos. Empurrar anual no PIX.
 5. **Preço como filtro:** não descer de R$ 29,90. Preço baixo atrai comprador não comprometido e aumenta churn — exatamente o oposto do que a primeira receita precisa.
@@ -176,15 +190,17 @@ O Pro a R$ 59,90 é **~5–10% do custo de uma agência** e menos que **1 roteir
 
 ### 7.1 Matriz de recursos
 
-| Recurso | Amostra grátis | Essencial R$ 29,90 | Pro R$ 59,90 | Scale R$ 149 | Enterprise R$ 499+ |
+| Recurso | Sem plano (pós-trial) | Essencial R$ 29,90 | Pro R$ 59,90 | Scale R$ 149 | Enterprise R$ 499+ |
 |---|---:|---:|---:|---:|---:|
-| Kits de conteúdo/mês | 3 (total) | 30 | 100 | 300 | fair use (1.000) |
-| Buscas de IA/dia | 10 | 50 | 200 | 500 | ilimitado fair use |
+| Kits de conteúdo/mês | **0 novos** | 30 | 100 | 300 | fair use (1.000) |
+| Buscas de IA/dia | **0** | 50 | 200 | 500 | ilimitado fair use |
 | Variações / "gerar outra versão" | não | sim (60s) | sim (30s) | sim (30s) | sim |
 | Voz personalizada no roteiro | não | sim | sim | sim | sim |
-| Roteiros salvos por produto | 1 | 5 | ilimitado | ilimitado | ilimitado |
-| Guia de gravação + produção | sim (5 itens) | sim (50) | ilimitado | ilimitado | ilimitado |
-| Histórico completo | não | sim | sim | sim | sim |
+| Roteiros salvos por produto | leitura | 5 | ilimitado | ilimitado | ilimitado |
+| Guia de gravação + produção | **0 itens novos** | sim (50) | ilimitado | ilimitado | ilimitado |
+| Histórico completo | visível (leitura) | sim | sim | sim | sim |
+
+**[20/10: a coluna "Amostra grátis" do estudo virou "Sem plano (pós-trial)" — decisão da 2ª rodada]**
 | Assentos | 1 | 1 | 1 | 3 | 10+ |
 | Exportação CSV | não | não | sim* | sim* | sim* |
 | Suporte | comunidade | e-mail 48h | prioritário 24h | dedicado | SLA |
@@ -200,15 +216,15 @@ O Pro a R$ 59,90 é **~5–10% do custo de uma agência** e menos que **1 roteir
 | **Pro** | R$ 59,90 | R$ 599 | R$ 49,92 | Creator ativo (foco) | **Alvo: ~50% da base** |
 | **Scale** | R$ 149 | R$ 1.490 | R$ 124,17 | Duplas e agências | Âncora + volume/assentos |
 | **Enterprise** | R$ 499+ | sob consulta | — | Operações maiores | Âncora de preço |
-| Avulso | R$ 19,90 (10 kits) | — | — | Quem não quer assinar | Decoy: 10 kits avulsos vs 30/mês + features |
+| ~~Avulso~~ | ~~R$ 19,90 (10 kits)~~ | — | — | ~~Quem não quer assinar~~ | **Removido em 18/10** (ver seção 0) |
 
 **Preço por kit percebido:** Essencial R$ 1,00 · Pro R$ 0,60 · Scale R$ 0,50 → escada linear e fácil de explicar.
 
 ### 7.3 Trial
 
 - **7 dias de Pro**, sem cartão, com onboarding completo (o "aha" é o primeiro kit pronto + guia).
-- E-mails: dia 0 (boas-vindas), dia 2 (primeiro kit), dia 5 (o que você já criou), dia 7 (fim do trial + oferta anual).
-- Ao expirar: cai para a **amostra de 3 kits**, sem apagar nada. O histórico fica visível, mas bloqueado para novos roteiros — perda percebida no momento certo.
+- E-mails: dia 0 (boas-vindas), dia 2 (primeiro kit), dia 5 (o que você já criou), dia 7 (fim do trial + oferta anual). **[20/10: e-mails Resend ainda não implementados — fase 3]**
+- Ao expirar: **[20/10: implementado — cai no estado "sem plano" (travado): histórico visível em leitura, 0 kits/buscas/produção novos; sem amostra de 3 kits]** — sem apagar nada.
 - Não pedir cartão no trial nesta fase: o preço é baixo e o público brasileiro responde melhor a PIX. Medir conversão e, se ficar abaixo de 10%, testar trial com cartão no Pro.
 
 ---
@@ -277,7 +293,7 @@ Se o Pro subir de R$ 59,90 para R$ 79,90 (+33%) e 20% dos clientes churnarem, a 
 | Risco | Impacto | Mitigação |
 |---|---|---|
 | Catálogo AbacatePay legado/duplicado | Cliente confuso, cobrança errada | Arquivar legados; criar linha `creator_*` com nomes e descrições claros |
-| Não existe billing no código | Nenhuma receita | Implementar tabela de planos, checkout, webhook e gating (roadmap) |
+| Não existe billing no código **[20/10: implementado em 18/10 — falta a `ABACATEPAY_API_KEY` no Render]** | Nenhuma receita | ~~Tabela de planos, checkout, webhook e gating~~ → definir a chave + Starter (`docs/go-live-billing.md`) |
 | Cold start do Render Free | Perda de conversão no login | Subir para Starter antes de cobrar (US$ 7) |
 | Usuário-pesado de IA | Consome o ticket inteiro | Teto mensal de kits por plano; fair use nas buscas |
 | Churn do PIX recorrente | Receita instável | Empurrar anual no PIX; trial sem cartão; lembretes de valor |
@@ -301,6 +317,8 @@ Se o Pro subir de R$ 59,90 para R$ 79,90 (+33%) e 20% dos clientes churnarem, a 
 | **5. QA e métricas** | Testes unitários/e2e do gating, evento de checkout, painel admin de assinaturas | 1–2 dias |
 
 **Total estimado:** 8–10 dias de desenvolvimento. Ordem recomendada: catálogo → dados → backend → frontend → trial.
+
+> **Status (20/10):** fases 0–3 e 5 **concluídas em 18/10** (catálogo: 6 produtos de assinatura, sem avulso; dados: na prática a migration de billing é a `028_billing.sql` — a `026`/`027` do repo são imports do FastMoss e analytics; backend e frontend no ar em produção). Fase 4: trial implementado; **e-mails Resend pendentes** (fase 3 do produto). Falta operacional: `ABACATEPAY_API_KEY` no Render + upgrade para Starter.
 
 ---
 

@@ -101,7 +101,7 @@ Se algo abaixo não bater com o código, **é achado**:
 ## Checklist por dimensão
 
 ### 1. Jornada de negócio
-- Cadastro/login (`frontend/components/platform/Auth.tsx`): validações, e-mail duplicado, sessão só em memória (login toda vez — impacto), mensagens.
+- Cadastro/login (`frontend/components/platform/Auth.tsx`): validações, e-mail duplicado, sessão persistida (`persistSession: true` em `lib/supabase.ts` — atualizado em 18/10; conferir efeitos: dispositivo compartilhado, relogin forçado, revogação), mensagens, reenvio de confirmação de e-mail.
 - Onboarding 5 etapas (`Onboarding.tsx`): obrigatoriedade, voltar/pular, modo edição, rascunho (órfão, troca de usuário no navegador), conclusão → destino, trial começa quando?
 - Conta sem onboarding completo: o que funciona? existe gate?
 - `/app/conta` (`Account.tsx`, `modules/account/`): perfil (persistência → topbar), preferências, card de plano em todos os estados, retorno `?checkout=ok`.
@@ -146,12 +146,12 @@ Se algo abaixo não bater com o código, **é achado**:
 - LGPD: PII em logs/erros/analytics; exclusão de conta apaga de verdade; retenção de logs/eventos; `/termos` e `/privacidade` refletem o código; enumeração de e-mail (signup/recuperação) revela existência?
 
 ### 6. Pagamentos e cobrança
-- Catálogo: `PRODUCT_IDS` (`plans.ts`) × `docs/go-live-billing.md` (7 produtos); preços R$ 29,90 / 299 / 59,90 / 599 / 149 / 1.490 batem com os produtos?
+- Catálogo: `PRODUCT_IDS` (`plans.ts`) × `docs/go-live-billing.md` (6 produtos de assinatura); preços R$ 29,90 / 299 / 59,90 / 599 / 149 / 1.490 batem com os produtos?
 - Checkout (`startCheckout`): `returnUrl`/`completionUrl` (`FRONTEND_URL`), retorno `?checkout=ok`, double-click, erro do provedor, já assinante, upgrade × downgrade, mensal ↔ anual.
 - Webhook: segredo, os 7 eventos, idempotência (`billing_events`), fora de ordem, produto desconhecido (log e ignore), `plan_changed` ignorado com segurança.
 - Estados: trialing → active → past_due → canceled; `cancel_at_period_end`; `pending_plan` no renew; re-assinatura; trial só 1x por conta?
 - Gating fiel: cada limite em TODOS os endpoints, 402 + CTA, reuso de kit liberado, contagem no limite exato e na virada do mês.
-- Avulso/extras: docs citam `ABACATEPAY_PRODUCT_AVULSO`/`kits_extra +10` — existe? senão é drift.
+- Avulso/extras: **removidos em 18/10** (avulso excluído da loja; `kits_extra` dropado na 029; `ABACATEPAY_PRODUCT_AVULSO` fora do código) — qualquer referência restante em código/docs/UI = drift.
 - `backend/tests/billing.test.ts` × smoke test de 9 passos do go-live; reembolso/chargeback/NFS: lacuna conhecida, não bug.
 
 ### 7. IA: qualidade, custos e consumo de tokens ⭐
@@ -176,7 +176,7 @@ Se algo abaixo não bater com o código, **é achado**:
 - Consumo das próprias auditorias/scripts: `tools/` (import scripts) chamam IA? `catalog:sync` gasta tokens? algum job que consome tokens fora das cotas?
 
 ### 8. Analytics, telemetria e métricas
-- `ANALYTICS_EVENTS` (`modules/analytics/analytics.routes.ts`): lista fixa — eventos realmente emitidos pelas telas (`track(...)` no frontend)? faltam eventos do funil (checkout_started? trial_started? kit_generated?)? sobram nomes nunca disparados (`signup_confirm_email` com e-mail não implementado)?
+- `ANALYTICS_EVENTS` (`modules/analytics/analytics.routes.ts`): lista fixa — eventos realmente emitidos pelas telas (`track(...)` no frontend)? faltam eventos do funil (checkout_started? trial_started? kit_generated?)? `signup_confirm_email` agora tem fluxo de reenvio (implementado) — sobram nomes nunca disparados?
 - Props: teto 1000 chars, sem PII; `path`; evento fora da lista é recusado.
 - `/admin/analytics/funnel` × dados reais; dashboard admin (cache 30s) coerente com billing summary e creators.
 - Duplicidade de eventos (double render no React, retry); rate limit 60/min não descarta rajadas legítimas.
@@ -203,7 +203,7 @@ Se algo abaixo não bater com o código, **é achado**:
 ### 11. Qualidade: testes, CI/CD e dependências
 - `.github/workflows/ci.yml`: backend `npm test` + `typecheck` + `build` + `npm audit --omit=dev`; frontend `lint` + `build` + `audit`; Playwright + E2E; gitleaks.
 - **E2E sem backend?** `frontend/playwright.config.ts` sobe só o Next (`npm run dev`, `NEXT_PUBLIC_E2E=1`) e o CI não inicia a API — o que os testes cobrem de verdade? rotas mockadas? estados degradados? Fluxos com sessão/kit/pagamento testados ou só telas públicas?
-- `backend/tests/` (15 arquivos, ~150 testes): quais fluxos críticos NÃO têm teste — webhook idempotência, IDOR/ownership, gating por plano, trial expirado, exclusão de conta, quotas de IA, RLS?
+- `backend/tests/` (15 arquivos, 161 testes): quais fluxos críticos NÃO têm teste — webhook idempotência, IDOR/ownership, gating por plano, trial expirado, exclusão de conta, quotas de IA, RLS?
 - `frontend/test-results/` tem falhas antigas — flaky? retries 2 no CI mascara?
 - Scripts existem de verdade (`npm run typecheck`, `verify`, `catalog:sync`)? `next build` typecheck ativo (sem `ignoreBuildErrors`)?
 - Dependências: lockfile sincronizado (`npm ci` limpo), `npm audit` sem vulnerabilidade prod, versões pinadas, deps não usadas óbvias.
