@@ -57,7 +57,7 @@ npm run build    # valida tsc + build de produção
   `code` do erro), `format`, `track` (analytics de funil), `support`, `types`.
 - `styles/` — `canonical.css` (tokens/contratos, é importado por último),
   `design-system.css`, `platform-*`, `pricing.css`, `support.css`.
-- `tests/e2e/` — Playwright (40 testes; mocks de API; `NEXT_PUBLIC_E2E=1`).
+- `tests/e2e/` — Playwright, com mocks de API (rode com `$env:NEXT_PUBLIC_E2E=1`; CI usa `retries: 2`). Cobre landing pública, onboarding/jornada, admin (incl. Assinaturas e Suporte), `/planos` e suporte.
 - `legacy-static/` — implementação anterior, preservada para referência e testes legados.
 
 ## Regras preservadas do front antigo
