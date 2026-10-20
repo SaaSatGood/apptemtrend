@@ -11,7 +11,7 @@
    --tt-danger #a52727
 
    Regras da casa:
-   - Foco visível: 3px solid #385400 (nunca ciano/lime em fundo claro).
+   - Foco de teclado: verde com contraste; clique não ganha contorno escuro.
    - Alvos de toque: mínimo 44px.
    - Métricas numéricas: font-variant-numeric: tabular-nums.
    ============================================================ */
@@ -27,6 +27,7 @@
   --tt-line: #dce3d3;
   --tt-muted: #4f574b;
   --tt-deep: #385400;
+  --tt-focus: #557d17;
   --tt-paper: #fffefa;
   --tt-danger: #a52727;
   --tt-danger-soft: #fdecec;
@@ -48,7 +49,7 @@
   --tt-radius-pill: 999px;
   --tt-control-height: 48px;
   --tt-touch-height: 44px;
-  --tt-focus-ring: 0 0 0 3px #38540038;
+  --tt-focus-ring: 0 0 0 3px #a9d66e80;
   --tt-shadow-card: 0 12px 34px #26351a0a;
   --tt-motion-fast: 180ms ease;
   --ink: var(--tt-ink);
@@ -178,9 +179,22 @@
   border-radius: var(--tt-radius-pill);
 }
 
-:is(#app-view, .auth-view, .onboarding, .tt-pricing, #admin-view, .content-kit-dialog) :is(a, button, input, textarea, select, summary):focus-visible {
-  outline: 3px solid var(--tt-deep);
+:is(.tt-home, .tt-public-header, #app-view, .auth-view, .onboarding, .tt-pricing, #admin-view, .content-kit-dialog, .publication-dialog, .tt-document-page, .tt-not-found) :is(a, button, summary):focus:not(:focus-visible) {
+  outline: none;
+}
+
+:is(.tt-home, .tt-public-header, #app-view, .auth-view, .onboarding, .tt-pricing, #admin-view, .content-kit-dialog, .publication-dialog, .tt-document-page, .tt-not-found) :is(a, button, input, textarea, select, summary):focus-visible {
+  outline: 3px solid var(--tt-focus);
   outline-offset: 3px;
+}
+
+:is(.tt-home, #app-view, .auth-view, .onboarding, .tt-pricing, #admin-view, .content-kit-dialog, .publication-dialog) :is(input:not([type="checkbox"]):not([type="radio"]), textarea, select):focus {
+  border-color: var(--tt-focus);
+  box-shadow: var(--tt-focus-ring);
+}
+
+:is(.tt-home, #app-view, .auth-view, .onboarding, .tt-pricing, #admin-view, .content-kit-dialog, .publication-dialog) :is(input:not([type="checkbox"]):not([type="radio"]), textarea, select):focus:not(:focus-visible) {
+  outline: none;
 }
 
 :is(#app-view, .auth-view, .onboarding, .tt-pricing, #admin-view, .content-kit-dialog) :is(button, a, input, textarea, select) {
@@ -456,7 +470,7 @@
   font-size: clamp(50px, 4.6vw, 66px);
   font-weight: 760;
   line-height: .98;
-  letter-spacing: -.075em;
+  letter-spacing: -.03em;
   text-wrap: balance;
 }
 .tt-home .tt-discover-hero h1 em {
@@ -538,22 +552,18 @@
 .tt-home .tt-hero-creators-image {
   display: block;
   width: 100%;
-  height: clamp(360px, 33vw, 480px);
+  height: clamp(340px, 28vw, 400px);
   object-fit: cover;
   object-position: center;
 }
 .tt-home .tt-hero-product-preview {
-  position: absolute;
-  z-index: 2;
-  right: 18px;
-  bottom: 18px;
-  left: 18px;
-  padding: 16px 18px;
-  border: 1px solid #ffffffc9;
-  border-radius: var(--tt-radius-card);
-  background: #fffefaf2;
-  box-shadow: 0 12px 30px #26351a18;
-  backdrop-filter: blur(14px);
+  position: static;
+  padding: 16px 18px 18px;
+  border: 0;
+  border-radius: 0;
+  background: var(--tt-paper);
+  box-shadow: none;
+  backdrop-filter: none;
 }
 .tt-home .tt-hero-product-preview span {
   display: block;
@@ -565,26 +575,27 @@
   text-transform: uppercase;
 }
 .tt-home .tt-hero-product-preview strong { color: var(--tt-ink); font-size: 20px; letter-spacing: -.04em; }
-.tt-home .tt-hero-product-preview p { max-width: 44ch; margin: 4px 0 0; color: var(--tt-muted); font-size: 12px; line-height: 1.4; }
+.tt-home .tt-hero-product-preview p { max-width: 44ch; margin: 5px 0 0; color: var(--tt-ink); font-size: 14px; line-height: 1.45; }
 .tt-home .tt-hero-plan-preview {
   display: grid;
-  grid-template-columns: minmax(170px, .75fr) minmax(0, 1.65fr) auto;
+  grid-template-columns: minmax(255px, .8fr) minmax(0, 2.2fr);
   align-items: center;
-  gap: 28px;
+  gap: clamp(24px, 3vw, 44px);
   width: min(1280px, calc(100% - 88px));
   margin: 0 auto 24px;
-  padding: 20px 23px;
+  padding: 22px 24px;
   border: 1px solid #cddfae;
   border-radius: var(--tt-radius-card);
   background: var(--tt-paper);
 }
 .tt-home .tt-hero-plan-preview > div span { display: block; margin-bottom: 6px; color: var(--tt-deep); font-size: 10px; font-weight: 850; text-transform: uppercase; letter-spacing: .1em; }
-.tt-home .tt-hero-plan-preview > div strong { display: block; max-width: 20ch; font-size: 18px; line-height: 1.2; letter-spacing: -.035em; }
-.tt-home .tt-hero-plan-preview ol { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
-.tt-home .tt-hero-plan-preview li { display: flex; align-items: baseline; gap: 10px; color: var(--tt-muted); font-size: 12px; }
-.tt-home .tt-hero-plan-preview li b { color: var(--tt-deep); font-size: 11px; font-variant-numeric: tabular-nums; }
-.tt-home .tt-hero-plan-preview > a { color: var(--tt-deep); font-size: 12px; font-weight: 850; text-decoration: none; white-space: nowrap; }
-.tt-home .tt-hero-plan-preview > a:hover { text-decoration: underline; text-underline-offset: 4px; }
+.tt-home .tt-hero-plan-preview > div strong { display: block; max-width: 29ch; font-size: 18px; line-height: 1.2; letter-spacing: -.035em; text-wrap: balance; }
+.tt-home .tt-hero-plan-intro > a { display: inline-flex; align-items: center; gap: 7px; margin-top: 12px; color: var(--tt-deep); font-size: 14px; font-weight: 800; text-decoration: underline; text-underline-offset: 4px; }
+.tt-home .tt-hero-plan-intro > a:hover { color: var(--tt-ink); }
+.tt-home .tt-hero-plan-intro > a span { display: inline; margin: 0; color: inherit; font-size: 18px; font-weight: 700; letter-spacing: 0; line-height: 1; text-transform: none; }
+.tt-home .tt-hero-plan-preview ol { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: clamp(14px, 2vw, 28px); margin: 0; padding: 0; list-style: none; }
+.tt-home .tt-hero-plan-preview li { display: flex; align-items: flex-start; gap: 11px; min-width: 0; color: #3d4a2e; font-size: 15px; line-height: 1.4; }
+.tt-home .tt-hero-plan-preview li b { display: grid; place-items: center; flex: 0 0 34px; width: 34px; height: 34px; border-radius: 50%; background: var(--tt-lime); color: var(--tt-ink); font-size: 14px; font-weight: 800; font-variant-numeric: tabular-nums; }
 .tt-home .tt-landing-examples { width: min(1280px, calc(100% - 64px)); padding: 22px 0; }
 .tt-home .tt-landing-examples .tt-discover-chips { display: flex; width: 100%; max-width: none; margin: 0; flex-wrap: wrap; white-space: normal; }
 .tt-home .tt-landing-examples .tt-discover-chips > span { align-self: center; font-size: 12px; color: var(--tt-muted); }
@@ -594,8 +605,8 @@
 @media (max-width: 1000px) {
   .tt-home .tt-hero { grid-template-columns: 1fr 1fr; gap: 24px; width: calc(100% - 48px); }
   .tt-home .tt-discover-hero h1 { font-size: clamp(44px, 5.4vw, 62px); }
-  .tt-home .tt-hero-plan-preview { width: calc(100% - 48px); grid-template-columns: 1fr 1.7fr; }
-  .tt-home .tt-hero-plan-preview > a { grid-column: 1 / -1; }
+  .tt-home .tt-hero-plan-preview { width: calc(100% - 48px); grid-template-columns: 1fr; }
+  .tt-home .tt-hero-plan-preview > div strong { max-width: none; }
 }
 @media (max-width: 760px) {
   .tt-home .tt-hero-band { margin: 9px 10px 0; padding-top: 58px; border-radius: 24px; }
@@ -608,12 +619,12 @@
   .tt-home .tt-discover-row .tt-btn { width: 100%; min-width: 0; min-height: 48px; }
   .tt-home .tt-hero-showcase { margin: 0; border-radius: 20px; }
   .tt-home .tt-hero-creators-image { height: 290px; }
-  .tt-home .tt-hero-product-preview { right: 10px; bottom: 10px; left: 10px; padding: 11px 13px; border-radius: 14px; }
+  .tt-home .tt-hero-product-preview { padding: 14px 16px 16px; }
   .tt-home .tt-hero-product-preview strong { font-size: 17px; }
-  .tt-home .tt-hero-product-preview p { font-size: 11px; }
+  .tt-home .tt-hero-product-preview p { font-size: 14px; }
   .tt-home .tt-hero-plan-preview { grid-template-columns: 1fr; gap: 17px; width: calc(100% - 36px); margin-bottom: 12px; padding: 18px; }
   .tt-home .tt-hero-plan-preview > div strong { max-width: none; }
-  .tt-home .tt-hero-plan-preview > a { grid-column: auto; }
+  .tt-home .tt-hero-plan-preview ol { grid-template-columns: 1fr; gap: 12px; }
   .tt-home .tt-landing-examples { width: calc(100% - 32px); }
 }
 

@@ -142,6 +142,8 @@ test("planos: usuário logado sem assinatura abre o pagamento sem voltar ao cada
 
   await page.goto("/planos");
   await expect(page.getByRole("link", { name: "Minha assinatura" })).toBeVisible();
+  await expect(page.getByRole("navigation", { name: "Navegação principal" }).getByRole("link", { name: "Ir para o app" })).toHaveCount(1);
+  await expect(page.locator(".tt-public-actions .tt-public-login")).toHaveCount(0);
   await page.getByRole("button", { name: "Assinar Pro" }).click();
   await expect(page).toHaveURL(/pagamento-teste/);
   expect(checkoutBody).toEqual({ plan: "pro", period: "annual" });

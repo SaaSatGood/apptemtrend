@@ -7,6 +7,11 @@ export const metadata: Metadata = {
     "Comece com 7 dias de Pro por nossa conta e cresça quando fizer sentido: planos mensais ou anuais com PIX ou cartão, variações de roteiro e produção ilimitada. Cancele quando quiser.",
 };
 
-export default function PlanosPage() {
-  return <PricingPage />;
+export default async function PlanosPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ period?: string | string[] }>;
+}) {
+  const { period } = await searchParams;
+  return <PricingPage initialPeriod={period === "monthly" ? "monthly" : "annual"} />;
 }

@@ -58,19 +58,21 @@ export default function PublicNav({ page }: PublicNavProps) {
           {links.map((link) => (
             <Link
               key={link.href}
-              href={page === "home" ? link.href.replace(/^\/(#)/, "$1") : link.href}
+              href={page === "home" ? (link.href === "/planos" ? "#planos" : link.href.replace(/^\/(#)/, "$1")) : link.href}
               aria-current={page === "pricing" && link.href === "/planos" ? "page" : undefined}
               onClick={() => setOpen(false)}
             >
               {link.label}
             </Link>
           ))}
-          <Link className="tt-public-mobile-account" href="/app" onClick={() => setOpen(false)}>
-            {loggedIn ? "Ir para o app" : "Entrar"}
-          </Link>
+          {loggedIn ? (
+            <Link className="tt-public-app-link" href="/app" onClick={() => setOpen(false)}>Ir para o app</Link>
+          ) : (
+            <Link className="tt-public-mobile-account" href="/app" onClick={() => setOpen(false)}>Entrar</Link>
+          )}
         </div>
         <div className="tt-public-actions">
-          <Link className="tt-public-login" href="/app">{loggedIn ? "Ir para o app" : "Entrar"}</Link>
+          {!loggedIn && <Link className="tt-public-login" href="/app">Entrar</Link>}
           <Link className="tt-public-cta" href={loggedIn ? "/app/conta" : "/app?mode=signup"}>
             {loggedIn ? (page === "pricing" ? "Minha assinatura" : "Minha conta") : "Criar conta grátis"}
           </Link>

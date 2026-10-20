@@ -24,8 +24,8 @@ export default function LandingPage() {
           <div className="tt-hero-showcase">
             <Image
               className="tt-hero-creators-image"
-              src="/product-still-life.png"
-              alt="Garrafa térmica rosa com outros produtos em uma composição de estúdio"
+              src="/hero-tumbler-v2.png"
+              alt="Garrafa térmica rosa em uma composição de estúdio com fundo verde-lima"
               width={1536}
               height={1024}
               sizes="(max-width: 900px) 100vw, 50vw"
@@ -41,13 +41,16 @@ export default function LandingPage() {
         </section>
 
         <div className="tt-shell tt-hero-plan-preview" aria-label="Exemplo de plano de gravação">
-          <div><span>Depois da escolha</span><strong>Seu plano já aponta o que gravar.</strong></div>
-          <ol>
-            <li><b>01</b><span>Abra com uma pergunta sobre a bebida.</span></li>
-            <li><b>02</b><span>Mostre a garrafa em uso.</span></li>
-            <li><b>03</b><span>Feche com o resultado do teste.</span></li>
+          <div className="tt-hero-plan-intro">
+            <span>Depois da escolha</span>
+            <strong>Seu plano já aponta o que gravar.</strong>
+            <a href="#content-kits">Veja o plano completo <span aria-hidden="true">↓</span></a>
+          </div>
+          <ol aria-label="Etapas do plano de gravação">
+            <li><b>1</b><span>Abra com uma pergunta sobre a bebida.</span></li>
+            <li><b>2</b><span>Mostre a garrafa em uso.</span></li>
+            <li><b>3</b><span>Feche com o resultado do teste.</span></li>
           </ol>
-          <a href="#content-kits">Veja o plano completo <span aria-hidden="true">↗</span></a>
         </div>
 
       </div>

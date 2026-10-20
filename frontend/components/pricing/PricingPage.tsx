@@ -9,48 +9,12 @@ import { track } from "@/lib/track";
 import type { BillingCatalogResponse, BillingSubscriptionSummary } from "@/lib/types";
 import PublicNav from "@/components/PublicNav";
 import { displayPlanName } from "@/lib/plan-display";
+import { FALLBACK_CATALOG } from "@/lib/billing-catalog";
 
 type Period = "monthly" | "annual";
 type PaidPlan = "essencial" | "pro" | "scale";
 type AuthState = "checking" | "guest" | "authenticated";
 type AccountPlan = { nome?: string; status?: string; trial_ends_at?: string | null; current_period_end?: string | null };
-
-// Espelho do catálogo do backend (mesmo relatório de preços). Usado apenas se
-// a API não responder — os CTAs degradam para cadastro, nunca para cobrança errada.
-const FALLBACK: BillingCatalogResponse = {
-  enabled: false,
-  trial_days: 7,
-  plans: [
-    {
-      id: "essencial", nome: "Essencial", resumo: "Para o creator iniciante",
-      precoMensalCents: 2990, precoAnualCents: 29900, precoMensal: "R$ 29,90", precoAnual: "R$ 299,00",
-      bullets: ["30 kits de conteúdo por mês", "50 buscas de IA por dia", "Variações do roteiro (a cada 60s)", "Voz personalizada no roteiro", "5 roteiros salvos por produto", "50 itens na produção"],
-      destaque: false,
-      limits: { searchesPerDay: 50, kitsPerMonth: 30, variations: true, variationCooldownSeconds: 60, vozPersonalizada: true, kitsPerProduct: 5, productionItems: 50 },
-    },
-    {
-      id: "pro", nome: "Pro", resumo: "Para o creator ativo",
-      precoMensalCents: 5990, precoAnualCents: 59900, precoMensal: "R$ 59,90", precoAnual: "R$ 599,00",
-      bullets: ["100 kits de conteúdo por mês", "200 buscas de IA por dia", "Variações do roteiro (a cada 30s)", "Roteiros salvos ilimitados", "Produção ilimitada", "Suporte prioritário em 24h"],
-      destaque: true,
-      limits: { searchesPerDay: 200, kitsPerMonth: 100, variations: true, variationCooldownSeconds: 30, vozPersonalizada: true, kitsPerProduct: null, productionItems: null },
-    },
-    {
-      id: "scale", nome: "Scale", resumo: "Para duplas e agências",
-      precoMensalCents: 14900, precoAnualCents: 149000, precoMensal: "R$ 149,00", precoAnual: "R$ 1.490,00",
-      bullets: ["300 kits de conteúdo por mês", "500 buscas de IA por dia", "3 assentos", "Suporte dedicado", "Exportação CSV"],
-      destaque: false,
-      limits: { searchesPerDay: 500, kitsPerMonth: 300, variations: true, variationCooldownSeconds: 30, vozPersonalizada: true, kitsPerProduct: null, productionItems: null },
-    },
-    {
-      id: "enterprise", nome: "Enterprise", resumo: "Para operações maiores",
-      precoMensalCents: null, precoAnualCents: null, precoMensal: null, precoAnual: null,
-      bullets: ["Fair use de 1.000 kits/mês", "Buscas de IA ilimitadas (fair use)", "10+ assentos", "SLA e onboarding assistido"],
-      destaque: false,
-      limits: { searchesPerDay: null, kitsPerMonth: 1000, variations: true, variationCooldownSeconds: 30, vozPersonalizada: true, kitsPerProduct: null, productionItems: null },
-    },
-  ],
-};
 
 const FAQS = [
   {
@@ -67,7 +31,7 @@ const FAQS = [
   },
   {
     q: "Tem garantia?",
-    a: `Você começa com ${FALLBACK.trial_days} dias de Pro por nossa conta, sem cartão. Se não fizer sentido, é só não assinar: nada é cobrado sem você decidir.`,
+    a: `Você começa com ${FALLBACK_CATALOG.trial_days} dias de Pro por nossa conta, sem cartão. Se não fizer sentido, é só não assinar: nada é cobrado sem você decidir.`,
   },
   {
     q: "E se eu me arrepender depois de assinar?",
@@ -105,13 +69,13 @@ const STATUS_LABEL: Record<string, string> = {
   inactive: "",
 };
 
-export default function PricingPage() {
+export default function PricingPage({ initialPeriod = "annual" }: { initialPeriod?: Period }) {
   const router = useRouter();
   const [catalog, setCatalog] = useState<BillingCatalogResponse | null>(null);
   const [sub, setSub] = useState<BillingSubscriptionSummary | null>(null);
   const [accountPlan, setAccountPlan] = useState<AccountPlan | null>(null);
   const [authState, setAuthState] = useState<AuthState>("checking");
-  const [period, setPeriod] = useState<Period>("annual");
+  const [period, setPeriod] = useState<Period>(initialPeriod);
   const [busy, setBusy] = useState<PaidPlan | null>(null);
   const [notice, setNotice] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
@@ -165,7 +129,7 @@ export default function PricingPage() {
     };
   }, []);
 
-  const data = catalog ?? FALLBACK;
+  const data = catalog ?? FALLBACK_CATALOG;
   const checkoutEnabled = catalog?.enabled === true;
   const loggedIn = authState === "authenticated";
   const plans = data.plans.filter((p) => p.id !== "enterprise");
@@ -356,7 +320,7 @@ export default function PricingPage() {
               ? [...p.bullets, ...(!p.bullets.some((item) => /roteiros salvos/i.test(item)) && p.limits.kitsPerProduct === null ? ["Roteiros salvos ilimitados"] : []), ...(!p.bullets.some((item) => /produção ilimitada/i.test(item)) && p.limits.productionItems === null ? ["Produção ilimitada"] : [])]
               : p.bullets;
             return (
-              <article key={p.id} className={`tt-price-card${p.destaque ? " is-featured" : ""}`}>
+              <article id={`plan-${p.id}`} key={p.id} className={`tt-price-card${p.destaque ? " is-featured" : ""}`}>
                 {p.destaque && <span className="tt-price-seal">Mais escolhido</span>}
                 <header>
                   <h2>{p.nome}</h2>
