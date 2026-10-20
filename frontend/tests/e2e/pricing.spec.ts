@@ -109,10 +109,43 @@ test("planos: assinante vê plano atual e agenda a troca", async ({ page }) => {
   });
   await page.goto("/planos");
   await expect(page.getByText("Seu plano: Essencial")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Mensal" })).toBeDisabled();
+  await expect(page.getByRole("button", { name: /Anual/ })).toBeDisabled();
+  await expect(page.getByText("Trocas de plano mantêm seu ciclo de cobrança atual.")).toBeVisible();
   await expect(page.getByRole("button", { name: "Seu plano atual" })).toBeDisabled();
   await page.getByRole("button", { name: /Mudar para Pro/ }).click();
   await expect(page.getByText(/Mudança para o Pro agendada/)).toBeVisible();
   expect(changeBody).toEqual({ plan: "pro", period: "annual" });
+});
+
+test("planos: usuário logado sem assinatura abre o pagamento sem voltar ao cadastro", async ({ page }) => {
+  await withSession(page);
+  await page.route("http://localhost:3333/billing/plans", (route) => route.fulfill({ json: catalog }));
+  await page.route("http://localhost:3333/billing/subscription", (route) => route.fulfill({
+    json: {
+      enabled: true,
+      plan: "free",
+      plan_label: "Sem plano",
+      status: "inactive",
+      period: null,
+      has_active_subscription: false,
+    },
+  }));
+  let checkoutBody: unknown = null;
+  await page.route("http://localhost:3333/billing/checkout", (route) => {
+    checkoutBody = route.request().postDataJSON();
+    return route.fulfill({ json: { url: "http://localhost:3000/pagamento-teste" } });
+  });
+  await page.route("http://localhost:3000/pagamento-teste", (route) => route.fulfill({
+    body: "Pagamento",
+    contentType: "text/html",
+  }));
+
+  await page.goto("/planos");
+  await expect(page.getByRole("link", { name: "Minha assinatura" })).toBeVisible();
+  await page.getByRole("button", { name: "Assinar Pro" }).click();
+  await expect(page).toHaveURL(/pagamento-teste/);
+  expect(checkoutBody).toEqual({ plan: "pro", period: "annual" });
 });
 
 test("app: faixa de trial ativo leva aos planos", async ({ page }) => {

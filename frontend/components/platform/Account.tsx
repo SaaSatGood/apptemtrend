@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { resolveSession, supabase } from "@/lib/supabase";
 import { api, friendlyError } from "@/lib/api";
@@ -45,6 +46,7 @@ function pct(used: number, limit: number | null | undefined): number | null {
 }
 
 export default function Account({ onEditPreferences }: { onEditPreferences: () => void }) {
+  const searchParams = useSearchParams();
   const { toast, me, signOut, reloadMe } = usePlatform();
   const [account, setAccount] = useState<AccountData | null>(null);
   const [loadingAccount, setLoadingAccount] = useState(true);
@@ -61,6 +63,9 @@ export default function Account({ onEditPreferences }: { onEditPreferences: () =
   const [cancelOpen, setCancelOpen] = useState(false);
   const [cancelBusy, setCancelBusy] = useState(false);
   const [cancelError, setCancelError] = useState("");
+  const [checkoutStatus, setCheckoutStatus] = useState<"idle" | "checking" | "confirmed" | "pending">(
+    searchParams.get("checkout") === "ok" ? "checking" : "idle"
+  );
 
   const loadAccount = useCallback(async () => {
     setLoadingAccount(true);
@@ -93,6 +98,38 @@ export default function Account({ onEditPreferences }: { onEditPreferences: () =
     queueMicrotask(() => { if (active) void loadAccount(); });
     return () => { active = false; };
   }, [loadAccount]);
+
+  useEffect(() => {
+    if (searchParams.get("checkout") !== "ok") return;
+    let active = true;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    let attempt = 0;
+    const checkPayment = async () => {
+      try {
+        const session = await resolveSession();
+        if (!session?.access_token) return;
+        const summary = await api<BillingSubscriptionSummary>("/billing/subscription", session.access_token);
+        if (!active) return;
+        if (summary?.enabled) setBilling(summary);
+        if (summary?.has_active_subscription && summary.status === "active") {
+          setCheckoutStatus("confirmed");
+          window.history.replaceState(null, "", "/app/conta");
+          await reloadMe().catch(() => undefined);
+          return;
+        }
+      } catch {
+        // O retorno do checkout pode chegar alguns segundos antes do webhook.
+      }
+      attempt += 1;
+      if (active && attempt < 6) timer = setTimeout(() => void checkPayment(), 2000);
+      else if (active) setCheckoutStatus("pending");
+    };
+    void checkPayment();
+    return () => {
+      active = false;
+      if (timer) clearTimeout(timer);
+    };
+  }, [reloadMe, searchParams]);
 
   const preferences = [
     ...(me?.creator?.estilos_conteudo || []),
@@ -238,6 +275,15 @@ export default function Account({ onEditPreferences }: { onEditPreferences: () =
         </div>
         {me?.is_admin && <Link className="ghost" href="/app/admin">Voltar ao painel</Link>}
       </div>
+      {checkoutStatus !== "idle" && (
+        <div className={`form-message ${checkoutStatus === "confirmed" ? "success" : ""}`} role="status">
+          {checkoutStatus === "checking" && "Pagamento recebido. Estamos confirmando a ativação do seu plano…"}
+          {checkoutStatus === "confirmed" && "Pagamento confirmado — seu plano já está ativo."}
+          {checkoutStatus === "pending" && (
+            <>Seu pagamento ainda está sendo processado. Você pode atualizar esta página em instantes ou falar com o <Link href="/app/suporte">suporte</Link>.</>
+          )}
+        </div>
+      )}
       <div className="account-summary">
         <span className="account-avatar" aria-hidden="true">{(name || account?.email || "T").trim().charAt(0).toUpperCase()}</span>
         <div>

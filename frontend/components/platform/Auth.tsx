@@ -132,7 +132,7 @@ export default function AuthPanel({
     setError("");
     const { error } = await supabase().auth.signInWithOAuth({
       provider,
-      options: { redirectTo: window.location.origin + window.location.pathname },
+      options: { redirectTo: window.location.origin + window.location.pathname + window.location.search },
     });
     if (error) {
       setError(humanAuthError(error));

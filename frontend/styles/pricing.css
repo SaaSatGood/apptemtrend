@@ -263,9 +263,9 @@
   display: flex;
   flex-direction: column;
   gap: 14px;
-  background: #fff;
-  border: 1px solid #dce3d3;
-  border-radius: 22px;
+  background: var(--tt-surface);
+  border: 1px solid var(--tt-line);
+  border-radius: var(--tt-radius-card);
   padding: 26px 24px;
 }
 
@@ -280,9 +280,9 @@
   top: -14px;
   left: 50%;
   transform: translateX(-50%);
-  background: var(--tt-lime, #c8ff2e);
-  color: var(--tt-ink, #10110f);
-  border-radius: 999px;
+  background: var(--tt-lime);
+  color: var(--tt-ink);
+  border-radius: var(--tt-radius-pill);
   padding: 6px 14px;
   font-size: 12px;
   font-weight: 800;
@@ -690,4 +690,15 @@
   display: inline-flex;
   align-items: center;
   text-decoration: none;
+}
+.tt-pricing-period-note {
+  margin: 10px 0 0;
+  color: var(--tt-muted, #696969);
+  font-size: 0.82rem;
+  text-align: center;
+}
+
+.tt-pricing-toggle button:disabled {
+  cursor: not-allowed;
+  opacity: 0.72;
 }

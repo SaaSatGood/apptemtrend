@@ -10,6 +10,7 @@ import type { BillingCatalogResponse, BillingSubscriptionSummary } from "@/lib/t
 
 type Period = "monthly" | "annual";
 type PaidPlan = "essencial" | "pro" | "scale";
+type AuthState = "checking" | "guest" | "authenticated";
 
 // Espelho do catálogo do backend (mesmo relatório de preços). Usado apenas se
 // a API não responder — os CTAs degradam para cadastro, nunca para cobrança errada.
@@ -75,6 +76,12 @@ const FAQS = [
   },
 ];
 
+const PLAN_OUTCOME: Record<PaidPlan, string> = {
+  essencial: "Teste ideias de produto e mantenha seus primeiros vídeos organizados.",
+  pro: "Crie roteiros com frequência e acompanhe cada vídeo até a publicação.",
+  scale: "Divida a criação entre três pessoas e acompanhe a produção em equipe.",
+};
+
 function monthlyEquivalent(cents: number | null): string | null {
   if (!cents) return null;
   return (cents / 12 / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -99,6 +106,7 @@ export default function PricingPage() {
   const router = useRouter();
   const [catalog, setCatalog] = useState<BillingCatalogResponse | null>(null);
   const [sub, setSub] = useState<BillingSubscriptionSummary | null>(null);
+  const [authState, setAuthState] = useState<AuthState>("checking");
   const [period, setPeriod] = useState<Period>("annual");
   const [busy, setBusy] = useState<PaidPlan | null>(null);
   const [notice, setNotice] = useState("");
@@ -120,11 +128,22 @@ export default function PricingPage() {
       try {
         const session = await resolveSession();
         const token = session?.access_token;
-        if (!token) return;
+        if (!token) {
+          if (active) setAuthState("guest");
+          return;
+        }
+        if (active) setAuthState("authenticated");
         const summary = await api<BillingSubscriptionSummary>("/billing/subscription", token);
-        if (active && summary?.enabled) setSub(summary);
+        if (active && summary?.enabled) {
+          setSub(summary);
+          if (summary.has_active_subscription && (summary.period === "monthly" || summary.period === "annual")) {
+            setPeriod(summary.period);
+          }
+        }
       } catch {
-        /* visitante: sem assinatura para mostrar */
+        // A sessão e o resumo são estados independentes: uma falha da API de
+        // billing nunca deve mandar um usuário autenticado de volta ao cadastro.
+        if (active) setAuthState((current) => current === "checking" ? "guest" : current);
       }
     })();
     return () => {
@@ -134,7 +153,7 @@ export default function PricingPage() {
 
   const data = catalog ?? FALLBACK;
   const checkoutEnabled = catalog?.enabled === true;
-  const loggedIn = sub?.enabled === true;
+  const loggedIn = authState === "authenticated";
   const plans = data.plans.filter((p) => p.id !== "enterprise");
   const enterprise = data.plans.find((p) => p.id === "enterprise");
   const hasActiveSub = sub?.has_active_subscription === true;
@@ -156,7 +175,8 @@ export default function PricingPage() {
     } catch {
       /* armazenamento opcional */
     }
-    router.push("/app?mode=signup");
+    const next = `/planos?plan=${plan}&period=${period}`;
+    router.push(`/app?mode=signup&next=${encodeURIComponent(next)}`);
   }
 
   async function subscribe(plan: PaidPlan) {
@@ -208,6 +228,9 @@ export default function PricingPage() {
   }
 
   function planCta(p: (typeof plans)[number]) {
+    if (authState === "checking") {
+      return { label: "Verificando sua conta…", disabled: true, onClick: undefined as (() => void) | undefined };
+    }
     const current = hasActiveSub && paidPlan === p.id && sub?.period === period;
     if (current) {
       return { label: "Seu plano atual", disabled: true, onClick: undefined as (() => void) | undefined };
@@ -239,8 +262,8 @@ export default function PricingPage() {
           <strong>TemTrend</strong>
         </Link>
         <div className="tt-pricing-nav-actions">
-          <Link className="tt-pricing-login" href="/app">Entrar</Link>
-          <Link className="tt-pricing-signup" href="/app?mode=signup">Começar agora</Link>
+          <Link className="tt-pricing-login" href={loggedIn ? "/app" : "/app"}>{loggedIn ? "Ir para o app" : "Entrar"}</Link>
+          <Link className="tt-pricing-signup" href={loggedIn ? "/app/conta" : "/app?mode=signup"}>{loggedIn ? "Minha assinatura" : "Começar agora"}</Link>
         </div>
       </header>
 
@@ -292,6 +315,7 @@ export default function PricingPage() {
               aria-pressed={period === "monthly"}
               className={period === "monthly" ? "active" : ""}
               onClick={() => setPeriod("monthly")}
+              disabled={hasActiveSub}
             >
               Mensal
             </button>
@@ -300,11 +324,15 @@ export default function PricingPage() {
               aria-pressed={period === "annual"}
               className={period === "annual" ? "active" : ""}
               onClick={() => setPeriod("annual")}
+              disabled={hasActiveSub}
             >
               Anual
               <span className="tt-pricing-badge">2 meses grátis</span>
             </button>
           </div>
+          {hasActiveSub && (
+            <p className="tt-pricing-period-note">Trocas de plano mantêm seu ciclo de cobrança atual.</p>
+          )}
         </div>
 
         {(notice || errorMsg) && (
@@ -332,6 +360,10 @@ export default function PricingPage() {
                 {equivalent && (
                   <p className="tt-price-equivalent">Equivale a {equivalent}/mês, cobrado uma vez por ano</p>
                 )}
+                <div className="tt-price-outcome">
+                  <span>Na prática</span>
+                  <p>{PLAN_OUTCOME[p.id as PaidPlan] || p.resumo}</p>
+                </div>
                 <ul className="tt-price-bullets">
                   {p.bullets.map((bullet) => (
                     <li key={bullet}>{bullet}</li>

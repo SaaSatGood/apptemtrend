@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { Suspense, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { usePlatform } from "@/components/platform/store";
 import AuthPanel from "@/components/platform/Auth";
@@ -22,6 +22,14 @@ function Discover() {
   const [authPanel] = useState<"login" | "signup">(() =>
     params.get("mode") === "signup" ? "signup" : "login"
   );
+  const requestedNext = params.get("next");
+  const safeNext = requestedNext?.startsWith("/") && !requestedNext.startsWith("//")
+    ? requestedNext
+    : null;
+
+  useEffect(() => {
+    if (session && me?.onboarding_completo && safeNext) router.replace(safeNext);
+  }, [me?.onboarding_completo, router, safeNext, session]);
 
   const recovery =
     typeof window !== "undefined" && window.location.hash.includes("type=recovery");
@@ -67,7 +75,7 @@ function Discover() {
           <Onboarding editing={false} onDone={() => {
             // reloadMe() já atualizou o perfil; refresh sem reload de página
             // (sessão em memória não sobrevive a reload).
-            router.push("/app/producao");
+            router.push(safeNext ?? "/app/producao");
           }} />
         ) : me.is_admin ? (
           <Admin />

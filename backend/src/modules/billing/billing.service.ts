@@ -152,6 +152,17 @@ export async function startCheckout(
   if (!billingActive()) {
     throw createAppError('BILLING_DISABLED', 'Pagamentos indisponíveis no momento.', 503);
   }
+  const { data: existingSubscription, error: existingError } = await supabaseAdmin
+    .from('subscriptions')
+    .select('id')
+    .eq('creator_id', creator.id)
+    .in('status', ['active', 'past_due'])
+    .limit(1)
+    .maybeSingle();
+  if (existingError) throw existingError;
+  if (existingSubscription) {
+    throw Errors.BAD_REQUEST('Você já possui uma assinatura. Use a opção de trocar plano na sua conta.');
+  }
   const base = env.FRONTEND_URL.replace(/\/$/, '');
   const returnUrl = `${base}/app/conta`;
   const completionUrl = `${base}/app/conta?checkout=ok`;
@@ -266,6 +277,9 @@ export async function schedulePlanChange(
   }
   if (row.plan === plan && row.period === period) {
     throw Errors.BAD_REQUEST('Você já assina este plano.');
+  }
+  if (row.period !== period) {
+    throw Errors.BAD_REQUEST('A troca de plano precisa manter o ciclo de cobrança atual.');
   }
   const productId = productIdFor(plan, period);
   if (!productId) throw Errors.BAD_REQUEST('Plano indisponível.');
