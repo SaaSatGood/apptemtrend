@@ -55,7 +55,7 @@ async function withSession(page: Page) {
 
 test("planos: catálogo, comparação e FAQ abrem para visitante", async ({ page }) => {
   await page.goto("/planos");
-  await expect(page.getByRole("heading", { level: 1 })).toContainText("Comece");
+  await expect(page.getByRole("heading", { level: 1 })).toContainText("Escolha seu plano");
   await expect(page.getByRole("heading", { name: "Essencial", exact: true })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Pro", exact: true })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Scale", exact: true })).toBeVisible();
@@ -147,7 +147,8 @@ test("planos: usuário logado sem assinatura abre o pagamento sem voltar ao cada
   expect(checkoutBody).toEqual({ plan: "pro", period: "annual" });
 });
 
-test("app: faixa de trial ativo leva aos planos", async ({ page }) => {
+test("app: faixa de trial ativo leva aos planos", async ({ page }, testInfo) => {
+  await page.setViewportSize({ width: 390, height: 844 });
   await withSession(page);
   await page.route("http://localhost:3333/**", (route) => {
     const path = new URL(route.request().url()).pathname;
@@ -173,6 +174,16 @@ test("app: faixa de trial ativo leva aos planos", async ({ page }) => {
   });
   await page.goto("/app");
   await expect(page.getByText(/Trial Pro · \d+ dias restantes/)).toBeVisible();
+  const appTitleFont = await page.getByRole("heading", { level: 1 }).first().evaluate((element) =>
+    getComputedStyle(element).fontFamily
+  );
+  expect(appTitleFont).toContain("Fustat");
+  const appNav = page.getByRole("navigation", { name: "Navegação da plataforma" });
+  for (const label of ["Descobrir", "Produção", "Planos", "Suporte"]) {
+    await expect(appNav.getByRole("link", { name: label })).toBeVisible();
+  }
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
+  await page.screenshot({ path: testInfo.outputPath("app-mobile-nav.png") });
   await page.getByRole("link", { name: "Ver planos" }).click();
   await expect(page).toHaveURL(/\/planos$/);
 });

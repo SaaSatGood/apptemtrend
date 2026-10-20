@@ -31,8 +31,8 @@ export default function LandingHero() {
   return (
     <div className="tt-discover-hero">
       <span className="tt-discover-kicker">Para creators do TikTok Shop</span>
-      <h1>Encontre o produto <em>para o próximo vídeo.</em></h1>
-      <p className="tt-discover-sub">Compare oportunidades reais e transforme a escolhida em um plano de gravação, cena por cena.</p>
+      <h1>Encontre o produto certo.</h1>
+      <p className="tt-discover-sub">Compare oportunidades para seu próximo vídeo e transforme a escolha em um plano de gravação, cena por cena.</p>
       <form
         className="tt-discover-form"
         onSubmit={(e) => {

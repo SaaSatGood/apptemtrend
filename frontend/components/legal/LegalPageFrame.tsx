@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
+import PublicNav from "@/components/PublicNav";
 
 type Props = {
   eyebrow: string;
@@ -12,14 +13,7 @@ type Props = {
 export default function LegalPageFrame({ eyebrow, title, updated, intro, children }: Props) {
   return (
     <div className="tt-document-page">
-      <header className="tt-document-header">
-        <nav className="tt-document-shell tt-document-nav" aria-label="Navegação da TemTrend">
-          <Link className="tt-document-logo" href="/" aria-label="TemTrend, página inicial">
-            <span aria-hidden="true">T↗</span><strong>TemTrend</strong>
-          </Link>
-          <Link className="tt-document-back" href="/">Voltar ao início</Link>
-        </nav>
-      </header>
+      <PublicNav page="legal" />
       <main id="document-content" className="tt-document-shell tt-document-main">
         <div className="tt-document-intro">
           <p className="tt-document-eyebrow"><span aria-hidden="true" /> {eyebrow}</p>

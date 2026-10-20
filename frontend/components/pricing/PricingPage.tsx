@@ -7,6 +7,7 @@ import { resolveSession } from "@/lib/supabase";
 import { api, friendlyError } from "@/lib/api";
 import { track } from "@/lib/track";
 import type { BillingCatalogResponse, BillingSubscriptionSummary } from "@/lib/types";
+import PublicNav from "@/components/PublicNav";
 import { displayPlanName } from "@/lib/plan-display";
 
 type Period = "monthly" | "annual";
@@ -273,28 +274,14 @@ export default function PricingPage() {
 
   return (
     <div className="tt-pricing">
-      <header className="tt-pricing-nav">
-        <Link className="tt-pricing-logo" href="/" aria-label="TemTrend, início">
-          <span aria-hidden="true">T</span>
-          <strong>TemTrend</strong>
-        </Link>
-        <div className="tt-pricing-nav-actions">
-          <Link className="tt-pricing-login" href={loggedIn ? "/app" : "/app"}>{loggedIn ? "Ir para o app" : "Entrar"}</Link>
-          <Link className="tt-pricing-signup" href={loggedIn ? "/app/conta" : "/app?mode=signup"}>{loggedIn ? "Minha assinatura" : "Começar agora"}</Link>
-        </div>
-      </header>
+      <PublicNav page="pricing" />
 
       <main>
         <section className="tt-pricing-hero">
-          <p className="tt-pricing-eyebrow">Planos</p>
-          <h1>
-            Comece com o <em>Pro completo</em>.<br />Cresça quando fizer sentido.
-          </h1>
+          <h1>Escolha seu plano.</h1>
           <p className="tt-pricing-sub">
-            Menos que um roteiro de freelancer. A TemTrend encontra o produto, monta o plano de
-            gravação em 8 partes e organiza sua produção do roteiro ao publicado.
+            Encontre o produto e receba um plano de gravação em 8 partes, do roteiro à publicação.
           </p>
-          <p className="tt-pricing-kit-explainer">Um kit de conteúdo reúne o roteiro, as cenas, a legenda e a chamada final de um vídeo.</p>
           <p className="tt-pricing-trial-chip">
             {data.trial_days} dias de Pro por nossa conta · sem cartão de crédito
           </p>

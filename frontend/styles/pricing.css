@@ -9,87 +9,11 @@
   font-family: var(--font-manrope), system-ui, sans-serif;
 }
 
-.tt-pricing-nav {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  width: min(1320px, calc(100% - 48px));
-  min-height: 82px;
-  margin: 18px auto 0;
-  padding: 10px 22px;
-  border: 1px solid #e9eee3;
-  border-radius: 999px;
-  background: #fffffff5;
-  box-shadow: 0 12px 38px #2c3d1714;
-}
-
-.tt-pricing-logo {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  text-decoration: none;
-  color: var(--tt-ink, #10110f);
-  font-weight: 800;
-  font-size: 22px;
-  letter-spacing: -.055em;
-}
-
-.tt-pricing-logo span {
-  display: grid;
-  place-items: center;
-  width: 44px;
-  height: 44px;
-  border-radius: 12px;
-  background: url("/temtrend-mark.svg") center / contain no-repeat;
-  color: transparent;
-  font-size: 0;
-}
-
-.tt-pricing-nav-actions {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.tt-pricing-login {
-  min-height: 48px;
-  display: inline-flex;
-  align-items: center;
-  padding: 0 14px;
-  border-radius: 999px;
-  background: var(--tt-lime, #c8ff2e);
-  color: var(--tt-ink, #10110f);
-  font-weight: 800;
-  text-decoration: none;
-}
-
-.tt-pricing-signup {
-  min-height: 48px;
-  display: inline-flex;
-  align-items: center;
-  padding: 0 18px;
-  border-radius: 999px;
-  background: var(--tt-ink, #10110f);
-  color: #fff;
-  font-weight: 800;
-  text-decoration: none;
-}
-
 .tt-pricing-hero {
   max-width: 950px;
   margin: 0 auto;
   text-align: center;
   padding: clamp(60px, 7vw, 100px) 20px 12px;
-}
-
-.tt-pricing-eyebrow {
-  text-transform: uppercase;
-  letter-spacing: 0.14em;
-  font-size: 12px;
-  font-weight: 800;
-  color: #4f574b;
-  margin: 0 0 12px;
 }
 
 .tt-pricing-hero h1 {
@@ -98,14 +22,6 @@
   font-weight: 750;
   letter-spacing: -.065em;
   margin: 0 0 16px;
-}
-
-.tt-pricing-hero h1 em {
-  font-family: var(--font-instrument-serif), Georgia, serif;
-  font-style: italic;
-  font-weight: 400;
-  color: #78a91a;
-  white-space: nowrap;
 }
 
 .tt-pricing-sub {
@@ -362,9 +278,7 @@
   border: 1px solid var(--tt-line, #dce3d3);
 }
 
-.tt-pricing-login:hover,
 .tt-price-cta:not(.is-ghost):hover:not(:disabled) { background: #ddff75; }
-.tt-pricing-signup:hover { background: #303b26; }
 .tt-price-cta.is-ghost:hover:not(:disabled) { background: #f0f7e5; border-color: #9fbd77; }
 
 .tt-price-cta:disabled {
@@ -557,19 +471,8 @@
 }
 
 @media (max-width: 700px) {
-  .tt-pricing-nav { width: calc(100% - 24px); min-height: 64px; margin-top: 8px; padding: 7px 10px; }
-  .tt-pricing-logo { gap: 7px; font-size: 18px; }
-  .tt-pricing-logo span { width: 36px; height: 36px; }
-  .tt-pricing-nav-actions { gap: 5px; }
-  .tt-pricing-login, .tt-pricing-signup { min-height: 40px; padding-inline: 12px; font-size: 12px; }
   .tt-pricing-hero { padding-top: 62px; }
   .tt-pricing-hero h1 { font-size: clamp(36px, 9.5vw, 58px); }
-}
-
-@media (max-width: 380px) {
-  .tt-pricing-logo { font-size: 16px; }
-  .tt-pricing-nav-actions { gap: 4px; }
-  .tt-pricing-login, .tt-pricing-signup { padding-inline: 10px; font-size: 11px; white-space: nowrap; }
 }
 
 .tt-pricing :is(a, button, summary):focus-visible {

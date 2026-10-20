@@ -73,7 +73,7 @@ async function setup(page: Page, options: { saved?: boolean; onboarding?: boolea
 test("descoberta, kit e produção até publicação manual", async ({ page }, testInfo) => {
   const fixture = await setup(page);
   await page.goto("/app");
-  await expect(page.getByRole("heading", { name: /Descubra o que vale/ })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Encontre seu produto." })).toBeVisible();
   await page.getByLabel("O que você quer vender?").fill("organizador de cozinha");
   await page.getByRole("button", { name: "Encontrar produtos" }).click();
   await expect(page.getByText("1 produto encontrado")).toBeVisible();
@@ -444,11 +444,15 @@ test("onboarding em cinco etapas e menu acessível", async ({ page }, testInfo) 
   await page.getByRole("button", { name: "Concluir configuração" }).click();
   await expect(page.getByRole("heading", { name: "Pronto.", exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Ir para Descobrir" }).click();
+  await expect(page).toHaveURL(/\/app$/);
+  await expect(page.getByRole("heading", { name: "Encontre seu produto." })).toBeVisible();
   await page.getByLabel("Abrir menu da conta").click();
   await expect(page.getByRole("link", { name: "Minha conta", exact: true })).toBeVisible();
   await page.keyboard.press("Escape");
   await expect(page.getByRole("link", { name: "Minha conta", exact: true })).toBeHidden();
   await page.getByLabel("Abrir menu da conta").click();
+  await page.screenshot({ path: testInfo.outputPath("account-menu-mobile.png") });
+  await expect(page.getByRole("link", { name: "Preferências", exact: true })).toBeVisible();
   await page.getByRole("link", { name: "Preferências", exact: true }).click();
   await expect(page.getByRole("heading", { name: "O que você quer fazer no TikTok?" })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);

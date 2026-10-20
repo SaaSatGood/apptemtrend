@@ -42,6 +42,14 @@ export default function Topbar() {
             >
               Produção
             </Link>
+            <Link href="/planos">Planos</Link>
+            <Link
+              href="/app/suporte"
+              aria-current={pathname?.startsWith("/app/suporte") ? "page" : undefined}
+              className={pathname?.startsWith("/app/suporte") ? "active" : ""}
+            >
+              Suporte
+            </Link>
           </nav>
         )}
         {admin && <span className="admin-nav-label">Painel administrativo</span>}

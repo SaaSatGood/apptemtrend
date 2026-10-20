@@ -13,3 +13,4 @@ frontend/test-results/
 # Playwright CLI output (may contain credentials)
 .playwright-cli/
 .tmp-shots/
+.taste-skill/

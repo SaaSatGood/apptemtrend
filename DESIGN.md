@@ -25,12 +25,12 @@ O lima é a única cor de marca. Status de erro, aviso e sucesso precisam de tex
 
 ## Tipografia
 
-- Manrope é a fonte de leitura e interface. Instrument Serif itálica acentua uma expressão curta em títulos de marketing e descoberta.
+- Inter Tight é a fonte de leitura e interface. Fustat é usada em títulos, inclusive no app. Ambas são carregadas localmente pelo Next.js; a escolha das famílias segue a referência tipográfica oficial da AbacatePay, sem reproduzir sua identidade visual.
 - Título principal: `clamp(2.7rem, 5.5vw, 5.5rem)`, peso 650–750, entrelinha próxima de 1 e espaçamento negativo moderado.
 - Títulos de seção: `clamp(2rem, 4vw, 4rem)`. Subtítulos de cartões: 1.15–1.5rem.
 - Texto corrido: pelo menos 1rem na landing e 0.875rem em áreas densas da plataforma. Metadados podem chegar a 0.75rem, nunca viram o único modo de entender uma ação.
 - Números de preço, comissão, vendas e progresso usam algarismos tabulares. Parágrafos longos têm largura máxima de aproximadamente 65 caracteres.
-- Em CSS, usar `--tt-font-ui` para interface e `--tt-font-editorial` apenas em destaque curto de título. Tamanhos recorrentes: `--tt-text-xs`, `--tt-text-sm`, `--tt-text-body` e `--tt-text-card-title`. Não introduzir outra família tipográfica em componentes novos.
+- Em CSS, usar `--tt-font-ui` para leitura e controles e `--tt-font-editorial` para títulos. Tamanhos recorrentes: `--tt-text-xs`, `--tt-text-sm`, `--tt-text-body` e `--tt-text-card-title`. Não introduzir outra família tipográfica em componentes novos.
 
 ## Layout e componentes
 

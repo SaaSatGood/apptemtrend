@@ -32,8 +32,11 @@
   --tt-danger-soft: #fdecec;
   --tt-success: #24643c;
   --tt-success-soft: #e9f8ef;
-  --tt-font-ui: var(--font-manrope), Arial, sans-serif;
-  --tt-font-editorial: var(--font-instrument-serif), Georgia, serif;
+  --tt-font-ui: var(--font-inter-tight), Arial, sans-serif;
+  --tt-font-editorial: var(--font-fustat), Arial, sans-serif;
+  /* Compatibilidade com estilos legados; novas regras usam os tokens tt. */
+  --font-manrope: var(--font-inter-tight);
+  --font-instrument-serif: var(--font-fustat);
   --tt-text-xs: 0.75rem;
   --tt-text-sm: 0.875rem;
   --tt-text-body: 1rem;
@@ -55,6 +58,17 @@
   --tt-radius-input: var(--tt-radius-control);
   --tt-btn-h: var(--tt-control-height);
   --tt-btn-h-sm: var(--tt-touch-height);
+}
+
+:is(.tt-home, .tt-pricing, #app-view, #admin-view, .auth-view, .onboarding, .tt-document-page, .tt-not-found) :is(h1, h2, h3, h4, h5, h6) {
+  font-family: var(--tt-font-editorial);
+  font-style: normal;
+  font-synthesis: none;
+}
+
+:is(.tt-home, .tt-pricing, #app-view, #admin-view, .auth-view, .onboarding, .tt-document-page, .tt-not-found) :is(h1, h2, h3, h4, h5, h6) em {
+  font-family: inherit;
+  font-style: normal;
 }
 
 /* A mesma base visual acompanha a pessoa da landing às áreas de trabalho. */
@@ -765,6 +779,216 @@
   color: var(--tt-ink);
 }
 
+/* Navegação compartilhada da landing e dos planos. A referência de proporção
+   é a barra da AbacatePay; cores, marca e destinos continuam da TemTrend. */
+.tt-public-header {
+  position: relative;
+  z-index: 80;
+  width: min(1200px, calc(100% - 40px));
+  margin: 16px auto 0;
+  border: 1px solid var(--tt-line);
+  border-radius: var(--tt-radius-pill);
+  background: var(--tt-surface);
+}
+.tt-home .tt-public-header {
+  position: fixed;
+  top: 14px;
+  left: 50%;
+  margin: 0;
+  transform: translateX(-50%);
+}
+.tt-public-nav {
+  display: flex;
+  align-items: center;
+  min-height: 76px;
+  padding: 10px 18px 10px 24px;
+  gap: clamp(24px, 3vw, 44px);
+}
+.tt-public-brand {
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 auto;
+  gap: 10px;
+  color: var(--tt-ink);
+  text-decoration: none;
+  white-space: nowrap;
+}
+.tt-public-brand span {
+  width: 38px;
+  height: 38px;
+  flex: none;
+  background: url("/temtrend-mark.svg") center / contain no-repeat;
+}
+.tt-public-brand strong { font-size: 19px; font-weight: 800; letter-spacing: -.055em; }
+.tt-public-links { display: flex; align-items: center; gap: clamp(12px, 1.8vw, 28px); min-width: 0; }
+.tt-public-links a,
+.tt-public-login {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: var(--tt-muted);
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 650;
+  white-space: nowrap;
+}
+.tt-public-links a:hover,
+.tt-public-links a[aria-current="page"],
+.tt-public-login:hover { color: var(--tt-deep); }
+.tt-public-actions { display: flex; align-items: center; gap: 18px; margin-left: auto; }
+.tt-public-login { color: var(--tt-ink); }
+.tt-public-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  padding: 0 22px;
+  border-radius: var(--tt-radius-pill);
+  background: var(--tt-lime);
+  color: var(--tt-ink);
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+.tt-public-cta:hover { background: var(--tt-lime-hover); }
+.tt-public-menu-button,
+.tt-public-mobile-account { display: none !important; }
+.tt-public-header :is(a, button):focus-visible {
+  outline: 3px solid var(--tt-deep);
+  outline-offset: 3px;
+}
+
+/* A área de trabalho usa a mesma altura, marca e hierarquia de ação. */
+#app-view .topbar {
+  top: 14px;
+  width: min(1200px, calc(100% - 40px));
+  min-height: 76px;
+  padding: 10px 18px 10px 24px;
+  border-color: var(--tt-line);
+  background: var(--tt-surface);
+  box-shadow: none;
+  backdrop-filter: none;
+}
+#app-view .topbar.is-scrolled { top: 8px; min-height: 68px; background: var(--tt-surface); box-shadow: 0 12px 30px #26351a12; }
+#app-view .app-logo { gap: 10px; font-size: 19px; font-weight: 800; letter-spacing: -.055em; }
+#app-view .app-logo > span { width: 38px; height: 38px; border-radius: 0; }
+#app-view .app-nav { gap: clamp(10px, 1.5vw, 22px); margin: 0 0 0 auto; padding: 0; border: 0; background: transparent; }
+#app-view .app-nav a {
+  min-width: 0;
+  min-height: 44px;
+  padding: 0 4px;
+  border-radius: 0;
+  background: transparent;
+  color: var(--tt-muted);
+  font-size: 13px;
+  font-weight: 650;
+  box-shadow: none;
+}
+#app-view .app-nav a.active,
+#app-view .app-nav a[aria-current="page"] { background: transparent; color: var(--tt-deep); box-shadow: none; }
+#app-view .app-nav a:hover:not(.active) { background: transparent; color: var(--tt-deep); }
+#app-view .app-create-link { margin: 0 0 0 clamp(12px, 1.8vw, 28px); min-height: 46px; padding: 0 18px; font-size: 13px; }
+#app-view .app-create-link span { width: auto; height: auto; background: transparent; color: inherit; font-size: 18px; }
+#app-view .user-menu { margin-left: 4px; }
+
+@media (max-width: 1050px) {
+  .tt-public-links { gap: 12px; }
+  .tt-public-links a { font-size: 12px; }
+  .tt-public-nav { gap: 18px; padding-left: 18px; }
+  .tt-public-actions { gap: 10px; }
+  .tt-public-cta { padding-inline: 16px; }
+}
+@media (max-width: 900px) {
+  .tt-public-header { width: calc(100% - 24px); margin-top: 8px; }
+  .tt-home .tt-public-header { top: 8px; }
+  .tt-public-nav { min-height: 64px; padding: 8px 10px 8px 16px; gap: 10px; }
+  .tt-public-brand span { width: 34px; height: 34px; }
+  .tt-public-brand strong { font-size: 17px; }
+  .tt-public-links {
+    display: none;
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 0;
+    right: 0;
+    padding: 12px;
+    border: 1px solid var(--tt-line);
+    border-radius: 20px;
+    background: var(--tt-surface);
+    box-shadow: 0 18px 42px #26351a1c;
+  }
+  .tt-public-links.is-open { display: grid; gap: 0; }
+  .tt-public-links a { min-height: 48px; padding: 0 12px; font-size: 15px; }
+  .tt-public-links a + a { border-top: 1px solid var(--tt-line); }
+  .tt-public-mobile-account { display: flex !important; }
+  .tt-public-login { display: none; }
+  .tt-public-cta { min-height: 44px; font-size: 12px; }
+  .tt-public-menu-button {
+    display: grid !important;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    border: 0;
+    border-radius: 50%;
+    background: var(--tt-soft);
+    color: var(--tt-ink);
+    cursor: pointer;
+  }
+  .tt-public-menu-icon { display: grid; gap: 5px; }
+  .tt-public-menu-icon i { width: 18px; height: 2px; border-radius: 2px; background: currentColor; transition: transform .2s ease; }
+  .tt-public-menu-button[aria-expanded="true"] .tt-public-menu-icon i:first-child { transform: translateY(3.5px) rotate(45deg); }
+  .tt-public-menu-button[aria-expanded="true"] .tt-public-menu-icon i:last-child { transform: translateY(-3.5px) rotate(-45deg); }
+  #app-view .topbar { top: 8px; width: calc(100% - 24px); min-height: 64px; padding: 8px 12px; }
+  #app-view .topbar.is-scrolled { top: 8px; min-height: 64px; }
+  #app-view .app-logo { font-size: 17px; }
+  #app-view .app-nav { gap: 8px; margin-left: auto; }
+  #app-view .app-nav a { font-size: 12px; }
+  #app-view .app-create-link { margin-left: 10px; padding-inline: 12px; font-size: 12px; }
+}
+@media (max-width: 750px) {
+  #app-view .topbar { height: 64px; }
+  #app-view .user-menu-panel {
+    position: fixed;
+    top: 80px;
+    right: 12px;
+    left: 12px;
+    width: auto;
+    max-height: calc(100dvh - 160px);
+    overflow-y: auto;
+  }
+  #app-view .app-logo { gap: 8px; font-size: 16px; }
+  #app-view .app-logo b { display: inline; }
+  #app-view .app-logo > span { width: 34px; height: 34px; }
+  #app-view .app-nav {
+    position: fixed;
+    z-index: 70;
+    left: 50%;
+    bottom: max(10px, env(safe-area-inset-bottom));
+    width: min(calc(100vw - 24px), 440px);
+    margin: 0;
+    padding: 5px;
+    gap: 0;
+    transform: translateX(-50%);
+    border: 1px solid var(--tt-line);
+    border-radius: var(--tt-radius-pill);
+    background: var(--tt-surface);
+    box-shadow: 0 12px 34px #26351a1a;
+  }
+  #app-view .app-nav a { flex: 1; min-height: 48px; padding: 0 5px; border-radius: var(--tt-radius-pill); font-size: 12px; }
+  #app-view .app-nav a.active,
+  #app-view .app-nav a[aria-current="page"] { background: var(--tt-soft); color: var(--tt-ink); }
+  #app-view .app-create-link { min-width: 0; min-height: 44px; margin-left: auto; padding: 0 12px; font-size: 12px; }
+  #app-view .app-create-link span { width: auto; height: auto; font-size: 17px; }
+}
+@media (max-width: 420px) {
+  .tt-public-brand strong { font-size: 16px; }
+  .tt-public-cta { padding-inline: 12px; font-size: 11px; }
+  .tt-public-actions { gap: 5px; }
+  #app-view .app-logo b { display: none; }
+  #app-view .app-create-link { font-size: 12px; }
+  #app-view .app-nav a { font-size: 11px; }
+}
+
 #app-view :is(.discovery-hero, .support-hero) {
   border-color: #cbdcb0;
   background: var(--tt-lime-soft);
@@ -986,7 +1210,6 @@
 .content-kit-dialog .content-kit-edit-note { margin: 12px 0 0; color: var(--tt-muted); font-size: 12px; line-height: 1.4; }
 .content-kit-dialog .content-kit-footer { justify-content: flex-end; }
 
-.tt-pricing .tt-pricing-kit-explainer { max-width: 60ch; margin: 12px auto 0; color: var(--tt-muted); font-size: 14px; line-height: 1.5; }
 .tt-pricing .tt-pricing-availability { max-width: 60ch; margin: 10px auto 0; color: var(--tt-muted); font-size: 13px; line-height: 1.45; }
 .tt-pricing .tt-price-equivalent s { margin-right: 6px; color: var(--tt-muted); }
 .tt-pricing .tt-price-card { min-height: 0; }

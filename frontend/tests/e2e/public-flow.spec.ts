@@ -45,10 +45,44 @@ test("login, termos e privacidade estão acessíveis", async ({ page }) => {
   await expect(page.getByRole("button", { name: /criar conta grátis/i })).toBeVisible();
   await page.goto("/termos");
   await expect(page.getByRole("heading", { name: /termos de uso/i })).toBeVisible();
-  await expect(page.getByRole("link", { name: "Voltar ao início" })).toBeVisible();
+  await expect(page.getByRole("navigation", { name: "Navegação principal" }).getByRole("link", { name: "TemTrend, início" })).toBeVisible();
   await page.goto("/privacidade");
   await expect(page.getByRole("heading", { name: /política de privacidade/i })).toBeVisible();
   await expect(page.getByRole("link", { name: "Acessar a plataforma" })).toBeVisible();
+});
+
+test("navegação pública é consistente e utilizável no celular", async ({ page }) => {
+  for (const [width, path] of [[390, "/"], [390, "/planos"], [390, "/termos"], [320, "/"]] as const) {
+    await page.setViewportSize({ width, height: 844 });
+    await page.goto(path);
+    const nav = page.getByRole("navigation", { name: "Navegação principal" });
+    await expect(nav.getByRole("link", { name: "Criar conta grátis" })).toBeVisible();
+    const menu = nav.locator('button[aria-controls="tt-public-links"]');
+    await expect(menu).toBeVisible();
+    await menu.click();
+    await expect(menu).toHaveAttribute("aria-expanded", "true");
+    await expect(nav.getByRole("link", { name: "Como funciona" })).toBeVisible();
+    await expect(nav.getByRole("link", { name: "Planos" })).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(menu).toHaveAttribute("aria-expanded", "false");
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
+  }
+});
+
+test("tipografia compartilhada usa Fustat nos títulos e Inter Tight na leitura", async ({ page }) => {
+  for (const path of ["/", "/planos", "/termos", "/app?mode=signup"]) {
+    await page.goto(path);
+    await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+    const fonts = await page.evaluate(async () => {
+      await document.fonts.ready;
+      return {
+        heading: getComputedStyle(document.querySelector("h1, h2")!).fontFamily.replaceAll(" ", "_"),
+        body: getComputedStyle(document.body).fontFamily.replaceAll(" ", "_"),
+      };
+    });
+    expect(fonts.heading).toContain("Fustat");
+    expect(fonts.body).toContain("Inter_Tight");
+  }
 });
 
 test("endereço inexistente mostra saída útil", async ({ page }) => {

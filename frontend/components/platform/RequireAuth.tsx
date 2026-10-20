@@ -60,7 +60,7 @@ export default function RequireAuth({
     return (
       <main id="app-view">
         <section className="page-wrap page-wrap--onboarding">
-          <Onboarding editing={false} onDone={() => router.push("/app/producao")} />
+          <Onboarding editing={false} onDone={() => router.push("/app")} />
         </section>
       </main>
     );
