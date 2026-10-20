@@ -63,14 +63,13 @@ test("planos: catálogo, comparação e FAQ abrem para visitante", async ({ page
   const trialChip = page.locator(".tt-pricing-trial-chip");
   await expect(trialChip).toContainText(/7 dias de Pro por nossa conta/);
   await expect(trialChip).toContainText(/sem cartão de crédito/);
-  await page.getByText("Comparar todos os recursos").click();
   await expect(page.getByRole("table")).toBeVisible();
   await expect(page.getByRole("columnheader", { name: "Grátis" })).toHaveCount(0);
   await expect(page.locator(".tt-faq-pricing details")).toHaveCount(6);
   await expect(page.getByText("Cancele quando quiser")).toBeVisible();
   await expect(page.getByRole("link", { name: "Reembolso" })).toBeVisible();
   // Sem assinatura: CTA leva ao cadastro.
-  await page.getByRole("button", { name: /Criar conta grátis/ }).first().click();
+  await page.getByRole("button", { name: /Começar trial grátis/ }).first().click();
   await expect(page).toHaveURL(/\/app\?mode=signup/);
 });
 

@@ -79,17 +79,18 @@ test("descoberta, kit e produção até publicação manual", async ({ page }, t
   await expect(page.getByText("1 produto encontrado")).toBeVisible();
   await expect(page.getByRole("heading", { name: "Conheça o produto encontrado" })).toBeVisible();
   expect(await page.locator(".discovery-hero").evaluate((element) => element.getBoundingClientRect().height)).toBeLessThan(450);
-  await expect(page.getByText(/Preço acessível/)).toBeVisible();
+  await expect(page.getByText(/Preço acessível/)).toHaveCount(0);
+  await expect(page.locator(".assistant-response .opportunity-metrics dt")).toHaveText(["Preço", "Vendas"]);
   await page.screenshot({ path: testInfo.outputPath("discover-desktop.png"), fullPage: true });
   await page.getByRole("button", { name: "Ver produto Organizador de cozinha" }).click();
   await expect(page.getByRole("heading", { name: product.nome, exact: true })).toBeVisible();
-  await page.getByRole("button", { name: "Criar conteúdo", exact: true }).click();
+  await page.getByRole("button", { name: "Gerar roteiro", exact: true }).click();
   const dialog = page.getByRole("dialog");
   await expect(dialog).toBeVisible();
-  await dialog.getByRole("button", { name: "+ Sem aparecer" }).click();
-  await expect(dialog.getByRole("button", { name: "✓ Sem aparecer" })).toHaveAttribute("aria-pressed", "true");
+  await dialog.getByRole("button", { name: "Sem aparecer, não selecionado" }).click();
+  await expect(dialog.getByRole("button", { name: "Sem aparecer, selecionado" })).toHaveAttribute("aria-pressed", "true");
   await dialog.getByLabel("Algum detalhe importante? (opcional)").fill("Um vídeo de 15 segundos");
-  await dialog.getByRole("button", { name: "Criar conteúdo" }).click();
+  await dialog.getByRole("button", { name: "Gerar roteiro" }).click();
   await expect(page.getByRole("heading", { name: kit.titulo })).toBeVisible();
   expect(fixture.getKitInstructions()).toContain("sem mostrar o rosto");
   expect(fixture.getKitInstructions()).toContain("Um vídeo de 15 segundos");
@@ -142,10 +143,9 @@ test("salvo não avança ao abrir o kit; retomada no celular", async ({ page }, 
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await page.screenshot({ path: testInfo.outputPath("discover-mobile.png"), fullPage: true });
   await page.getByRole("link", { name: "Produção", exact: true }).click();
-  await page.getByRole("button", { name: /^Em produção/ }).click();
-  await expect(page.getByRole("heading", { name: "Nenhum conteúdo encontrado." })).toBeVisible();
+  await expect(page.getByRole("button", { name: /^Em produção/ })).toHaveCount(0);
   await page.getByRole("button", { name: /^Salvos/ }).click();
-  await page.getByRole("link", { name: "Ver conteúdo" }).click();
+  await page.getByRole("link", { name: "Ver roteiro" }).click();
   const guide = page.locator(".recording-guide");
   await expect(guide.getByRole("heading", { name: "Grave uma etapa de cada vez." })).toBeVisible();
   await expect(page.locator(".kit-document, .kit-actions")).toHaveCount(0);
@@ -180,26 +180,30 @@ test("resultados exibem cinco produtos comparáveis e ações diretas", async ({
   await expect(page.getByText("5 produtos encontrados")).toBeVisible();
   const cards = page.locator(".assistant-response .opportunity-card");
   await expect(cards).toHaveCount(5);
-  await expect(cards.first().getByRole("heading")).toHaveText("Organizador de cozinha");
+  expect(await cards.first().evaluate((card) => card.getBoundingClientRect().width / card.parentElement!.getBoundingClientRect().width)).toBeGreaterThan(0.95);
+  await expect(cards.first().getByRole("heading")).toHaveText("Kit organizador de banheiro");
   await expect(page.getByRole("button", { name: /Mostrar mais/ })).toHaveCount(0);
   for (const card of await cards.all()) {
-    await expect(card.locator(".opportunity-metrics dt")).toHaveText(["Preço", "Comissão / venda", "Vendas"]);
+    await expect(card.locator(".opportunity-metrics dt")).toHaveText(["Preço", "Comissão estimada / venda", "Vendas"]);
     await expect(card.getByRole("button", { name: /^Salvar / })).toBeVisible();
     await expect(card.getByRole("button", { name: /^Gerar roteiro para/ })).toBeVisible();
   }
-  await expect(cards.nth(3).getByText("Maior comissão estimada")).toBeVisible();
+  await expect(cards.nth(4).getByText("Maior comissão estimada")).toBeVisible();
   await expect(cards.nth(2).getByText("Maior comissão estimada")).toHaveCount(0);
+  await cards.first().getByRole("button", { name: "Comparar produto" }).click();
+  await cards.nth(1).getByRole("button", { name: "Comparar produto" }).click();
+  await expect(page.getByLabel("Comparação de produtos")).toBeVisible();
   await page.screenshot({ path: testInfo.outputPath("five-comparable-products.png"), fullPage: true });
 
-  await cards.first().getByRole("button", { name: "Salvar Organizador de cozinha" }).click();
-  await expect(cards.first().getByText("Salvo ✓").first()).toBeVisible();
+  await cards.nth(2).getByRole("button", { name: "Salvar Organizador de cozinha" }).click();
+  await expect(cards.nth(2).getByText("Salvo ✓").first()).toBeVisible();
   await expect(page).toHaveURL(/\/app$/);
   expect(fixture.mutations).toContain("POST /creator-content");
 
-  await cards.first().getByRole("button", { name: "Gerar roteiro para Organizador de cozinha" }).click();
+  await cards.nth(2).getByRole("button", { name: "Gerar roteiro para Organizador de cozinha" }).click();
   const dialog = page.getByRole("dialog");
   await expect(dialog).toBeVisible();
-  await dialog.getByRole("button", { name: "Criar conteúdo" }).click();
+  await dialog.getByRole("button", { name: "Gerar roteiro" }).click();
   await expect(page.getByRole("heading", { name: kit.titulo })).toBeVisible();
 });
 
@@ -227,7 +231,7 @@ test("resultados e ações cabem na largura do celular", async ({ page }, testIn
   const cards = page.locator(".assistant-response .opportunity-card");
   await expect(cards).toHaveCount(5);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
-  await expect(cards.last().getByRole("button", { name: "Gerar roteiro para Garrafa térmica" })).toBeVisible();
+  await expect(cards.last().getByRole("button", { name: "Gerar roteiro para Luminária para vídeo" })).toBeVisible();
   for (const width of [390, 1280]) {
     await page.setViewportSize({ width, height: 844 });
     const actions = await cards.evaluateAll((elements) => elements.map((card) => {
@@ -319,7 +323,7 @@ test("detalhes, guia e produção mantêm o nome completo e a largura em três t
     await expect(page.getByRole("heading", { name: longName, exact: true })).toBeVisible();
     if (width === 390) expect(await page.getByRole("heading", { name: longName, exact: true }).evaluate((element) => element.getBoundingClientRect().height / parseFloat(getComputedStyle(element).lineHeight))).toBeLessThanOrEqual(2.15);
     await expect(page.getByText("Imagem do produto")).toHaveCount(0);
-    await expect(page.getByRole("link", { name: "Ver conteúdo" })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Ver roteiro" })).toBeVisible();
     if (width === 390) await page.screenshot({ path: testInfo.outputPath("product-detail-mobile.png"), fullPage: true });
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
     await page.goto(`/app/produtos/${productId}/kits/${kitId}`);
@@ -355,12 +359,19 @@ test("conta mostra ações secundárias e estado de erro recuperável", async ({
   await page.goto("/app/conta");
   await expect(page.getByRole("heading", { name: "Minha conta." })).toBeVisible();
   await expect(page.getByRole("button", { name: "Atualizar senha" })).toHaveClass(/ghost/);
-  await expect(page.getByText("Voz atualizada ✓")).toBeVisible();
+  await expect(page.getByText("Voz atualizada ✓")).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Salvar minha voz" })).toBeDisabled();
   await expect(page.getByRole("button", { name: "Dados atualizados ✓" })).toHaveCount(0);
   const cardOrder = await page.locator(".account-layout .account-card").evaluateAll((cards) => cards.map((card) => ({ title: card.querySelector("h2")?.textContent || "", top: card.getBoundingClientRect().top })).sort((a, b) => a.top - b.top).map((card) => card.title));
   expect(cardOrder).toEqual(["Informações do perfil", "Preferências de conteúdo", "Sua voz", "Segurança"]);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await page.screenshot({ path: testInfo.outputPath("account-settings-mobile.png"), fullPage: true });
+  await page.getByRole("button", { name: "Excluir minha conta" }).click();
+  const deleteDialog = page.getByRole("dialog");
+  await expect(deleteDialog.getByRole("button", { name: "Confirmar exclusão" })).toBeDisabled();
+  await deleteDialog.getByLabel("Digite seu email para confirmar").fill("creator@temtrend.test");
+  await expect(deleteDialog.getByRole("button", { name: "Confirmar exclusão" })).toBeEnabled();
+  await deleteDialog.getByRole("button", { name: "Cancelar" }).click();
 
   const failAccount = (route: import("@playwright/test").Route) => route.fulfill({ status: 503, json: { error: { message: "Indisponível" } } });
   await page.route("http://localhost:3333/account", failAccount);
@@ -377,7 +388,7 @@ test("produto sem kit mostra prévia compacta e uma ação principal", async ({ 
   await page.goto(`/app/produtos/${productId}`);
   await expect(page.getByRole("heading", { name: longName, exact: true })).toBeVisible();
   await expect(page.locator(".kit-empty-preview span")).toHaveText(["Hook", "5 cenas", "Legenda", "Hashtags", "CTA"]);
-  await expect(page.getByRole("button", { name: "Criar conteúdo" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Gerar roteiro" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Salvar produto" })).toBeVisible();
   await expect(page.locator("#product-detail .primary")).toHaveCount(1);
   await expect(page.getByText("Use os dados confirmados do produto para gerar seu roteiro.")).toHaveCount(0);
@@ -387,11 +398,12 @@ test("criação de conteúdo cabe no celular sem rolagem lateral", async ({ page
   await page.setViewportSize({ width: 390, height: 844 });
   await setup(page);
   await page.goto(`/app/produtos/${productId}`);
-  await page.getByRole("button", { name: "Criar conteúdo", exact: true }).click();
+  await page.getByRole("button", { name: "Gerar roteiro", exact: true }).click();
   const dialog = page.getByRole("dialog");
-  await expect(dialog.getByRole("heading", { name: "Seu vídeo começa aqui." })).toBeVisible();
-  await expect(dialog.getByRole("button", { name: "Criar conteúdo" })).toBeInViewport();
-  expect(await dialog.evaluate((node) => node.scrollWidth <= node.clientWidth && node.scrollHeight <= node.clientHeight + 1)).toBe(true);
+  await expect(dialog.getByRole("heading", { name: "Gere seu roteiro." })).toBeVisible();
+  await expect(dialog.getByText("Produto do roteiro")).toBeVisible();
+  await expect(dialog.getByRole("button", { name: "Gerar roteiro" })).toBeInViewport();
+  expect(await dialog.evaluate((node) => node.scrollWidth <= node.clientWidth)).toBe(true);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await page.screenshot({ path: testInfo.outputPath("create-content-mobile.png") });
 });
@@ -410,7 +422,7 @@ test("produção ordena pela próxima ação e ajusta o botão ao estado", async
   await expect(cards).toHaveCount(4);
   await expect(cards.locator(".production-status")).toHaveText(["Em produção", "Salvo", "Gravado", "Publicado ✓"]);
   await expect(cards.nth(0).getByText("Gravar cena 1 de 2")).toBeVisible();
-  await expect(cards.nth(1).getByRole("link", { name: "Criar conteúdo" })).toBeVisible();
+  await expect(cards.nth(1).getByRole("link", { name: "Gerar roteiro" })).toBeVisible();
   await expect(cards.nth(2).getByRole("button", { name: "Publicar" })).toBeVisible();
   await page.getByRole("combobox", { name: "Ordenação" }).selectOption("recentes");
   await expect(cards.first().getByRole("heading", { name: "Produto publicado" })).toBeVisible();

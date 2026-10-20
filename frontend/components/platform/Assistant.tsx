@@ -66,6 +66,13 @@ function isSensitive(product: Product): boolean {
   return /lingerie|camisola|moda íntima|moda intima|roupa íntima|roupa intima|adulto/i.test(`${product.categoria || ""} ${product.nome}`);
 }
 
+function videoReason(reason?: string | null): string | null {
+  if (!reason) return null;
+  // TODO: pedir ao serviço uma justificativa própria para vídeo, sem repetir métricas do card.
+  const cleaned = reason.split(" · ").filter((part) => !/preço acessível|comissão de|\d[\d.]* vendidos/i.test(part)).join(" · ").trim();
+  return cleaned && !/^(selecionado para a sua busca|combina com sua busca)$/i.test(cleaned) ? cleaned : null;
+}
+
 export function ProductCard({
   product,
   saved,
@@ -74,6 +81,8 @@ export function ProductCard({
   onOpen,
   onSave,
   onGenerate,
+  compared = false,
+  onCompare,
 }: {
   product: Product;
   saved: boolean;
@@ -82,6 +91,8 @@ export function ProductCard({
   onOpen: (id: string) => void;
   onSave: (id: string) => void;
   onGenerate: (id: string) => void;
+  compared?: boolean;
+  onCompare?: (id: string) => void;
 }) {
   const name = displayProductName(product);
   const commission = commissionOf(product);
@@ -96,13 +107,14 @@ export function ProductCard({
       <div className="product-body">
         <span className="product-category">{product.categoria || "Produto"}</span>
         <h3 title={product.nome}>{name}</h3>
-        {product.motivo && <p className="opportunity-motivo"><strong>Por que este:</strong> {product.motivo}</p>}
+        {videoReason(product.motivo) && <p className="opportunity-motivo"><strong>Por que considerar</strong><span>{videoReason(product.motivo)}</span></p>}
         {isSensitive(product) && <p className="opportunity-sensitive">Pode ter restrição de anúncio ou criativo no TikTok.</p>}
         <dl className="opportunity-metrics">
           <div><dt>Preço</dt><dd>{product.preco_texto || (product.preco_min_brl != null ? BRL.format(product.preco_min_brl) : "Não informado")}</dd></div>
-          <div><dt>Comissão / venda</dt><dd>{commission != null ? BRL.format(commission) : "Não informado"}{product.comissao_percentual != null && <small>{product.comissao_percentual}%{commission != null ? " do menor preço" : ""}</small>}</dd></div>
+          {commission != null && <div><dt>Comissão estimada / venda</dt><dd>{BRL.format(commission)}{product.comissao_percentual != null && <small>{product.comissao_percentual}% do menor preço</small>}</dd></div>}
           <div><dt>Vendas</dt><dd>{sold >= 0 ? sold.toLocaleString("pt-BR") : "Não informado"}{sold >= 0 && <small>{product.unidades_vendidas_total != null ? "no total" : "no período"}</small>}</dd></div>
         </dl>
+        {onCompare && <button className="opportunity-compare-toggle" type="button" aria-pressed={compared} onClick={() => onCompare(product.id)}>{compared ? "✓ Na comparação" : "Comparar produto"}</button>}
         <div className="product-actions">
           <div className="opportunity-secondary-actions">
             <button type="button" disabled={saved || saving} aria-label={`Salvar ${name}`} onClick={() => onSave(product.id)}>{saving ? "Salvando…" : saved ? "Salvo ✓" : "Salvar"}</button>
@@ -121,6 +133,7 @@ export default function Assistant({ onOpen }: { onOpen: (id: string) => void }) 
   const landingSearch = params.get("search");
   const { toast, productions, me, session, loadProductions } = usePlatform();
   const [query, setQuery] = useState(() => (landingSearch || "").slice(0, 500));
+  const [querySuggested, setQuerySuggested] = useState(false);
   const [searching, setSearching] = useState(false);
   const [searched, setSearched] = useState(false);
   const [message, setMessage] = useState("");
@@ -132,6 +145,8 @@ export default function Assistant({ onOpen }: { onOpen: (id: string) => void }) 
   const [planLimitMessage, setPlanLimitMessage] = useState("");
   const [contextIds, setContextIds] = useState<string[]>([]);
   const [hideSensitive, setHideSensitive] = useState(false);
+  const [sortBy, setSortBy] = useState<"vendas" | "preco" | "comissao">("vendas");
+  const [compareIds, setCompareIds] = useState<string[]>([]);
   const hasPendingSearch = useRef(false);
   const inFlight = useRef(false);
   const scrollAfterSearch = useRef(false);
@@ -200,20 +215,17 @@ export default function Assistant({ onOpen }: { onOpen: (id: string) => void }) 
       }
     });
 
-    const focusSearch = (event: KeyboardEvent) => {
-      const target = event.target as HTMLElement | null;
-      if (event.key !== "/" || target?.matches("input, textarea, select, [contenteditable='true']")) return;
-      event.preventDefault();
-      document.querySelector<HTMLInputElement>("#assistant-input")?.focus();
-    };
-    window.addEventListener("keydown", focusSearch);
     return () => {
       active = false;
-      window.removeEventListener("keydown", focusSearch);
     };
   }, [storageKey, landingSearch]);
 
-  const topResults = useMemo(() => results.filter((product) => !hideSensitive || !isSensitive(product)).slice(0, TOP_RESULTS), [results, hideSensitive]);
+  const topResults = useMemo(() => results.filter((product) => !hideSensitive || !isSensitive(product)).slice(0, TOP_RESULTS).sort((a, b) => {
+    if (sortBy === "preco") return (a.preco_min_brl ?? Infinity) - (b.preco_min_brl ?? Infinity);
+    if (sortBy === "comissao") return (commissionOf(b) ?? -1) - (commissionOf(a) ?? -1);
+    return salesOf(b) - salesOf(a);
+  }), [results, hideSensitive, sortBy]);
+  const comparedProducts = topResults.filter((product) => compareIds.includes(product.id));
   const highlight = useMemo(() => highlightFor(topResults), [topResults]);
   const clarificationChoices = /(?:facil|faceis|facilidade) de (?:gravar|demonstrar|mostrar)/.test(query.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase())
     ? CLARIFICATION_CHOICES.filter(([label]) => label !== "Fáceis de gravar")
@@ -313,6 +325,12 @@ export default function Assistant({ onOpen }: { onOpen: (id: string) => void }) 
     setNeedsClarification(false);
     setMessage("");
     setError(false);
+    setCompareIds([]);
+    setQuerySuggested(false);
+  }
+
+  function toggleCompare(id: string) {
+    setCompareIds((current) => current.includes(id) ? current.filter((item) => item !== id) : [...current.slice(-1), id]);
   }
 
   return (
@@ -332,7 +350,6 @@ export default function Assistant({ onOpen }: { onOpen: (id: string) => void }) 
       >
         <label htmlFor="assistant-input">
           O que você quer vender?
-          <span className="search-shortcut" aria-label="Pressione barra para buscar" title="Pressione / para buscar">/</span>
         </label>
         <div className="assistant-input-row">
           <input
@@ -344,13 +361,14 @@ export default function Assistant({ onOpen }: { onOpen: (id: string) => void }) 
             autoComplete="off"
             placeholder="Ex.: Quero um produto barato para demonstrar em 15 segundos"
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            onChange={(e) => { setQuery(e.target.value); setQuerySuggested(false); }}
           />
           <button id="assistant-submit" className="primary" type="submit" disabled={searching}>
             {searching ? "Encontrando produtos…" : "Encontrar produtos"}
           </button>
-          <button className="ghost discovery-surprise" type="button" disabled={searching} onClick={() => void search("Não sei o que vender. Sugira oportunidades do catálogo para começar a criar conteúdo.", true)}>{recurring ? "Me surpreenda" : "Não sei o que vender"}</button>
+          <button className="ghost discovery-surprise" type="button" disabled={searching} onClick={() => { setQuerySuggested(true); void search("Não sei o que vender. Sugira oportunidades do catálogo para começar a criar conteúdo.", true); }}>{recurring ? "Me surpreenda" : "Não sei o que vender"}</button>
         </div>
+        {querySuggested && <p className="assistant-query-source">Busca sugerida pela TemTrend. Edite o texto para personalizar.</p>}
       </form>
       <div className="assistant-shortcut-groups">
       {interestShortcuts.length > 0 && <div className="assistant-interest-shortcuts" role="group" aria-label="Buscas dos seus interesses"><span>Para você</span>{interestShortcuts.map((theme) => (
@@ -361,6 +379,7 @@ export default function Assistant({ onOpen }: { onOpen: (id: string) => void }) 
               onClick={() => {
                 const text = `Quero vender produtos de ${theme.toLocaleLowerCase("pt-BR")} para criar vídeos`;
                 setQuery(text);
+                setQuerySuggested(true);
                 setContextIds([]);
                 search(text, true);
               }}
@@ -377,6 +396,7 @@ export default function Assistant({ onOpen }: { onOpen: (id: string) => void }) 
             disabled={searching}
             onClick={() => {
               setQuery(text);
+              setQuerySuggested(true);
               setContextIds([]);
               search(text, true);
             }}
@@ -411,9 +431,10 @@ export default function Assistant({ onOpen }: { onOpen: (id: string) => void }) 
                 <span>{topResults.length} {topResults.length === 1 ? "produto encontrado" : "produtos encontrados"}</span>
                 <h2>{topResults.length === 1 ? "Conheça o produto encontrado" : "Compare e escolha seu produto"}</h2>
               </div>
-              <small>Dados do catálogo TemTrend</small>
+              <div className="discover-results-tools"><small>Dados do catálogo TemTrend · ordenados por {sortBy === "vendas" ? "vendas" : sortBy === "preco" ? "menor preço" : "comissão estimada"}</small><label>Ordenar por <select value={sortBy} onChange={(event) => setSortBy(event.target.value as typeof sortBy)}><option value="vendas">Mais vendidos</option><option value="preco">Menor preço</option><option value="comissao">Maior comissão</option></select></label></div>
             </div>
           )}
+          {!searching && comparedProducts.length === 2 && <div className="opportunity-comparison" aria-label="Comparação de produtos"><div className="opportunity-comparison-head"><strong>Comparar produtos</strong><button type="button" onClick={() => setCompareIds([])}>Limpar comparação</button></div><div className="opportunity-comparison-grid">{comparedProducts.map((product) => <div key={product.id}><strong>{displayProductName(product)}</strong><span>Preço: {product.preco_texto || (product.preco_min_brl != null ? BRL.format(product.preco_min_brl) : "—")}</span><span>Vendas: {salesOf(product) >= 0 ? salesOf(product).toLocaleString("pt-BR") : "—"}</span><span>Comissão estimada: {commissionOf(product) != null ? BRL.format(commissionOf(product)!) : "—"}</span><button type="button" onClick={() => onOpen(product.id)}>Ver produto</button></div>)}</div></div>}
           {!searching && results.some(isSensitive) && <label className="sensitive-filter"><input type="checkbox" checked={hideSensitive} onChange={(event) => { setHideSensitive(event.target.checked); try { localStorage.setItem("temtrend-hide-sensitive", String(event.target.checked)); } catch {} }} /> Ocultar categorias sensíveis</label>}
           <div className="product-grid">
             {searching ? (
@@ -438,6 +459,8 @@ export default function Assistant({ onOpen }: { onOpen: (id: string) => void }) 
                   onOpen={onOpen}
                   onSave={(id) => void saveProduct(id)}
                   onGenerate={setKitProductId}
+                  compared={compareIds.includes(p.id)}
+                  onCompare={toggleCompare}
                 />
               ))
             ) : needsClarification ? null : (
@@ -463,6 +486,7 @@ export default function Assistant({ onOpen }: { onOpen: (id: string) => void }) 
       {kitProductId && (
         <ContentKitDialog
           productId={kitProductId}
+          product={results.find((product) => product.id === kitProductId)}
           mode="kit"
           forceNew={false}
           onClose={() => setKitProductId(null)}

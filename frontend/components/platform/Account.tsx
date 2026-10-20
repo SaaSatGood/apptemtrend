@@ -8,6 +8,7 @@ import { api, friendlyError } from "@/lib/api";
 import { usePlatform } from "./store";
 import Modal from "./Modal";
 import type { BillingSubscriptionSummary } from "@/lib/types";
+import { displayPlanName } from "@/lib/plan-display";
 
 interface AccountData {
   nome: string;
@@ -28,6 +29,7 @@ const PLAN_STATUS_LABEL: Record<string, string> = {
   past_due: "Pagamento pendente",
   inactive: "Sem plano",
 };
+const VOICE_TONES = ["Descontraído", "Direto", "Bem-humorado", "Técnico"];
 
 function planStatusLabel(status?: string): string {
   return PLAN_STATUS_LABEL[status ?? ""] ?? "Ativo";
@@ -59,6 +61,7 @@ export default function Account({ onEditPreferences }: { onEditPreferences: () =
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState("");
+  const [deleteConfirmation, setDeleteConfirmation] = useState("");
   const [billing, setBilling] = useState<BillingSubscriptionSummary | null>(null);
   const [cancelOpen, setCancelOpen] = useState(false);
   const [cancelBusy, setCancelBusy] = useState(false);
@@ -66,6 +69,14 @@ export default function Account({ onEditPreferences }: { onEditPreferences: () =
   const [checkoutStatus, setCheckoutStatus] = useState<"idle" | "checking" | "confirmed" | "pending">(
     searchParams.get("checkout") === "ok" ? "checking" : "idle"
   );
+  const [profileSaved, setProfileSaved] = useState(false);
+  const [voiceSaved, setVoiceSaved] = useState(false);
+
+  useEffect(() => {
+    if (!profileSaved && !voiceSaved) return;
+    const timer = setTimeout(() => { setProfileSaved(false); setVoiceSaved(false); }, 4000);
+    return () => clearTimeout(timer);
+  }, [profileSaved, voiceSaved]);
 
   const loadAccount = useCallback(async () => {
     setLoadingAccount(true);
@@ -148,6 +159,7 @@ export default function Account({ onEditPreferences }: { onEditPreferences: () =
     };
   }, [savedVoz]);
   const nameChanged = Boolean(account && name.trim() !== account.nome.trim());
+  const deletionBlockedByBilling = Boolean(account?.plan?.billing && (!billing || billing.has_active_subscription));
 
   async function saveName(e: React.FormEvent) {
     e.preventDefault();
@@ -169,6 +181,7 @@ export default function Account({ onEditPreferences }: { onEditPreferences: () =
       });
       await supabase().auth.refreshSession();
       setAccount((current) => (current ? { ...current, nome: trimmed } : current));
+      setProfileSaved(true);
       toast("Nome atualizado.");
     } catch (error) {
       toast(friendlyError(error, "Não conseguimos concluir agora. Tente novamente."));
@@ -188,6 +201,7 @@ export default function Account({ onEditPreferences }: { onEditPreferences: () =
         body: JSON.stringify({ nome: name.trim() || account?.nome || "", voz_exemplo: trimmed }),
       });
       await reloadMe();
+      setVoiceSaved(true);
       toast(trimmed ? "Sua voz foi salva. Roteiros novos saem no seu jeito ✓" : "Sua voz foi removida.");
     } catch (error) {
       toast(friendlyError(error, "Não conseguimos salvar sua voz. Tente novamente."));
@@ -197,6 +211,8 @@ export default function Account({ onEditPreferences }: { onEditPreferences: () =
   }
 
   async function savePassword(e: React.FormEvent<HTMLFormElement>) {
+    // TODO: exigir reautenticação com senha atual (ou confirmação por email) e
+    // validar mínimo de 8 com o provedor antes de alterar este fluxo de auth.
     e.preventDefault();
     const formElement = e.currentTarget;
     const form = new FormData(formElement);
@@ -221,7 +237,9 @@ export default function Account({ onEditPreferences }: { onEditPreferences: () =
   }
 
   async function confirmDelete() {
-    if (deleting) return;
+    // TODO: o backend deve confirmar/cancelar assinatura no provedor antes de
+    // remover um usuário com cobrança; a UI bloqueia esse caso por segurança.
+    if (deleting || deletionBlockedByBilling || deleteConfirmation.trim().toLocaleLowerCase("pt-BR") !== account?.email?.toLocaleLowerCase("pt-BR")) return;
     setDeleting(true);
     try {
       const { data } = await supabase().auth.getSession();
@@ -288,9 +306,8 @@ export default function Account({ onEditPreferences }: { onEditPreferences: () =
         <span className="account-avatar" aria-hidden="true">{(name || account?.email || "T").trim().charAt(0).toUpperCase()}</span>
         <div>
           <strong>{account?.nome || "Carregando seu perfil..."}</strong>
-          <span>{account?.email || ""}</span>
         </div>
-        <span className="account-plan-pill">{account?.plan?.nome || "Sem plano"}</span>
+        <span className="account-plan-pill">{displayPlanName(account?.plan?.nome)}</span>
       </div>
       <div className="account-layout">
         <div className="account-main">
@@ -312,11 +329,12 @@ export default function Account({ onEditPreferences }: { onEditPreferences: () =
             <label>
               Email
               <input type="email" disabled value={account?.email || ""} />
-              <small>O email é usado para entrar na sua conta e não pode ser alterado aqui.</small>
+              <small>Este email é usado para entrar. Para alterá-lo, <Link href="/app/suporte">fale com o suporte</Link>.</small>
             </label>
-            {nameChanged || savingName ? <button className="primary account-save" type="submit" disabled={savingName}>
+            <button className="primary account-save" type="submit" disabled={savingName || !nameChanged}>
               {savingName ? "Salvando..." : "Salvar alterações"}
-            </button> : <p className="account-saved-status" role="status">Dados atualizados ✓</p>}
+            </button>
+            {profileSaved && <p className="account-saved-status" role="status">Dados atualizados ✓</p>}
           </form>
         </section>
         <section className="card account-card">
@@ -352,7 +370,7 @@ export default function Account({ onEditPreferences }: { onEditPreferences: () =
               <p className="eyebrow">Plano atual</p>
               <div className="plan-card">
                 <div>
-                  <strong>{account?.plan?.nome || "Sem plano"}</strong>
+                  <strong>{displayPlanName(account?.plan?.nome)}</strong>
                   <span className="status">{planStatusLabel(account?.plan?.status)}</span>
                 </div>
                 {locked ? (
@@ -414,9 +432,10 @@ export default function Account({ onEditPreferences }: { onEditPreferences: () =
                   <p className="muted">
                     {account?.plan?.billing
                       ? "Assinaturas abrem em breve — seu acesso continua completo."
-                      : "Acesso completo durante o pré-lançamento, sem cobrança recorrente."}
+                      : "Acesso completo durante o pré-lançamento, sem cobrança recorrente. A data de término ainda não foi informada."}
                   </p>
                 )}
+                <Link className="account-plans-link" href="/planos">Ver planos</Link>
               </div>
             </section>
           );
@@ -426,9 +445,9 @@ export default function Account({ onEditPreferences }: { onEditPreferences: () =
             <div className="account-card-heading compact">
               <div><h2>Preferências de conteúdo</h2><p>Seus temas aparecem como atalhos de busca em Descobrir.</p></div>
             </div>
-            {preferences.length ? <div className="account-preference-list">{preferences.map((preference) => <span key={preference}>{preference}</span>)}</div> : <p className="muted">Você ainda não selecionou temas ou formatos de conteúdo.</p>}
+            {preferences.length ? <div className="account-preference-list">{preferences.map((preference) => <span key={preference}>{preference}</span>)}</div> : <p className="muted">Escolha seus nichos para receber sugestões melhores em Descobrir.</p>}
             <button className="ghost" type="button" onClick={onEditPreferences}>
-              Editar preferências
+              {preferences.length ? "Editar preferências" : "Escolher temas"}
             </button>
           </section>
         )}
@@ -439,7 +458,7 @@ export default function Account({ onEditPreferences }: { onEditPreferences: () =
             </div>
             <form className="stack" onSubmit={saveVoice}>
               <label>
-                Como você fala nos vídeos? (opcional)
+                Descreva seu jeito de falar ou cole um roteiro de exemplo (opcional)
                 <textarea
                   rows={4}
                   maxLength={500}
@@ -448,19 +467,21 @@ export default function Account({ onEditPreferences }: { onEditPreferences: () =
                   onChange={(e) => setVoz(e.target.value)}
                 />
               </label>
+              <div className="account-voice-tones" role="group" aria-label="Sugestões de tom">{VOICE_TONES.map((tone) => <button key={tone} type="button" onClick={() => setVoz((current) => [current.trim(), `Meu tom é ${tone.toLocaleLowerCase("pt-BR")}.`].filter(Boolean).join(" ").slice(0, 500))}>{tone}</button>)}</div>
               <small className="muted">{voz.trim().length} de 500 caracteres</small>
-              {voiceChanged || savingVoice ? <button className="ghost account-save" type="submit" disabled={savingVoice}>
+              <button className="ghost account-save" type="submit" disabled={savingVoice || !voiceChanged}>
                 {savingVoice ? "Salvando..." : "Salvar minha voz"}
-              </button> : <p className="account-saved-status" role="status">Voz atualizada ✓</p>}
+              </button>
+              {voiceSaved && <p className="account-saved-status" role="status">Voz atualizada ✓</p>}
             </form>
           </section>
         )}
         </aside>
       </div>
-      <button className="ghost account-signout" type="button" onClick={() => void signOut()}>Sair da conta</button>
+      <section className="card account-card account-session"><h2>Sessão</h2><button className="ghost account-signout" type="button" onClick={() => void signOut()}>Sair da conta</button></section>
         <section className="card danger-card account-danger">
           <div><h2>Excluir conta</h2><p className="muted">Remove permanentemente seu perfil e todos os conteúdos salvos.</p></div>
-          <button className="danger-button" type="button" onClick={() => { setDeleteError(""); setConfirmOpen(true); }}>
+          <button className="danger-button" type="button" onClick={() => { setDeleteError(""); setDeleteConfirmation(""); setConfirmOpen(true); }}>
             Excluir minha conta
           </button>
         </section>
@@ -469,10 +490,12 @@ export default function Account({ onEditPreferences }: { onEditPreferences: () =
           <div className="stack">
             <p className="eyebrow">Excluir conta</p>
             <h2 id="delete-account-title">Excluir sua conta?</h2>
-            <p className="muted">Essa ação é permanente e remove sua conta, perfil e conteúdos salvos. Não pode ser desfeita.</p>
+            <p className="muted">Essa ação é permanente e remove sua conta, perfil e conteúdos salvos. Não pode ser desfeita. Excluir a conta não é o mesmo que cancelar uma assinatura: cancele-a antes, se estiver ativa.</p>
+            {deletionBlockedByBilling && <p className="form-message error">Não é seguro excluir a conta enquanto há uma assinatura ativa ou seu estado não foi confirmado. Cancele a assinatura e aguarde o fim do acesso, ou <Link href="/app/suporte">fale com o suporte</Link>.</p>}
+            <label>Digite seu email para confirmar<input type="email" autoComplete="off" value={deleteConfirmation} onChange={(event) => setDeleteConfirmation(event.target.value)} /></label>
             {deleteError && <p className="form-message error" role="alert">{deleteError}</p>}
             <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-              <button className="danger-button" type="button" disabled={deleting} onClick={confirmDelete}>
+              <button className="danger-button" type="button" disabled={deleting || deletionBlockedByBilling || deleteConfirmation.trim().toLocaleLowerCase("pt-BR") !== account?.email?.toLocaleLowerCase("pt-BR")} onClick={confirmDelete}>
                 {deleting ? "Excluindo..." : "Confirmar exclusão"}
               </button>
               <button className="ghost" type="button" disabled={deleting} onClick={() => setConfirmOpen(false)}>

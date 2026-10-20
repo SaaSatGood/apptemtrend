@@ -117,15 +117,15 @@
   gap: 6px;
   text-align: left;
   padding: 12px 14px;
-  border: 1px solid #dce3d3;
-  border-radius: 14px;
-  background: #fff;
+  border: 1px solid var(--tt-line);
+  border-radius: var(--tt-radius-control);
+  background: var(--tt-surface);
   cursor: pointer;
   transition: border-color 0.15s ease, background 0.15s ease;
 }
 
 .support-ticket:hover {
-  border-color: #385400;
+  border-color: var(--tt-deep);
 }
 
 .support-ticket.is-active {
@@ -142,12 +142,12 @@
 
 .support-ticket-top strong {
   font-size: 0.95rem;
-  color: #1c1f1a;
+  color: var(--tt-ink);
   overflow-wrap: anywhere;
 }
 
 .support-ticket-meta {
-  color: #4f574b;
+  color: var(--tt-muted);
   font-size: 0.82rem;
 }
 
@@ -156,12 +156,12 @@
   display: inline-flex;
   align-items: center;
   padding: 3px 10px;
-  border-radius: 999px;
+  border-radius: var(--tt-radius-pill);
   font-size: 0.72rem;
   font-weight: 700;
-  border: 1px solid #dce3d3;
-  background: #f4f6ef;
-  color: #4f574b;
+  border: 1px solid var(--tt-line);
+  background: var(--tt-soft);
+  color: var(--tt-muted);
   white-space: nowrap;
 }
 
@@ -201,7 +201,7 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
-  border-bottom: 1px solid #dce3d3;
+  border-bottom: 1px solid var(--tt-line);
   padding-bottom: 14px;
 }
 
@@ -234,9 +234,9 @@
 .support-bubble {
   max-width: min(560px, 86%);
   padding: 10px 14px;
-  border-radius: 14px;
-  border: 1px solid #dce3d3;
-  background: #f4f6ef;
+  border-radius: var(--tt-radius-control);
+  border: 1px solid var(--tt-line);
+  background: var(--tt-soft);
 }
 
 .support-bubble p {
@@ -246,13 +246,13 @@
 }
 
 .support-bubble small {
-  color: #4f574b;
+  color: var(--tt-muted);
   font-size: 0.74rem;
 }
 
 .support-messages li.is-creator .support-bubble {
-  background: #172015;
-  border-color: #172015;
+  background: var(--tt-ink);
+  border-color: var(--tt-ink);
 }
 
 .support-messages li.is-creator .support-bubble p {

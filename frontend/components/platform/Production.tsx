@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { copyText, formatUpdated, fullProductName, normalizeScenes, validTikTokUrl } from "@/lib/format";
+import { copyText, fullProductName, normalizeScenes, validTikTokUrl } from "@/lib/format";
 import { supabase } from "@/lib/supabase";
 import { api } from "@/lib/api";
 import { track } from "@/lib/track";
@@ -33,9 +33,19 @@ const STATUS_LABEL: Record<string, string> = {
 };
 
 const PRIORITY: Record<string, number> = { em_producao: 0, salvo: 1, gravado: 2, publicado: 3 };
+const STAGES = ["Salvo", "Em produção", "Gravado", "Publicado"];
+
+function relativeUpdate(value?: string | null): { label: string; stale: boolean } {
+  if (!value) return { label: "Data não disponível", stale: false };
+  const days = Math.max(0, Math.floor((Date.now() - new Date(value).getTime()) / 86400000));
+  if (!Number.isFinite(days)) return { label: "Data não disponível", stale: false };
+  if (days === 0) return { label: "Atualizado hoje", stale: false };
+  if (days === 1) return { label: "Atualizado ontem", stale: false };
+  return days >= 14 ? { label: `Parado há ${Math.floor(days / 7)} semanas`, stale: true } : { label: `Atualizado há ${days} dias`, stale: false };
+}
 
 function nextHint(content: CreatorContent, scenesDone: number[]) {
-  if (content.status === "salvo") return content.content_kits ? "Revisar roteiro" : "Criar conteúdo";
+  if (content.status === "salvo") return content.content_kits ? "Revisar roteiro" : "Gerar roteiro";
   if (content.status === "gravado") return "Publicar o vídeo";
   if (content.status === "publicado") return content.published_url ? "Vídeo publicado" : "Publicação registrada";
   const total = normalizeScenes(content.content_kits?.cenas).length;
@@ -108,9 +118,6 @@ export default function Production() {
           <h1>Minha <em>produção.</em></h1>
           <p>Continue exatamente de onde parou em cada conteúdo.</p>
         </div>
-        <button className="primary production-new" type="button" onClick={findProduct}>
-          + Novo conteúdo
-        </button>
       </div>
       <div className="production-toolbar">
         <div className="production-controls">
@@ -129,14 +136,14 @@ export default function Production() {
           <label className="production-sort">
             <span className="sr-only">Ordenação</span>
             <select value={sort} onChange={(event) => setSort(event.target.value as Sort)}>
-              <option value="prioridade">Ordenar: próxima ação</option>
+              <option value="prioridade">Ordenar: etapa da produção</option>
               <option value="recentes">Ordenar: mais recentes</option>
-              <option value="antigos">Ordenar: mais antigos</option>
+              <option value="antigos">Ordenar: mais parados</option>
             </select>
           </label>
         </div>
         <div id="production-filters" className="production-filters" role="group" aria-label="Filtrar produção">
-          {FILTERS.map(([value, label]) => (
+          {FILTERS.filter(([value]) => value === "todos" || count(value) > 0).map(([value, label]) => (
             <button
               key={value}
               type="button"
@@ -189,30 +196,32 @@ export default function Production() {
         ) : (
           visible.map((c) => {
             const kit = c.content_kits;
-            const product = c.products ?? { id: c.product_id, nome: "Produto" };
+            const product = c.products ?? { id: c.product_id, nome: "Conteúdo sem produto vinculado" };
             const status = effectiveStatus(c);
             const current = progressIndex(status);
+            const updated = relativeUpdate(c.atualizado_em);
             return (
               <article key={c.id} className="production-card">
                 <div className="production-image-wrap">
                   <ProductImage product={product} width={180} height={180} />
-                  <span className={`production-step step-${current}`}>{current}/4</span>
+                  <span className={`production-step step-${current}`} title={`Etapa ${current} de 4: ${STAGES[current - 1]}`}>{STAGES[current - 1]} · {current}/4</span>
                 </div>
                 <div className="production-info">
                   <div className="production-card-topline">
                     <span className={`production-status status-${status}`}>
                       {STATUS_LABEL[status] || status}
                     </span>
-                    <small>Atualizado em {formatUpdated(c.atualizado_em)}</small>
+                    <small className={updated.stale ? "is-stale" : ""}>{updated.label}</small>
                   </div>
                   <h3 title={fullProductName(product)}>{fullProductName(product)}</h3>
+                  {!c.products && <p className="production-kit-name">Roteiro salvo sem vínculo com o catálogo.</p>}
                   {kit?.titulo && displayKitTitle(kit, product).toLocaleLowerCase("pt-BR") !== fullProductName(product).toLocaleLowerCase("pt-BR") && <p className="production-kit-name">{displayKitTitle(kit, product)}</p>}
-                  <div className="production-progress-compact" aria-label={`Etapa ${current} de 4`}>
+                  <div className="production-progress-compact" role="group" aria-label={`Etapa atual: ${STAGES[current - 1]}. Etapa ${current} de 4.`}>
                     {[1, 2, 3, 4].map((step) => (
-                      <span key={step} className={step <= current ? "done" : ""} />
+                      <span key={step} className={step <= current ? "done" : ""} title={STAGES[step - 1]} aria-label={`${STAGES[step - 1]}${step === current ? ", etapa atual" : ""}`} />
                     ))}
                   </div>
-                  <p className="production-next-hint">{nextHint(c, recorded[c.content_kit_id || ""] || [])}</p>
+                  <p className="production-next-hint"><strong>Próxima etapa:</strong> {nextHint(c, recorded[c.content_kit_id || ""] || [])}</p>
                   <div className="production-card-actions">
                     {status === "publicado" && c.published_url ? (
                       <a
@@ -234,7 +243,7 @@ export default function Production() {
                             : `/app/produtos/${c.product_id}`
                         }
                       >
-                        {status === "salvo" ? kit ? "Ver conteúdo" : "Criar conteúdo" : status === "publicado" ? "Ver roteiro" : "Continuar produção"}
+                        {status === "salvo" ? kit ? "Ver roteiro" : "Gerar roteiro" : status === "publicado" ? "Ver roteiro" : "Continuar produção"}
                       </Link>
                     )}
                     {kit?.hook && (

@@ -86,7 +86,7 @@ export default function KitDetail({ productId, kitId }: { productId: string; kit
 
   return (
     <section className="detail-view kit-focus-view" aria-live="polite">
-      <nav className="detail-breadcrumb" aria-label="Navegação estrutural"><Link href="/app">Descobrir</Link><span>›</span><Link href={`/app/produtos/${currentProduct.id}`}>Produto</Link><span>›</span><strong>Criar conteúdo</strong></nav>
+      <nav className="detail-breadcrumb" aria-label="Navegação estrutural"><Link href="/app">Descobrir</Link><span>›</span><Link href={`/app/produtos/${currentProduct.id}`}>Produto</Link><span>›</span><strong>Roteiro</strong></nav>
       <header className="content-kit-header">
         <div className="content-kit-heading-copy">
           <p className="eyebrow">Seu plano de gravação</p>
@@ -114,7 +114,7 @@ export default function KitDetail({ productId, kitId }: { productId: string; kit
         onGenerateAnother={() => setGeneratingBriefing("")}
       />
       {publishing && <PublicationDialog content={publishing} onClose={() => setPublishing(null)} />}
-      {generatingBriefing !== null && <ContentKitDialog productId={productId} mode="kit" forceNew initialBriefing={generatingBriefing} onClose={() => setGeneratingBriefing(null)} onCreated={(created) => { setGeneratingBriefing(null); router.push(`/app/produtos/${productId}/kits/${created.id}`); }} />}
+      {generatingBriefing !== null && <ContentKitDialog productId={productId} product={currentProduct} mode="kit" forceNew initialBriefing={generatingBriefing} onClose={() => setGeneratingBriefing(null)} onCreated={(created) => { setGeneratingBriefing(null); router.push(`/app/produtos/${productId}/kits/${created.id}`); }} />}
     </section>
   );
 }

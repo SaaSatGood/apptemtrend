@@ -6,17 +6,22 @@ import { supabase } from "@/lib/supabase";
 import { api, friendlyError, type ApiError } from "@/lib/api";
 import { track, ttvMs } from "@/lib/track";
 import { usePlatform } from "./store";
+import ProductImage from "./ProductImage";
+import { displayProductName } from "@/lib/format";
+import type { Product } from "@/lib/types";
 
 const SUGGESTIONS = [
-  { label: "Direto ao ponto", description: "Sem introdução longa", instruction: "Use um tom direto e objetivo." },
-  { label: "Até 15 segundos", description: "Rápido para gravar", instruction: "Crie um vídeo curto, com no máximo 15 segundos." },
-  { label: "Sem aparecer", description: "Produto e mãos em cena", instruction: "Mostre somente o produto e as mãos, sem mostrar o rosto." },
-  { label: "Recomendação natural", description: "Tom de conversa real", instruction: "Use um tom natural, como uma recomendação pessoal." },
-  { label: "Problema e solução", description: "Mostre o antes e depois", instruction: "Comece com um problema real e mostre a solução com o produto." },
+  { label: "Direto ao ponto", description: "Sem introdução longa", group: "Tom", instruction: "Use um tom direto e objetivo." },
+  { label: "Até 15 segundos", description: "Rápido para gravar", group: "Duração", instruction: "Crie um vídeo curto, com no máximo 15 segundos." },
+  { label: "Sem aparecer", description: "Produto e mãos em cena", group: "Gravação", instruction: "Mostre somente o produto e as mãos, sem mostrar o rosto." },
+  { label: "Recomendação natural", description: "Tom de conversa real", group: "Tom", instruction: "Use um tom natural, como uma recomendação pessoal." },
+  { label: "Problema e solução", description: "Mostre o antes e depois", group: "Narrativa", instruction: "Comece com um problema real e mostre a solução com o produto." },
 ];
+const BRIEFING_CHIPS = ["Mostrar preço", "Sem rosto", "Falar de frete"];
 
 export default function ContentKitDialog({
   productId,
+  product,
   mode,
   forceNew,
   initialBriefing = "",
@@ -24,6 +29,7 @@ export default function ContentKitDialog({
   onCreated,
 }: {
   productId: string;
+  product?: Product | null;
   mode: "save" | "kit";
   forceNew: boolean;
   initialBriefing?: string;
@@ -54,6 +60,10 @@ export default function ContentKitDialog({
   function toggleSuggestion(label: string) {
     setError("");
     setSelected((current) => current.includes(label) ? current.filter((item) => item !== label) : [...current, label]);
+  }
+
+  function addBriefingChip(label: string) {
+    setBriefing((current) => current.toLocaleLowerCase("pt-BR").includes(label.toLocaleLowerCase("pt-BR")) ? current : [current.trim(), label + "."].filter(Boolean).join(" "));
   }
 
   async function submit(e: React.FormEvent) {
@@ -130,19 +140,14 @@ export default function ContentKitDialog({
         </button>
         <div className="content-kit-workspace">
           <header className="content-kit-form-header">
-            <p className="eyebrow">{mode === "save" ? "Salvar e criar" : forceNew ? "Nova versão" : "Novo conteúdo"}</p>
-            <h2 id="content-kit-dialog-title">{mode === "save" ? "Salve sua ideia." : forceNew ? "Teste outro ângulo." : "Seu vídeo começa aqui."}</h2>
-            <p className="muted">Escolha uma direção. A TemTrend organiza o roteiro para você revisar antes de gravar.</p>
-            <div className="content-kit-output" aria-label="O conteúdo inclui">
-              <span><strong>01</strong> Hook</span>
-              <span><strong>02</strong> Cenas</span>
-              <span><strong>03</strong> Legenda e CTA</span>
-            </div>
-            <p className="content-kit-promise"><strong>Pronto para gravar.</strong> Você recebe instruções cena por cena.</p>
+            <p className="eyebrow">{mode === "save" ? "Salvar produto" : forceNew ? "Nova versão" : "Roteiro para vídeo"}</p>
+            <h2 id="content-kit-dialog-title">{mode === "save" ? "Salve este produto." : forceNew ? "Teste outro ângulo." : "Gere seu roteiro."}</h2>
+            <p className="muted">{mode === "save" ? "Guarde o produto e sua direção para criar o roteiro depois." : "Escolha uma direção. A TemTrend organiza cenas, fala e legenda para você revisar."}</p>
+            {product && <div className="content-kit-product-context"><ProductImage product={product} width={64} height={64} /><div><span>Produto do roteiro</span><strong>{displayProductName(product)}</strong></div></div>}
           </header>
           <div className="content-kit-editor">
             <fieldset className="content-kit-style">
-              <legend>Como você quer gravar? <span>Escolha quantos estilos quiser</span></legend>
+              <legend>Como você quer gravar? <span>As opções escolhidas são combinadas em um único roteiro.</span></legend>
               <div className="briefing-suggestions">
                 {SUGGESTIONS.map(({ label, description }) => {
                   const isSelected = selected.includes(label);
@@ -150,18 +155,18 @@ export default function ContentKitDialog({
                     <button
                       key={label}
                       type="button"
-                      aria-label={`${isSelected ? "✓" : "+"} ${label}`}
+                      aria-label={`${label}, ${isSelected ? "selecionado" : "não selecionado"}`}
                       aria-pressed={isSelected}
                       className={isSelected ? "selected" : ""}
                       onClick={() => toggleSuggestion(label)}
                     >
-                      <span className="content-kit-option-mark" aria-hidden="true">{isSelected ? "✓" : "+"}</span>
-                      <span className="content-kit-option-copy"><strong>{label}</strong><small aria-hidden="true">{description}</small></span>
+                      <span className="content-kit-option-mark" aria-hidden="true">{isSelected ? "✓" : ""}</span>
+                      <span className="content-kit-option-copy"><span className="content-kit-option-group">{SUGGESTIONS.find((item) => item.label === label)?.group}</span><strong>{label}</strong><small aria-hidden="true">{description}</small></span>
                     </button>
                   );
                 })}
               </div>
-              <p className="content-kit-selection" role="status">{selected.length ? `${selected.length} ${selected.length === 1 ? "direção escolhida" : "direções escolhidas"}` : "Nenhuma direção escolhida. A TemTrend decide por você."}</p>
+              <p className="content-kit-selection" role="status">{selected.length ? `${selected.length} ${selected.length === 1 ? "estilo escolhido" : "estilos escolhidos"}` : "Nenhum escolhido: a TemTrend decide por você."}</p>
             </fieldset>
             <label className="content-kit-custom">
               <span>Algum detalhe importante? <small>(opcional)</small></span>
@@ -173,6 +178,8 @@ export default function ContentKitDialog({
                 onChange={(e) => { setBriefing(e.target.value); setError(""); }}
               />
             </label>
+            <div className="content-kit-briefing-chips" role="group" aria-label="Sugestões para o roteiro">{BRIEFING_CHIPS.map((label) => <button key={label} type="button" onClick={() => addBriefingChip(label)}>{label}</button>)}</div>
+            <p className="content-kit-edit-note">Depois, você poderá gerar outra versão para mudar a direção.</p>
             <small className={`content-kit-count${tooLong ? " is-over-limit" : ""}`}>{briefing.length}/{customLimit}{tooLong ? ". Resuma os detalhes para continuar" : ""}</small>
             {error && <p className="form-message error" role="alert">{error}</p>}
             {planLimit && (
@@ -183,11 +190,10 @@ export default function ContentKitDialog({
           </div>
         </div>
         <footer className="content-kit-footer">
-          <p className="content-kit-form-note">Você poderá editar a direção gerando outra versão depois.</p>
           <div className="content-kit-form-actions">
             <button className="ghost" type="button" disabled={busy} onClick={onClose}>Cancelar</button>
             <button className="primary" type="submit" disabled={busy || tooLong}>
-              {busy ? "Preparando seu roteiro…" : mode === "save" ? "Salvar e criar roteiro" : forceNew ? "Gerar outra versão" : "Criar conteúdo"}
+              {busy ? "Preparando…" : mode === "save" ? "Salvar produto" : forceNew ? "Gerar outra versão" : "Gerar roteiro"}
             </button>
           </div>
         </footer>

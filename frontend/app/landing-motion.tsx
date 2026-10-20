@@ -16,7 +16,7 @@ export default function LandingMotion() {
     }
 
     const targets = root.querySelectorAll<HTMLElement>(
-      ".tt-section h2, .tt-dark-section h2, .tt-story, .tt-kit-piece, .tt-kit-breakdown-cta, .tt-feature-main, .tt-feature-small, .tt-audience-grid article, .tt-product-grid article, .tt-reel-grid article, .tt-number-grid article, .tt-steps-list article, .tt-final-card",
+      ".tt-section h2, .tt-dark-section h2, .tt-story, .tt-kit-piece, .tt-kit-breakdown-cta, .tt-feature-main, .tt-feature-small, .tt-audience-grid article, .tt-product-grid article, .tt-number-grid article, .tt-steps-list article, .tt-final-card",
     );
     targets.forEach((target) => target.setAttribute("data-motion", ""));
     root.classList.add("tt-motion-ready");

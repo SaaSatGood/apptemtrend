@@ -1,16 +1,16 @@
 /* Plataforma TemTrend: sistema visual unificado com a landing page. */
 #app-view {
   --app-ink: var(--tt-ink, #10110f);
-  --app-muted: #657060;
-  --app-line: var(--tt-line, #dce3d3);
+  --app-muted: var(--tt-muted);
+  --app-line: var(--tt-line);
   --app-line-strong: #c8d4bd;
-  --app-paper: var(--tt-paper, #fffefa);
-  --app-canvas: var(--tt-canvas, #fbfcf8);
-  --app-soft: #edf5df;
-  --app-soft-2: #e2efcd;
-  --app-lime: var(--tt-lime, #c8ff2e);
-  --app-lime-hover: #b8ef1b;
-  --app-green: #416314;
+  --app-paper: var(--tt-paper);
+  --app-canvas: var(--tt-canvas);
+  --app-soft: var(--tt-soft);
+  --app-soft-2: var(--tt-lime-soft);
+  --app-lime: var(--tt-lime);
+  --app-lime-hover: var(--tt-lime-hover);
+  --app-green: var(--tt-deep);
   min-height: 100svh;
   overflow-x: clip;
   color: var(--app-ink);

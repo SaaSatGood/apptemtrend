@@ -12,23 +12,16 @@
 .onboarding,
 .account-load-error,
 #admin-view {
-  --tt-ink: #10110f;
-  --tt-lime: #c8ff2e;
-  --tt-lime-soft: #f2ffcb;
-  --tt-lime-deep: #385400;
-  --tt-soft: #f4f6ef;
-  --tt-line: #dce3d3;
+  --tt-lime-deep: var(--tt-deep);
   --tt-blue: #c9f5ff;
-  --tt-muted: #4f574b;
-  --ink: #10110f;
-  --muted: #4f574b;
-  --line: #dce3d3;
-  --tt-radius-btn: 999px;
-  --tt-radius-input: 12px;
-  --tt-radius-card: 20px;
-  --tt-btn-h: 51px;
-  --tt-btn-h-sm: 44px;
-  font-family: var(--font-manrope), Arial, sans-serif;
+  --ink: var(--tt-ink);
+  --muted: var(--tt-muted);
+  --line: var(--tt-line);
+  --tt-radius-btn: var(--tt-radius-pill);
+  --tt-radius-input: var(--tt-radius-control);
+  --tt-btn-h: var(--tt-control-height);
+  --tt-btn-h-sm: var(--tt-touch-height);
+  font-family: var(--tt-font-ui);
   color: var(--tt-ink);
 }
 

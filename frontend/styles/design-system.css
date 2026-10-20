@@ -1,36 +1,25 @@
 /* ============================================================
-   TemTrend — Design System (padronização textos + botões)
-   Ordem de import: este arquivo vem POR ÚLTIMO no layout,
-   então vence conflitos entre landing.css e styles.css.
-   Padrão decidido:
-   - Botão primário: fundo #000, texto #fff, radius 11px,
-     altura 52px (42px na variação small), fonte 13-14px/800,
-     sem UPPERCASE forçado — o texto do JSX manda.
-   - Botão secundário (.ghost/.button-light): fundo #fff,
-     borda #ddd, mesmo tamanho do primário.
-   - Ação de texto (.text-button/.text-link): sublinhado,
-     14px/700, sem seta via CSS.
-   - Chips/filtros: pill 999px.
-   - Títulos h1: sem uppercase forçado, 900, tracking -0.06em.
-     Só .eyebrow/.kicker e micro-labels usam uppercase.
-   - Cores: --ink #080808, --muted #6b6b6b, --line #e9e9e9.
+   TemTrend — componentes base legados.
+   A identidade e os tokens definitivos estão em canonical.css,
+   importado por último no layout. Novos componentes devem usar
+   os tokens --tt-* documentados em DESIGN.md.
    ============================================================ */
 
 :root {
-  --ink: #10110f;
-  --muted: #4f574b;
-  --line: #dce3d3;
-  --tt-radius-btn: 999px;
-  --tt-radius-input: 12px;
+  --ink: var(--tt-ink);
+  --muted: var(--tt-muted);
+  --line: var(--tt-line);
+  --tt-radius-btn: var(--tt-radius-pill);
+  --tt-radius-input: var(--tt-radius-control);
   --tt-radius-card: 20px;
-  --tt-btn-h: 51px;
-  --tt-btn-h-sm: 44px;
+  --tt-btn-h: var(--tt-control-height);
+  --tt-btn-h-sm: var(--tt-touch-height);
   --tt-btn-font: 13px;
 }
 
 /* Foco e feedback consistentes em toda a aplicação */
 :where(a, button, input, textarea, select, summary):focus-visible {
-  outline: 3px solid #385400;
+  outline: 3px solid var(--tt-deep);
   outline-offset: 3px;
 }
 button:disabled { cursor: not-allowed; opacity: .72; }

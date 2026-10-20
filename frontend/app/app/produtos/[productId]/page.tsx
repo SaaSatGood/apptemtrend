@@ -6,6 +6,7 @@ import RequireAuth from "@/components/platform/RequireAuth";
 import Topbar from "@/components/platform/Topbar";
 import ProductDetail from "@/components/platform/ProductKit";
 import ContentKitDialog from "@/components/platform/ContentKitDialog";
+import type { Product } from "@/lib/types";
 
 function Content() {
   const params = useParams<{ productId: string }>();
@@ -14,6 +15,7 @@ function Content() {
     productId: string;
     mode: "save" | "kit";
     forceNew: boolean;
+    product: Product;
   } | null>(null);
 
   return (
@@ -23,12 +25,13 @@ function Content() {
         <ProductDetail
           key={params.productId}
           productId={params.productId}
-          onNeedKit={(productId, mode, forceNew) => setKitDialog({ productId, mode, forceNew })}
+          onNeedKit={(productId, mode, forceNew, product) => setKitDialog({ productId, mode, forceNew, product })}
         />
       </section>
       {kitDialog && (
         <ContentKitDialog
           productId={kitDialog.productId}
+          product={kitDialog.product}
           mode={kitDialog.mode}
           forceNew={kitDialog.forceNew}
           onClose={() => setKitDialog(null)}

@@ -7,10 +7,12 @@ import { resolveSession } from "@/lib/supabase";
 import { api, friendlyError } from "@/lib/api";
 import { track } from "@/lib/track";
 import type { BillingCatalogResponse, BillingSubscriptionSummary } from "@/lib/types";
+import { displayPlanName } from "@/lib/plan-display";
 
 type Period = "monthly" | "annual";
 type PaidPlan = "essencial" | "pro" | "scale";
 type AuthState = "checking" | "guest" | "authenticated";
+type AccountPlan = { nome?: string; status?: string; trial_ends_at?: string | null; current_period_end?: string | null };
 
 // Espelho do catálogo do backend (mesmo relatório de preços). Usado apenas se
 // a API não responder — os CTAs degradam para cadastro, nunca para cobrança errada.
@@ -106,11 +108,18 @@ export default function PricingPage() {
   const router = useRouter();
   const [catalog, setCatalog] = useState<BillingCatalogResponse | null>(null);
   const [sub, setSub] = useState<BillingSubscriptionSummary | null>(null);
+  const [accountPlan, setAccountPlan] = useState<AccountPlan | null>(null);
   const [authState, setAuthState] = useState<AuthState>("checking");
   const [period, setPeriod] = useState<Period>("annual");
   const [busy, setBusy] = useState<PaidPlan | null>(null);
   const [notice, setNotice] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
+
+  useEffect(() => {
+    if (!notice) return;
+    const timer = setTimeout(() => setNotice(""), 6000);
+    return () => clearTimeout(timer);
+  }, [notice]);
 
   useEffect(() => {
     track("pricing_view", { logged: false });
@@ -133,6 +142,10 @@ export default function PricingPage() {
           return;
         }
         if (active) setAuthState("authenticated");
+        try {
+          const account = await api<{ plan?: AccountPlan }>("/account", token);
+          if (active) setAccountPlan(account.plan ?? null);
+        } catch { /* o resumo de cobrança ainda pode carregar */ }
         const summary = await api<BillingSubscriptionSummary>("/billing/subscription", token);
         if (active && summary?.enabled) {
           setSub(summary);
@@ -158,6 +171,8 @@ export default function PricingPage() {
   const enterprise = data.plans.find((p) => p.id === "enterprise");
   const hasActiveSub = sub?.has_active_subscription === true;
   const paidPlan = sub && sub.plan && sub.plan !== "free" ? sub.plan : null;
+  const currentPlanName = displayPlanName(accountPlan?.nome || sub?.plan_label);
+  const currentPlanStatus = accountPlan?.status || sub?.status;
 
   async function token(): Promise<string | undefined> {
     try {
@@ -244,8 +259,10 @@ export default function PricingPage() {
     }
     if (!checkoutEnabled) {
       return loggedIn
-        ? { label: "Assinaturas em breve", disabled: true, onClick: undefined as (() => void) | undefined }
-        : { label: "Criar conta grátis", disabled: false, onClick: () => goToSignup(p.id as PaidPlan) };
+        ? currentPlanStatus === "trialing" || currentPlanName !== "Sem plano"
+          ? { label: "Usar meu acesso", disabled: false, onClick: () => router.push("/app") }
+          : { label: "Falar com suporte", disabled: false, onClick: () => router.push("/app/suporte") }
+        : { label: "Começar trial grátis", disabled: false, onClick: () => goToSignup(p.id as PaidPlan) };
     }
     return {
       label: busy === p.id ? "Abrindo pagamento…" : `Assinar ${p.nome}`,
@@ -277,23 +294,25 @@ export default function PricingPage() {
             Menos que um roteiro de freelancer. A TemTrend encontra o produto, monta o plano de
             gravação em 8 partes e organiza sua produção do roteiro ao publicado.
           </p>
+          <p className="tt-pricing-kit-explainer">Um kit de conteúdo reúne o roteiro, as cenas, a legenda e a chamada final de um vídeo.</p>
           <p className="tt-pricing-trial-chip">
             {data.trial_days} dias de Pro por nossa conta · sem cartão de crédito
           </p>
+          {!checkoutEnabled && <p className="tt-pricing-availability">O trial de Pro começa no cadastro. As assinaturas dos planos ainda não estão abertas.</p>}
         </section>
 
         {loggedIn && (
           <section className="tt-pricing-current" aria-label="Seu plano atual">
             <div>
               <strong>
-                Seu plano: {(data.plans.find((p) => p.id === paidPlan)?.nome) ?? sub?.plan_label ?? "Sem plano"}
+                Seu plano: {currentPlanName}
               </strong>
               <span>
-                {sub?.status === "trialing" && sub?.trial_ends_at
-                  ? `Trial Pro até ${fmtDate(sub.trial_ends_at)}`
+                {currentPlanStatus === "trialing" && (accountPlan?.trial_ends_at || sub?.trial_ends_at)
+                  ? `Trial Pro até ${fmtDate(accountPlan?.trial_ends_at || sub?.trial_ends_at)}`
                   : sub?.current_period_end
                     ? `${STATUS_LABEL[sub?.status ?? ""] || "Ativo"} · renova em ${fmtDate(sub.current_period_end)}`
-                    : STATUS_LABEL[sub?.status ?? ""] || "Sem plano"}
+                    : currentPlanName === "Sem plano" ? "Escolha um plano para começar" : "Acesso disponível na sua conta"}
                 {sub?.cancel_at_period_end && sub?.current_period_end
                   ? ` · acesso até ${fmtDate(sub.current_period_end)}`
                   : ""}
@@ -327,7 +346,7 @@ export default function PricingPage() {
               disabled={hasActiveSub}
             >
               Anual
-              <span className="tt-pricing-badge">2 meses grátis</span>
+              {plans.every((plan) => plan.precoMensalCents != null && plan.precoAnualCents === plan.precoMensalCents * 10) && <span className="tt-pricing-badge">2 meses grátis</span>}
             </button>
           </div>
           {hasActiveSub && (
@@ -346,6 +365,9 @@ export default function PricingPage() {
             const cta = planCta(p);
             const amount = period === "annual" ? p.precoAnual : p.precoMensal;
             const equivalent = period === "annual" ? monthlyEquivalent(p.precoAnualCents) : null;
+            const bullets = p.id === "scale"
+              ? [...p.bullets, ...(!p.bullets.some((item) => /roteiros salvos/i.test(item)) && p.limits.kitsPerProduct === null ? ["Roteiros salvos ilimitados"] : []), ...(!p.bullets.some((item) => /produção ilimitada/i.test(item)) && p.limits.productionItems === null ? ["Produção ilimitada"] : [])]
+              : p.bullets;
             return (
               <article key={p.id} className={`tt-price-card${p.destaque ? " is-featured" : ""}`}>
                 {p.destaque && <span className="tt-price-seal">Mais escolhido</span>}
@@ -358,14 +380,14 @@ export default function PricingPage() {
                   {amount && <small>{period === "annual" ? "/ano" : "/mês"}</small>}
                 </div>
                 {equivalent && (
-                  <p className="tt-price-equivalent">Equivale a {equivalent}/mês, cobrado uma vez por ano</p>
+                  <p className="tt-price-equivalent"><s>{p.precoMensal}/mês</s> Equivale a {equivalent}/mês, cobrado uma vez por ano</p>
                 )}
                 <div className="tt-price-outcome">
                   <span>Na prática</span>
                   <p>{PLAN_OUTCOME[p.id as PaidPlan] || p.resumo}</p>
                 </div>
                 <ul className="tt-price-bullets">
-                  {p.bullets.map((bullet) => (
+                  {bullets.map((bullet) => (
                     <li key={bullet}>{bullet}</li>
                   ))}
                 </ul>
@@ -385,15 +407,16 @@ export default function PricingPage() {
         {enterprise && (
           <section className="tt-enterprise-band" aria-label="Plano Enterprise">
             <div>
-              <strong>{enterprise.nome} · R$ 499+/mês</strong>
+              <strong>{enterprise.nome} · sob consulta</strong>
+              <p>Preço e período de cobrança definidos em proposta.</p>
               <p>{enterprise.bullets.join(" · ")}</p>
             </div>
-            <Link className="tt-enterprise-cta" href="/app/conta">Falar sobre Enterprise</Link>
+            <Link className="tt-enterprise-cta" href="/app/suporte">Falar sobre Enterprise</Link>
           </section>
         )}
 
         <section className="tt-compare">
-          <details>
+          <details open>
             <summary>Comparar todos os recursos</summary>
             <div className="tt-compare-scroll">
               <table>

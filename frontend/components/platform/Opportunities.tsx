@@ -43,14 +43,21 @@ export default function Opportunities() {
         <Link className="text-button" href="/app/producao">Ver todos ({productions.length})</Link>
       </div>
       <div className="resume-grid">
-        {resume.map((item) => (
+        {resume.map((item, index) => (
           <Link
             key={item.id}
-            className="resume-card"
+            className={`resume-card${index === 0 ? " resume-card--focus" : ""}`}
             href={item.content_kit_id ? `/app/produtos/${item.product_id}/kits/${item.content_kit_id}` : `/app/produtos/${item.product_id}`}
           >
             <div className="resume-image"><ProductImage product={item.products || { nome: "Produto", imagem_url: null, categoria: null }} width={72} height={72} /></div>
-            <div className="resume-content"><span className={`production-status status-${item.status}`}>{({ salvo: "Salvo", em_producao: "Em produção", gravado: "Gravado", publicado: "Publicado" })[item.status]}</span><strong title={item.products?.nome || "Seu produto salvo"}>{item.products?.nome || "Seu produto salvo"}</strong><div className="resume-progress" aria-label={`Etapa ${({ salvo: 1, em_producao: 2, gravado: 3, publicado: 4 })[item.status]} de 4`}><span style={{ width: `${({ salvo: 25, em_producao: 50, gravado: 75, publicado: 100 })[item.status]}%` }} /></div><small>{nextAction(item.status, item.content_kit_id, normalizeScenes(item.content_kits?.cenas).length, recorded)}</small></div>
+            <div className="resume-content">
+              {index === 0 && <span className="resume-focus-label">Retome agora</span>}
+              <span className={`production-status status-${item.status}`}>{({ salvo: "Salvo", em_producao: "Em produção", gravado: "Gravado", publicado: "Publicado" })[item.status]}</span>
+              <strong title={item.products?.nome || "Seu produto salvo"}>{item.products?.nome || "Seu produto salvo"}</strong>
+              <div className="resume-progress" aria-label={`Etapa ${({ salvo: 1, em_producao: 2, gravado: 3, publicado: 4 })[item.status]} de 4`}><span style={{ width: `${({ salvo: 25, em_producao: 50, gravado: 75, publicado: 100 })[item.status]}%` }} /></div>
+              <small>{nextAction(item.status, item.content_kit_id, normalizeScenes(item.content_kits?.cenas).length, recorded)}</small>
+              {index === 0 && <span className="resume-focus-action">Continuar <span aria-hidden="true">↗</span></span>}
+            </div>
           </Link>
         ))}
       </div>

@@ -42,7 +42,7 @@ export function Skeletons() {
   );
 }
 
-export default function ProductDetail({ productId, onNeedKit }: { productId: string; onNeedKit: (productId: string, mode: "save" | "kit", forceNew: boolean) => void }) {
+export default function ProductDetail({ productId, onNeedKit }: { productId: string; onNeedKit: (productId: string, mode: "save" | "kit", forceNew: boolean, product: Product) => void }) {
   const { productions, toast } = usePlatform();
   const [detail, setDetail] = useState<{ product: Product; content_kits: ContentKit[] } | null>(null);
   const [failed, setFailed] = useState(false);
@@ -98,11 +98,11 @@ export default function ProductDetail({ productId, onNeedKit }: { productId: str
 
   function quickSave() {
     if (production) return;
-    onNeedKit(product.id, "save", false);
+    onNeedKit(product.id, "save", false, product);
   }
 
   function primaryAction() {
-    onNeedKit(product.id, "kit", false);
+    onNeedKit(product.id, "kit", false, product);
   }
 
   return (
@@ -132,11 +132,11 @@ export default function ProductDetail({ productId, onNeedKit }: { productId: str
               </a>
             )}
             <div className="product-detail-primary">
-              {kits.length ? <Link className="primary" href={`/app/produtos/${product.id}/kits/${kits.find((kit) => kit.id === production?.content_kit_id)?.id || kits[0].id}`}>Ver conteúdo</Link> : <button className="primary" type="button" onClick={primaryAction}>Criar conteúdo</button>}
+              {kits.length ? <Link className="primary" href={`/app/produtos/${product.id}/kits/${kits.find((kit) => kit.id === production?.content_kit_id)?.id || kits[0].id}`}>Ver roteiro</Link> : <button className="primary" type="button" onClick={primaryAction}>Gerar roteiro</button>}
               {!saved && <button className="ghost save-product" type="button" onClick={quickSave}>Salvar produto</button>}
               {kits.length > 0 && (
-                <button className="ghost" type="button" onClick={() => onNeedKit(product.id, "kit", true)}>
-                  Gerar outro conteúdo
+                <button className="ghost" type="button" onClick={() => onNeedKit(product.id, "kit", true, product)}>
+                  Gerar outra versão
                 </button>
               )}
             </div>

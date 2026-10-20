@@ -1,12 +1,13 @@
 .adminShell {
-  --admin-ink: var(--tt-ink, #10110f);
-  --admin-muted: var(--tt-muted, #4f574b);
-  --admin-line: var(--tt-line, #dce3d3);
-  --admin-soft: var(--tt-soft, #f4f6ef);
-  --admin-lime: var(--tt-lime, #c8ff2e);
-  --admin-deep: var(--tt-deep, #385400);
+  --admin-ink: var(--tt-ink);
+  --admin-muted: var(--tt-muted);
+  --admin-line: var(--tt-line);
+  --admin-soft: var(--tt-soft);
+  --admin-lime: var(--tt-lime);
+  --admin-deep: var(--tt-deep);
   padding-top: 68px;
   color: var(--admin-ink);
+  font-family: var(--tt-font-ui);
 }
 
 .adminShell button,
@@ -67,7 +68,7 @@
 .iconButton {
   min-height: 46px;
   border: 0;
-  border-radius: 999px;
+  border-radius: var(--tt-radius-pill);
   padding: 11px 18px;
   display: inline-flex;
   align-items: center;
@@ -79,8 +80,9 @@
   transition: transform .18s ease, background-color .18s ease, opacity .18s ease;
 }
 
-.primaryButton { background: var(--admin-lime); color: var(--admin-ink); }
-.secondaryButton { border: 1px solid var(--admin-line); background: #fff; color: var(--admin-ink); }
+.primaryButton { border: 1px solid var(--admin-lime); background: var(--admin-lime); color: var(--admin-ink); }
+.primaryButton:hover:not(:disabled) { border-color: var(--tt-lime-hover); background: var(--tt-lime-hover); }
+.secondaryButton { border: 1px solid var(--admin-line); background: var(--tt-surface); color: var(--admin-ink); }
 .primaryButton:hover:not(:disabled), .secondaryButton:hover:not(:disabled), .iconButton:hover:not(:disabled) { transform: translateY(-2px); }
 .primaryButton:disabled, .secondaryButton:disabled, .iconButton:disabled { opacity: .45; cursor: not-allowed; }
 .primaryButton svg, .secondaryButton svg, .iconButton svg { width: 17px; height: 17px; }
@@ -233,8 +235,8 @@
   min-height: 48px;
   padding: 12px 14px;
   border: 1px solid #d7ddd0;
-  border-radius: 11px;
-  background: #fff;
+  border-radius: var(--tt-radius-control);
+  background: var(--tt-surface);
   color: var(--admin-ink);
   font-size: .78rem;
   box-shadow: none;
@@ -506,3 +508,42 @@
 .funnelList dt { color: var(--admin-muted); font-size: .74rem; }
 
 .funnelList dd { margin: 0; font-size: .84rem; font-weight: 850; }
+
+/* A administração compartilha as superfícies e os controles do app. */
+.adminShell { padding-top: clamp(30px, 4vw, 52px); }
+.hero h1 { font-weight: 750; line-height: 1.02; }
+.hero h1 em { color: var(--tt-deep); font-family: var(--tt-font-editorial); }
+.viewTabs { border-color: var(--tt-line); background: var(--tt-surface); box-shadow: var(--tt-shadow-card); }
+.viewTabs button { color: var(--tt-muted); }
+.viewTabs button.activeTab { background: var(--tt-ink); color: var(--tt-surface); }
+.metricGrid,
+.healthCard,
+.editor,
+.creatorSummary,
+.tableWrap { border-color: var(--tt-line); border-radius: var(--tt-radius-card); }
+.healthCard,
+.editor,
+.tableWrap,
+.creatorSummary > div { background: var(--tt-surface); }
+.aiCard { background: var(--tt-ink); color: var(--tt-surface); }
+.metricCard:first-child,
+.creatorSummary > div:last-child { background: var(--tt-lime); }
+.productRow,
+.creatorRow { border-color: var(--tt-line); border-radius: var(--tt-radius-control); background: var(--tt-paper); }
+.productRow:hover { border-color: #a7c681; box-shadow: var(--tt-shadow-card); }
+.toolbar select,
+.searchField,
+.formGrid :is(input, select, textarea) { border-color: var(--tt-line); border-radius: var(--tt-radius-control); background: var(--tt-surface); color: var(--tt-ink); }
+.primaryButton,
+.secondaryButton { min-height: var(--tt-control-height); }
+.primaryButton { background: var(--tt-lime); border-color: var(--tt-lime); color: var(--tt-ink); }
+.secondaryButton { background: var(--tt-surface); border-color: var(--tt-line); color: var(--tt-ink); }
+.adminShell :is(a, button, input, textarea, select, summary):focus-visible { outline: 3px solid var(--tt-deep); outline-offset: 3px; }
+.metricCard > strong,
+.creatorSummary strong,
+.subsTable td { font-variant-numeric: tabular-nums; }
+
+@media (max-width: 620px) {
+  .adminShell { padding-top: 30px; }
+  .hero h1 { font-size: clamp(2.6rem, 12vw, 4.2rem); }
+}
