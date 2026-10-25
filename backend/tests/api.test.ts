@@ -41,6 +41,21 @@ describe('TemTrend Beta API', () => {
     await app.close();
   });
 
+  it('requires authentication for the discovery search history', async () => {
+    const app = buildApp();
+    const requests = [
+      { method: 'GET' as const, url: '/assistant/searches' },
+      { method: 'GET' as const, url: '/assistant/searches/aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa' },
+      { method: 'DELETE' as const, url: '/assistant/searches/aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa' },
+      { method: 'DELETE' as const, url: '/assistant/searches' },
+    ];
+    for (const request of requests) {
+      const response = await app.inject(request);
+      expect(response.statusCode, `${request.method} ${request.url}`).toBe(401);
+    }
+    await app.close();
+  });
+
   it('rejects financial product fields', () => {
     const result = createProductSchema.safeParse({
       nome: 'Produto',

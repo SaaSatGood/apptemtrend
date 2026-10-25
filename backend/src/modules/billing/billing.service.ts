@@ -3,10 +3,15 @@ import { supabaseAdmin } from '../../lib/supabase.js';
 import { logger } from '../../lib/logger.js';
 import { createAppError, Errors, type Creator } from '../../types/index.js';
 import { invalidateMeCache } from '../creators/creator.service.js';
+import { countFreeSearches } from '../../lib/ai-metrics.js';
 import { listUserDirectory } from '../admin/admin.repository.js';
 import { billingActive, planContextForCreator } from './billing.gating.js';
 import {
-  PLAN_META,
+  LAUNCH_ANNUAL_CENTS,
+  LAUNCH_MONTHLY_CENTS,
+  LAUNCH_SEATS,
+  PRO_ANNUAL_CENTS,
+  PRO_MONTHLY_CENTS,
   planLabel,
   productIdFor,
   type PaidPlanId,
@@ -15,6 +20,7 @@ import {
 } from './plans.js';
 import {
   createSubscriptionCheckout,
+  createOneTimeCheckout,
   cancelSubscriptionAtProvider,
   changeSubscriptionPlanAtProvider,
 } from './billing.provider.js';
@@ -32,12 +38,56 @@ interface SubscriptionRow {
   plan: string;
   period: string;
   status: string;
+  billing_mode?: string | null;
+  launch_price?: boolean | null;
+  launch_seat?: number | null;
   provider_checkout_id: string | null;
   provider_subscription_id: string | null;
   current_period_end: string | null;
   started_at: string | null;
+  created_at?: string | null;
   pending_plan?: string | null;
   pending_period?: string | null;
+}
+
+const PENDING_CHECKOUT_TTL_MS = 24 * 60 * 60 * 1000;
+const RENEWAL_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
+
+export interface LaunchAvailability {
+  active: boolean;
+  seats_total: number;
+  seats_left: number;
+  monthly_cents: number;
+  annual_cents: number;
+}
+
+function isFuture(iso: string | null | undefined, now = Date.now()): boolean {
+  if (!iso) return false;
+  const parsed = Date.parse(iso);
+  return Number.isFinite(parsed) && parsed > now;
+}
+
+export async function getLaunchAvailability(): Promise<LaunchAvailability> {
+  const empty: LaunchAvailability = {
+    active: false,
+    seats_total: LAUNCH_SEATS,
+    seats_left: 0,
+    monthly_cents: LAUNCH_MONTHLY_CENTS,
+    annual_cents: LAUNCH_ANNUAL_CENTS,
+  };
+  const { data, error } = await supabaseAdmin.rpc('launch_seats_used');
+  if (error) {
+    logger.error({ err: error }, 'Failed to count launch seats');
+    // Conservador: sem a função, não promete o preço de lançamento.
+    return empty;
+  }
+  const used = typeof data === 'number' ? data : Number(data ?? 0);
+  const seatsLeft = Math.max(0, LAUNCH_SEATS - (Number.isFinite(used) ? used : 0));
+  return {
+    ...empty,
+    active: seatsLeft > 0,
+    seats_left: seatsLeft,
+  };
 }
 
 function billingUnavailable(): ReturnType<typeof createAppError> {
@@ -57,10 +107,12 @@ async function invalidateCreatorCache(creatorId: string): Promise<void> {
 export interface BillingUsage {
   kits_total: number;
   kits_month: number;
-  kits_limit: number;
-  kits_limit_period: 'month';
+  kits_limit: number | null;
+  kits_limit_period: 'month' | 'lifetime';
   searches_today: number;
+  searches_total: number | null;
   searches_limit: number | null;
+  searches_limit_period: 'day' | 'lifetime';
 }
 
 export interface SubscriptionSummary {
@@ -73,6 +125,9 @@ export interface SubscriptionSummary {
   current_period_end: string | null;
   cancel_at_period_end: boolean;
   has_active_subscription: boolean;
+  payment_mode: 'recurring' | 'one_time' | null;
+  launch_price: boolean;
+  renewal_due: boolean;
   pending_plan: string | null;
   pending_plan_label: string | null;
   pending_period: string | null;
@@ -97,14 +152,17 @@ async function getUsage(userId: string, creator: Creator): Promise<BillingUsage>
       .eq('usage_date', now.toISOString().slice(0, 10))
       .maybeSingle(),
   ]);
-  const { limits } = planContextForCreator(creator);
+  const { plan, limits } = planContextForCreator(creator);
+  const free = plan === 'free';
   return {
     kits_total: totalRes.count ?? 0,
     kits_month: monthRes.count ?? 0,
-    kits_limit: limits.kitsPerMonth ?? 0,
-    kits_limit_period: 'month' as const,
+    kits_limit: limits.kitsPerMonth,
+    kits_limit_period: free ? 'lifetime' : 'month',
     searches_today: (usageRes.data as { assistant_calls?: number } | null)?.assistant_calls ?? 0,
+    searches_total: free ? await countFreeSearches(userId) : null,
     searches_limit: limits.searchesPerDay,
+    searches_limit_period: free ? 'lifetime' : 'day',
   };
 }
 
@@ -112,35 +170,65 @@ export async function getSubscriptionSummary(
   userId: string,
   creator: Creator,
 ): Promise<SubscriptionSummary | { enabled: false }> {
-  if (!billingActive()) return { enabled: false };
   const { plan, limits } = planContextForCreator(creator);
-  const { data: activeRow } = await supabaseAdmin
+  const now = Date.now();
+  const { data: activeRows } = await supabaseAdmin
     .from('subscriptions')
-    .select('id, status, pending_plan, pending_period, provider_subscription_id')
+    .select('id, status, pending_plan, pending_period, provider_subscription_id, current_period_end, billing_mode, launch_price, created_at')
     .eq('creator_id', creator.id)
-    .in('status', ['active', 'past_due'])
+    .in('status', ['active', 'past_due', 'canceled'])
     .order('created_at', { ascending: false })
-    .limit(1)
-    .maybeSingle();
-  const pending = activeRow as
-    | { pending_plan?: string | null; pending_period?: string | null; provider_subscription_id?: string | null }
-    | null;
+    .limit(5);
+  type SummaryRow = {
+    status?: string | null;
+    pending_plan?: string | null;
+    pending_period?: string | null;
+    provider_subscription_id?: string | null;
+    current_period_end?: string | null;
+    billing_mode?: string | null;
+    launch_price?: boolean | null;
+  };
+  const rows = (activeRows ?? []) as SummaryRow[];
+  // Prefere a assinatura cujo período ainda está valendo (inclusive cancelada
+  // com acesso até o fim do que foi pago). Se não houver, mostra a mais recente.
+  const row = rows.find((item) => isFuture(item.current_period_end, now)) ?? rows[0] ?? null;
+  const accessUntilEnd = Boolean(row && isFuture(row.current_period_end, now));
+  const manageable = Boolean(accessUntilEnd && row?.status !== 'canceled');
+  const paymentMode = row?.billing_mode === 'one_time' ? 'one_time' as const : row?.billing_mode === 'recurring' ? 'recurring' as const : null;
+  const periodEnd = row?.current_period_end ? Date.parse(row.current_period_end) : 0;
+  const canceled = row?.status === 'canceled';
   return {
     enabled: true,
     plan,
     plan_label: planLabel(plan),
-    status: creator.plan_status ?? 'inactive',
+    status: plan === 'free' ? 'active' : accessUntilEnd
+      ? (canceled ? 'canceled' : (creator.plan_status ?? 'inactive'))
+      : 'inactive',
     period: creator.plan_period ?? null,
     trial_ends_at: creator.trial_ends_at ?? null,
-    current_period_end: creator.current_period_end ?? null,
+    current_period_end: row?.current_period_end ?? creator.current_period_end ?? null,
     cancel_at_period_end: creator.cancel_at_period_end === true,
-    has_active_subscription: Boolean(pending?.provider_subscription_id),
-    pending_plan: pending?.pending_plan ?? null,
-    pending_plan_label: pending?.pending_plan ? planLabel(pending.pending_plan) : null,
-    pending_period: pending?.pending_period ?? null,
+    has_active_subscription: manageable,
+    payment_mode: accessUntilEnd ? paymentMode : null,
+    launch_price: accessUntilEnd && row?.launch_price === true,
+    renewal_due:
+      manageable &&
+      paymentMode === 'one_time' &&
+      periodEnd > now &&
+      periodEnd - now <= 7 * 24 * 60 * 60 * 1000,
+    pending_plan: row?.pending_plan ?? null,
+    pending_plan_label: row?.pending_plan ? planLabel(row.pending_plan) : null,
+    pending_period: row?.pending_period ?? null,
     limits,
     usage: await getUsage(userId, creator),
   };
+}
+
+export interface CheckoutResult {
+  url: string;
+  mode: 'recurring' | 'one_time';
+  launch: boolean;
+  amount_cents: number;
 }
 
 export async function startCheckout(
@@ -148,68 +236,168 @@ export async function startCheckout(
   creator: Creator,
   plan: PaidPlanId,
   period: PlanPeriod,
-): Promise<{ url: string }> {
+): Promise<CheckoutResult> {
   if (!billingActive()) {
     throw createAppError('BILLING_DISABLED', 'Pagamentos indisponíveis no momento.', 503);
   }
-  const { data: existingSubscription, error: existingError } = await supabaseAdmin
+  const now = Date.now();
+  const { data: rowsData, error: rowsError } = await supabaseAdmin
     .from('subscriptions')
-    .select('id')
+    .select('id, status, current_period_end, billing_mode, launch_price, launch_seat, created_at')
     .eq('creator_id', creator.id)
-    .in('status', ['active', 'past_due'])
-    .limit(1)
-    .maybeSingle();
-  if (existingError) throw existingError;
-  if (existingSubscription) {
-    throw Errors.BAD_REQUEST('Você já possui uma assinatura. Use a opção de trocar plano na sua conta.');
+    .in('status', ['active', 'past_due', 'pending', 'canceled'])
+    .order('created_at', { ascending: false })
+    .limit(10);
+  if (rowsError) throw rowsError;
+  const rows = (rowsData ?? []) as Array<{
+    id: string;
+    status: string;
+    current_period_end: string | null;
+    billing_mode: string | null;
+    launch_price: boolean | null;
+    launch_seat: number | null;
+    created_at: string | null;
+  }>;
+
+  const pending = rows.find((row) => {
+    if (row.status !== 'pending') return false;
+    const created = row.created_at ? Date.parse(row.created_at) : 0;
+    return Number.isFinite(created) && created > now - PENDING_CHECKOUT_TTL_MS;
+  });
+  if (pending) {
+    throw Errors.BAD_REQUEST('Você já tem um pagamento em andamento. Conclua o checkout anterior ou aguarde alguns minutos.');
   }
+
+  const current = rows.find(
+    (row) => (row.status === 'active' || row.status === 'past_due' || row.status === 'canceled') && isFuture(row.current_period_end, now),
+  );
+  // Pagamento avulso (PIX) pode ser renovado nos últimos 7 dias, somando o novo
+  // período ao que ainda resta. Quem cancelou e ainda tem acesso pode
+  // reativar sem perder o período já pago; a nova cobrança começa no fim dele.
+  const canceledWithAccess = current?.status === 'canceled';
+  const renewalBase = current?.current_period_end &&
+    (canceledWithAccess ||
+      (current.billing_mode === 'one_time' &&
+        Date.parse(current.current_period_end) - now <= RENEWAL_WINDOW_MS))
+      ? current.current_period_end
+      : null;
+  if (current && !renewalBase) {
+    throw Errors.BAD_REQUEST('Você já possui uma assinatura ativa. Use a opção de trocar plano na sua conta.');
+  }
+
+  // Renovação de cliente de lançamento herda o preço e a vaga originais: não
+  // consome uma nova vaga do lote de 100 a cada ciclo. Depois de cancelar, a
+  // condição é reavaliada (a vaga antiga já foi liberada).
+  const renewalLaunch = Boolean(renewalBase && !canceledWithAccess && current?.launch_price === true);
+
   const base = env.FRONTEND_URL.replace(/\/$/, '');
   const returnUrl = `${base}/app/conta`;
   const completionUrl = `${base}/app/conta?checkout=ok`;
+  const standardAmount = period === 'annual' ? PRO_ANNUAL_CENTS : PRO_MONTHLY_CENTS;
+  const launchAmount = period === 'annual' ? LAUNCH_ANNUAL_CENTS : LAUNCH_MONTHLY_CENTS;
 
-  const productId = productIdFor(plan, period);
-  const meta = PLAN_META[plan];
-  const amountCents = period === 'annual' ? meta.precoAnualCents : meta.precoMensalCents;
-  if (!productId || amountCents === null) throw Errors.BAD_REQUEST('Plano indisponível.');
-
-  const { data: row, error } = await supabaseAdmin
+  const { data: inserted, error } = await supabaseAdmin
     .from('subscriptions')
     .insert({
       creator_id: creator.id,
       plan,
       period,
       status: 'pending',
-      amount_cents: amountCents,
+      amount_cents: renewalLaunch ? launchAmount : standardAmount,
+      current_period_end: renewalBase,
+      billing_mode: 'recurring',
+      launch_price: renewalLaunch,
+      launch_seat: renewalLaunch ? current?.launch_seat ?? null : null,
     })
     .select('id')
     .single();
-  if (error || !row) {
+  if (error || !inserted) {
     logger.error({ err: error }, 'Failed to create pending subscription');
     throw billingUnavailable();
   }
+  const rowId = (inserted as { id: string }).id;
 
-  const checkout = await createSubscriptionCheckout({
-    productId,
-    externalId: (row as { id: string }).id,
+  let launch = renewalLaunch;
+  if (renewalLaunch) {
+    logger.info(
+      { subscription_id: rowId, launch_seat: current?.launch_seat ?? null },
+      'Launch price inherited on renewal',
+    );
+  } else {
+    // Reserva atômica de uma das 100 vagas de lançamento. A função SQL usa
+    // advisory lock para impedir duas cobranças na mesma última vaga.
+    const { data: seat, error: seatError } = await supabaseAdmin.rpc('claim_launch_seat', {
+      p_subscription_id: rowId,
+    });
+    if (seatError) {
+      logger.error({ err: seatError }, 'Failed to claim launch seat');
+    } else {
+      launch = seat !== null && seat !== undefined;
+    }
+  }
+
+  const amountCents = launch ? launchAmount : standardAmount;
+  if (launch && !renewalLaunch) {
+    await supabaseAdmin
+      .from('subscriptions')
+      .update({ amount_cents: amountCents, updated_at: new Date().toISOString() })
+      .eq('id', rowId);
+  }
+
+  const recurringProduct = productIdFor(plan, period, { launch, mode: 'recurring' });
+  const oneTimeProduct = productIdFor(plan, period, { launch, mode: 'one_time' });
+  const failCheckout = async (reason: string): Promise<never> => {
+    logger.error({ subscription_id: rowId, plan, period, launch, reason }, 'Failed to create provider checkout');
+    await supabaseAdmin
+      .from('subscriptions')
+      .update({
+        status: 'failed',
+        launch_price: false,
+        launch_seat: null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', rowId);
+    throw billingUnavailable();
+  };
+  if (!recurringProduct || !oneTimeProduct) return failCheckout('missing_product');
+
+  let checkout = await createSubscriptionCheckout({
+    productId: recurringProduct,
+    externalId: rowId,
     returnUrl,
     completionUrl,
   });
+  let mode: 'recurring' | 'one_time' = 'recurring';
+
   if (!checkout) {
-    void supabaseAdmin
-      .from('subscriptions')
-      .update({ status: 'failed', updated_at: new Date().toISOString() })
-      .eq('id', (row as { id: string }).id)
-      .then(() => undefined);
-    throw billingUnavailable();
+    // Fallback operacional: enquanto a loja não habilita cartão/Pix Automático,
+    // vende o mesmo período via PIX avulso. O acesso é liberado pelo webhook de
+    // checkout e a renovação acontece por um novo checkout.
+    checkout = await createOneTimeCheckout({
+      productId: oneTimeProduct,
+      externalId: rowId,
+      returnUrl,
+      completionUrl,
+    });
+    mode = 'one_time';
   }
+  if (!checkout) return failCheckout('provider_unavailable');
 
   await supabaseAdmin
     .from('subscriptions')
-    .update({ provider_checkout_id: checkout.id, updated_at: new Date().toISOString() })
-    .eq('id', (row as { id: string }).id);
+    .update({
+      provider_checkout_id: checkout.id,
+      billing_mode: mode,
+      amount_cents: amountCents,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', rowId);
 
-  logger.info({ creator_id: creator.id, plan, period, checkout_id: checkout.id }, 'Subscription checkout created');
-  return { url: checkout.url };
+  logger.info(
+    { creator_id: creator.id, plan, period, checkout_id: checkout.id, mode, launch, amount_cents: amountCents },
+    'Subscription checkout created',
+  );
+  return { url: checkout.url, mode, launch, amount_cents: amountCents };
 }
 
 export async function cancelSubscription(
@@ -299,7 +487,7 @@ async function findSubscriptionRow(filters: {
   checkoutId?: string | null;
   providerSubscriptionId?: string | null;
 }): Promise<SubscriptionRow | null> {
-  const select = 'id, creator_id, plan, period, status, provider_checkout_id, provider_subscription_id, current_period_end, started_at, pending_plan, pending_period';
+  const select = 'id, creator_id, plan, period, status, billing_mode, launch_price, launch_seat, provider_checkout_id, provider_subscription_id, current_period_end, started_at, pending_plan, pending_period';
   if (filters.checkoutId) {
     const { data } = await supabaseAdmin
       .from('subscriptions')
@@ -322,10 +510,17 @@ async function findSubscriptionRow(filters: {
 async function activateRow(
   row: SubscriptionRow,
   subscriptionId: string | null,
-  trialEndsAt: string | null,
 ): Promise<'processed'> {
   const now = new Date().toISOString();
   const periodEnd = extendPeriodEnd(row.current_period_end, row.period);
+  // Renovação avulsa cria uma nova linha: a anterior deixa de ser "active"
+  // para não duplicar MRR nem contar o mesmo cliente duas vezes.
+  await supabaseAdmin
+    .from('subscriptions')
+    .update({ status: 'renewed', updated_at: now })
+    .eq('creator_id', row.creator_id)
+    .eq('status', 'active')
+    .neq('id', row.id);
   await supabaseAdmin
     .from('subscriptions')
     .update({
@@ -333,6 +528,7 @@ async function activateRow(
       provider_subscription_id: subscriptionId ?? row.provider_subscription_id,
       current_period_end: periodEnd,
       started_at: row.started_at ?? now,
+      canceled_at: null,
       updated_at: now,
     })
     .eq('id', row.id);
@@ -340,15 +536,18 @@ async function activateRow(
     .from('creators')
     .update({
       plan: row.plan,
-      plan_status: trialEndsAt ? 'trialing' : 'active',
+      plan_status: 'active',
       plan_period: row.period,
       current_period_end: periodEnd,
-      trial_ends_at: trialEndsAt,
+      trial_ends_at: null,
       cancel_at_period_end: false,
     })
     .eq('id', row.creator_id);
   await invalidateCreatorCache(row.creator_id);
-  logger.info({ subscription_id: row.id, plan: row.plan, creator_id: row.creator_id }, 'Subscription activated');
+  logger.info(
+    { subscription_id: row.id, plan: row.plan, creator_id: row.creator_id, mode: row.billing_mode ?? 'recurring' },
+    'Subscription activated',
+  );
   return 'processed';
 }
 
@@ -362,7 +561,20 @@ async function activateSubscription(data: Record<string, unknown>): Promise<'pro
     logger.warn({ checkout_id: snapshot.checkoutId, subscription_id: snapshot.subscriptionId }, 'Billing event without matching subscription row');
     return 'ignored';
   }
-  return activateRow(row, snapshot.subscriptionId, snapshot.trialEndsAt);
+  // Reentrega de subscription.completed (ou ativação prévia via checkout) não
+  // pode esticar o período de novo. Apenas completa o ID do provedor quando falta.
+  if (row.status === 'active') {
+    if (snapshot.subscriptionId && !row.provider_subscription_id) {
+      await supabaseAdmin
+        .from('subscriptions')
+        .update({ provider_subscription_id: snapshot.subscriptionId, updated_at: new Date().toISOString() })
+        .eq('id', row.id);
+    }
+    return 'processed';
+  }
+  if (row.status !== 'pending') return 'ignored';
+  if (snapshot.status?.toLowerCase() === 'trialing' || snapshot.trialEndsAt) return 'ignored';
+  return activateRow(row, snapshot.subscriptionId);
 }
 
 async function renewSubscription(data: Record<string, unknown>): Promise<'processed' | 'ignored'> {
@@ -412,6 +624,10 @@ async function markPastDue(data: Record<string, unknown>): Promise<'processed' |
     checkoutId: snapshot.checkoutId,
   });
   if (!row) return 'ignored';
+  await supabaseAdmin
+    .from('subscriptions')
+    .update({ status: 'past_due', updated_at: new Date().toISOString() })
+    .eq('id', row.id);
   await supabaseAdmin.from('creators').update({ plan_status: 'past_due' }).eq('id', row.creator_id);
   await invalidateCreatorCache(row.creator_id);
   logger.warn({ subscription_id: row.id, creator_id: row.creator_id }, 'Subscription payment failed (past_due)');
@@ -445,7 +661,7 @@ async function activateCheckout(data: Record<string, unknown>): Promise<'process
   if (checkout.checkoutId) {
     const row = await findSubscriptionRow({ checkoutId: checkout.checkoutId });
     if (row && row.status === 'pending') {
-      return activateRow(row, null, null);
+      return activateRow(row, null);
     }
   }
   return 'ignored';
@@ -454,8 +670,10 @@ async function activateCheckout(data: Record<string, unknown>): Promise<'process
 async function handleEvent(event: ParsedBillingEvent): Promise<'processed' | 'ignored'> {
   switch (event.type) {
     case 'subscription.completed':
-    case 'subscription.trial_started':
       return activateSubscription(event.data);
+    case 'subscription.trial_started':
+      // Não oferecemos trial; o evento não comprova pagamento.
+      return 'ignored';
     case 'subscription.renewed':
       return renewSubscription(event.data);
     case 'subscription.payment_failed':
@@ -551,6 +769,8 @@ export interface AdminSubscriptionView {
   plan_label: string;
   period: string;
   status: string;
+  billing_mode: 'recurring' | 'one_time' | null;
+  launch_price: boolean;
   amount_cents: number | null;
   current_period_end: string | null;
   pending_plan: string | null;
@@ -570,7 +790,7 @@ export async function adminListSubscriptions(query: { page: number; limit: numbe
   const from = (query.page - 1) * query.limit;
   const { data, error, count } = await supabaseAdmin
     .from('subscriptions')
-    .select('id, creator_id, plan, period, status, amount_cents, current_period_end, pending_plan, created_at', { count: 'exact' })
+    .select('id, creator_id, plan, period, status, billing_mode, launch_price, amount_cents, current_period_end, pending_plan, created_at', { count: 'exact' })
     .order('created_at', { ascending: false })
     .range(from, from + query.limit - 1);
   if (error) throw error;
@@ -580,6 +800,8 @@ export async function adminListSubscriptions(query: { page: number; limit: numbe
     plan: string;
     period: string;
     status: string;
+    billing_mode: string | null;
+    launch_price: boolean | null;
     amount_cents: number | null;
     current_period_end: string | null;
     pending_plan: string | null;
@@ -607,6 +829,8 @@ export async function adminListSubscriptions(query: { page: number; limit: numbe
       plan_label: planLabel(row.plan),
       period: row.period,
       status: row.status,
+      billing_mode: row.billing_mode === 'one_time' ? 'one_time' : row.billing_mode === 'recurring' ? 'recurring' : null,
+      launch_price: row.launch_price === true,
       amount_cents: row.amount_cents,
       current_period_end: row.current_period_end,
       pending_plan: row.pending_plan,

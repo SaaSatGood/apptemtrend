@@ -3,8 +3,9 @@ import fp from 'fastify-plugin';
 import { z } from 'zod';
 import { requireAuth } from '../../plugins/auth.js';
 import { RATE_LIMITS } from '../../config/constants.js';
-import { reserveForceNew, reserveKitQuota, releaseForceNew, releaseQuota } from '../../lib/ai-metrics.js';
-import { assertKitQuota, assertVariationQuota, planLimitError, variationsPolicy, vozPersonalizadaAllowed } from '../billing/billing.gating.js';
+import { reserveForceNew, reserveKitQuota, reserveFreeKitQuota, releaseForceNew, releaseFreeQuota, releaseQuota } from '../../lib/ai-metrics.js';
+import { assertKitQuota, assertVariationQuota, planContextForCreator, planLimitError, variationsPolicy, vozPersonalizadaAllowed } from '../billing/billing.gating.js';
+import { FAIR_USE_KITS_PER_MONTH, FREE_KITS_TOTAL } from '../billing/plans.js';
 import { productQuerySchema } from './product.schema.js';
 import * as productService from './product.service.js';
 import { requireActiveCreator } from '../creators/creator.service.js';
@@ -78,8 +79,25 @@ async function productRoutes(fastify: FastifyInstance) {
     }).strict().parse(request.body ?? {});
     const creator = await requireActiveCreator(request.authUser.id);
     await assertKitQuota(creator, body.force_new ? undefined : id);
-    if (!await reserveKitQuota(request.authUser.id)) {
-      throw Errors.CONFLICT('Limite diário de roteiros atingido. Tente novamente amanhã.');
+    // Reabrir um roteiro existente não consome um dos três créditos gratuitos.
+    if (!body.force_new && planContextForCreator(creator).plan === 'free') {
+      const { content_kits } = await productService.getProductById(id, { creatorId: creator.id });
+      if (content_kits[0]) return reply.status(200).send({ content_kit: content_kits[0], created: false });
+    }
+    // Plano pago não tem teto diário visível: o limite real é o uso justo
+    // mensal (assertKitQuota). O contador diário segue registrando métricas,
+    // mas com o mesmo teto mensal para nunca virar um "30/dia" escondido.
+    const { plan } = planContextForCreator(creator);
+    const releaseReservedQuota = () => plan === 'free'
+      ? releaseFreeQuota(request.authUser.id, 'kit')
+      : releaseQuota(request.authUser.id, 'kit');
+    const reserved = plan === 'free'
+      ? await reserveFreeKitQuota(request.authUser.id, creator.id, FREE_KITS_TOTAL)
+      : await reserveKitQuota(request.authUser.id, FAIR_USE_KITS_PER_MONTH);
+    if (!reserved) {
+      throw plan === 'free'
+        ? planLimitError(`Você usou os ${FREE_KITS_TOTAL} roteiros do plano Grátis. Assine Pro para continuar criando.`)
+        : planLimitError('Você atingiu o limite de uso justo deste mês. Fale com a gente para ajustar seu plano e continuar criando.');
     }
     let forceReserved = false;
     let quotaReleased = false;
@@ -87,14 +105,14 @@ async function productRoutes(fastify: FastifyInstance) {
       if (body.force_new) {
         const policy = variationsPolicy(creator);
         if (!policy.allowed) {
-          await releaseQuota(request.authUser.id, 'kit');
+          await releaseReservedQuota();
           quotaReleased = true;
           throw planLimitError('Gerar outra versão está disponível nos planos pagos. Faça upgrade para criar variações do roteiro.');
         }
         await assertVariationQuota(creator, id);
         forceReserved = await reserveForceNew(creator.id, id, policy.cooldownMs);
         if (!forceReserved) {
-          await releaseQuota(request.authUser.id, 'kit');
+          await releaseReservedQuota();
           quotaReleased = true;
           throw Errors.CONFLICT(`Aguarde ${Math.round(policy.cooldownMs / 1000)} segundos antes de gerar outra versão para este produto.`);
         }
@@ -104,14 +122,14 @@ async function productRoutes(fastify: FastifyInstance) {
         ? await productService.createFreshContentKit(id, creator.id, body.instructions, voz)
         : await productService.ensureContentKit(id, creator.id, body.instructions, voz);
       if (!result.created) {
-        await releaseQuota(request.authUser.id, 'kit');
+        await releaseReservedQuota();
         quotaReleased = true;
       }
       return reply.status(result.created ? 201 : 200).send(result);
     } catch (error) {
       if (forceReserved) await releaseForceNew(creator.id, id);
       if (!quotaReleased) {
-        await releaseQuota(request.authUser.id, 'kit');
+        await releaseReservedQuota();
       }
       throw error;
     }

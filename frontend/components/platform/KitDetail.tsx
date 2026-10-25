@@ -3,9 +3,12 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import Icon from "@/components/ui/Icon";
 import { supabase } from "@/lib/supabase";
 import { api, friendlyError } from "@/lib/api";
-import type { ContentKit, CreatorContent, Product } from "@/lib/types";
+import { loadProductDetail, peekProductDetail, type ProductDetail } from "@/lib/product-detail-cache";
+import { fullProductName } from "@/lib/format";
+import type { CreatorContent } from "@/lib/types";
 import { usePlatform } from "./store";
 import { Skeletons } from "./ProductKit";
 import ContentKitDialog from "./ContentKitDialog";
@@ -19,9 +22,11 @@ import ProductImage from "./ProductImage";
 
 export default function KitDetail({ productId, kitId }: { productId: string; kitId: string }) {
   const router = useRouter();
-  const { productions, productionsLoading, productionsError, toast, loadProductions } = usePlatform();
-  const [product, setProduct] = useState<Product | null>(null);
-  const [kit, setKit] = useState<ContentKit | null>(null);
+  const { session, productions, productionsLoading, productionsError, toast, loadProductions } = usePlatform();
+  const [detail, setDetail] = useState<ProductDetail | null>(() => {
+    const cached = peekProductDetail(productId);
+    return cached?.content_kits.some((item) => item.id === kitId) ? cached : null;
+  });
   const [failed, setFailed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [generatingBriefing, setGeneratingBriefing] = useState<string | null>(null);
@@ -29,21 +34,43 @@ export default function KitDetail({ productId, kitId }: { productId: string; kit
 
   useEffect(() => {
     let cancelled = false;
+    const cached = peekProductDetail(productId);
+    const cachedForRoute = cached?.content_kits.some((item) => item.id === kitId) ? cached : null;
     (async () => {
       try {
-        const { data } = await supabase().auth.getSession();
-        const detail = await api<{ product: Product; content_kits: ContentKit[] }>(`/products/${productId}`, data.session?.access_token);
+        let loaded = await loadProductDetail(productId, session?.access_token, {
+          // Cache sem este roteiro pode ser de antes de uma geração: força a
+          // revalidação em vez de mostrar "não encontrado" por engano.
+          force: !cachedForRoute,
+        });
         if (cancelled) return;
-        const found = detail.content_kits.find((item) => item.id === kitId) || null;
-        if (!found) { setFailed(true); return; }
-        setProduct(detail.product);
-        setKit(found);
+        let found = loaded.content_kits.find((item) => item.id === kitId) || null;
+        if (!found && cachedForRoute) {
+          // Havia uma requisição anterior em voo quando o roteiro foi criado.
+          // Confirma com uma leitura forçada antes de negar o conteúdo.
+          loaded = await loadProductDetail(productId, session?.access_token, { force: true });
+          if (cancelled) return;
+          found = loaded.content_kits.find((item) => item.id === kitId) || null;
+        }
+        if (!found) {
+          setFailed(true);
+          return;
+        }
+        setDetail(loaded);
+        setFailed(false);
       } catch (error) {
-        if (!cancelled) { setFailed(true); toast(friendlyError(error, "Não conseguimos abrir este plano de gravação. Tente novamente.")); }
+        if (cancelled) return;
+        if (!cachedForRoute) {
+          setFailed(true);
+          toast(friendlyError(error, "Não conseguimos abrir este plano de gravação. Tente novamente."));
+        }
       }
     })();
     return () => { cancelled = true; };
-  }, [productId, kitId, toast]);
+  }, [productId, kitId, session?.access_token, toast]);
+
+  const product = detail?.product ?? null;
+  const kit = detail?.content_kits.find((item) => item.id === kitId) ?? null;
 
   if (failed || (!product && !kit)) {
     if (!failed) return <section className="detail-view" aria-live="polite"><p role="status">Carregando seu conteúdo…</p><div className="product-grid"><Skeletons /></div></section>;
@@ -53,6 +80,8 @@ export default function KitDetail({ productId, kitId }: { productId: string; kit
 
   const currentProduct = product;
   const currentKit = kit;
+  const productName = fullProductName(currentProduct);
+  const productFacts = [currentProduct.categoria, currentProduct.preco_texto].filter((value): value is string => Boolean(value?.trim())).join(" · ");
   const context = kitContext(currentKit, currentProduct);
   const productProduction = productionForProduct(productions, currentProduct.id);
   const otherKitInProgress = productProduction && productProduction.status !== "salvo" && productProduction.content_kit_id !== currentKit.id;
@@ -97,7 +126,12 @@ export default function KitDetail({ productId, kitId }: { productId: string; kit
         </div>
         <aside className="content-kit-product" aria-label="Produto deste conteúdo">
           <ProductImage product={currentProduct} width={220} height={180} />
-          <div><span>Produto deste conteúdo</span><strong>{currentProduct.categoria || "Produto"}</strong><Link href={`/app/produtos/${currentProduct.id}`}>Ver detalhes</Link></div>
+          <div className="content-kit-product-copy">
+            <span className="content-kit-product-label">Produto deste conteúdo</span>
+            <strong title={productName}>{productName}</strong>
+            {productFacts && <p className="content-kit-product-meta">{productFacts}</p>}
+            <Link href={`/app/produtos/${currentProduct.id}`} aria-label={`Ver produto: ${productName}`}>Ver produto <Icon name="arrow-up-right" size={13} /></Link>
+          </div>
         </aside>
       </header>
       <ProductionSteps current={production ? ({ salvo: 1, em_producao: 2, gravado: 3, publicado: 4 })[production.status] : 1} />

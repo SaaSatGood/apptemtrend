@@ -2,6 +2,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import Icon, { type IconName } from "@/components/ui/Icon";
 import { supabase } from "@/lib/supabase";
 import { api, friendlyError } from "@/lib/api";
 import { FALLBACK_IMAGE } from "@/lib/format";
@@ -188,21 +189,22 @@ function initials(creator: AdminCreator): string {
   return (creator.nome || creator.email || "Creator").split(/\s+/).slice(0, 2).map((part) => part[0]?.toUpperCase()).join("");
 }
 
-function AdminIcon({ name }: { name: "overview" | "box" | "users" | "refresh" | "plus" | "search" | "download" | "edit" | "external" | "card" | "message" }) {
-  const paths = {
-    overview: <><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/></>,
-    box: <><path d="m21 8-9 5-9-5 9-5 9 5Z"/><path d="m3 8 9 5 9-5v8l-9 5-9-5V8Z"/></>,
-    users: <><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></>,
-    refresh: <><path d="M20 11a8.1 8.1 0 0 0-15.5-2M4 4v5h5"/><path d="M4 13a8.1 8.1 0 0 0 15.5 2M20 20v-5h-5"/></>,
-    plus: <><path d="M12 5v14M5 12h14"/></>,
-    search: <><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></>,
-    download: <><path d="M12 3v12M7 10l5 5 5-5"/><path d="M5 21h14"/></>,
-    edit: <><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L8 18l-4 1 1-4Z"/></>,
-    external: <><path d="M14 3h7v7M10 14 21 3"/><path d="M21 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5"/></>,
-    card: <><rect x="2" y="5" width="20" height="14" rx="3"/><path d="M2 10h20"/></>,
-    message: <><path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4Z"/></>,
-  };
-  return <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">{paths[name]}</svg>;
+const ADMIN_ICONS: Record<"overview" | "box" | "users" | "refresh" | "plus" | "search" | "download" | "edit" | "external" | "card" | "message", IconName> = {
+  overview: "grid",
+  box: "box",
+  users: "users",
+  refresh: "refresh",
+  plus: "plus",
+  search: "search",
+  download: "download",
+  edit: "pencil",
+  external: "external-link",
+  card: "plan",
+  message: "message-square",
+};
+
+function AdminIcon({ name }: { name: keyof typeof ADMIN_ICONS }) {
+  return <Icon name={ADMIN_ICONS[name]} size={16} />;
 }
 
 export default function Admin() {
@@ -637,7 +639,7 @@ export default function Admin() {
           <div className={styles.sectionHeading}><div><span>Catálogo</span><h2>Produtos da plataforma</h2></div><p>Encontre, revise e publique oportunidades para creators.</p></div>
           {formOpen && (
             <div className={styles.editor} ref={formRef}>
-              <div className={styles.editorHeading}><div><span>{editingId ? "Editando produto" : "Novo produto"}</span><h2>{editingId ? form.name || "Produto" : "Adicionar ao catálogo"}</h2><p>Organize os dados que alimentam a descoberta e os roteiros de conteúdo.</p></div><button type="button" onClick={closeForm} aria-label="Fechar formulário">×</button></div>
+              <div className={styles.editorHeading}><div><span>{editingId ? "Editando produto" : "Novo produto"}</span><h2>{editingId ? form.name || "Produto" : "Adicionar ao catálogo"}</h2><p>Organize os dados que alimentam a descoberta e os roteiros de conteúdo.</p></div><button type="button" onClick={closeForm} aria-label="Fechar formulário"><Icon name="x" size={18} /></button></div>
               <form onSubmit={submitProduct} className={styles.productForm}>
                 <fieldset>
                   <legend><b>1</b><span>Identificação<small>Informações que o creator verá primeiro.</small></span></legend>

@@ -136,6 +136,18 @@ export async function createCreatorContent(input: {
   return data;
 }
 
+export async function deleteCreatorContent(id: string): Promise<void> {
+  const { error } = await supabaseAdmin
+    .from('creator_content')
+    .delete()
+    .eq('id', id);
+
+  if (error) {
+    logger.error({ err: error }, 'Error deleting creator content');
+    throw error;
+  }
+}
+
 export async function updateCreatorContent(id: string, input: Record<string, unknown>): Promise<CreatorContent> {
   const { data, error } = await supabaseAdmin
     .from('creator_content')

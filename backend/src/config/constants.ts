@@ -65,6 +65,9 @@ export const AI_LIMITS = {
   CLASSIFY_MAX_OUTPUT_TOKENS: 400,
   CLASSIFY_CACHE_TTL_MS: 30 * 60 * 1000,
   ASSISTANT_RESPONSE_CACHE_TTL_MS: 10 * 60 * 1000,
+  // Chat de suporte: resposta curta, latura curta.
+  SUPPORT_TIMEOUT_MS: 12_000,
+  SUPPORT_MAX_OUTPUT_TOKENS: 600,
   // Geração de kit: 1 tentativa inicial + 2 retries (confiabilidade primeiro).
   MAX_GENERATION_ATTEMPTS: 3,
   GENERATE_TIMEOUT_MS: 30_000,

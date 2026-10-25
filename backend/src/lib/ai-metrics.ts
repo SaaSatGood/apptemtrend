@@ -58,6 +58,48 @@ export async function reserveAssistantQuota(
   return true;
 }
 
+/** A cota gratuita não renova: soma o uso de dias anteriores e reserva hoje
+ *  atomicamente no mesmo contador que já protege buscas concorrentes. */
+export async function countFreeSearches(userId: string, beforeDate?: string): Promise<number> {
+  let query = supabaseAdmin.from('ai_usage_daily')
+    .select('assistant_calls')
+    .eq('user_id', userId)
+    .gt('assistant_calls', 0)
+    .limit(3);
+  if (beforeDate) query = query.lt('usage_date', beforeDate);
+  const { data, error } = await query;
+  if (error) {
+    logger.error({ err: error }, 'Failed to count free searches');
+    throw new Error('Free search quota unavailable');
+  }
+  return (data ?? []).reduce((total, day) => total + (day.assistant_calls ?? 0), 0);
+}
+
+export async function reserveFreeAssistantQuota(userId: string, totalLimit: number): Promise<boolean> {
+  const previous = await countFreeSearches(userId, todayKey());
+  const remainingToday = totalLimit - previous;
+  return remainingToday > 0 && reserveDatabaseQuota(userId, 'assistant', remainingToday);
+}
+
+export async function reserveFreeKitQuota(userId: string, creatorId: string, totalLimit: number): Promise<boolean> {
+  const dayStart = `${todayKey()}T00:00:00.000Z`;
+  const { count, error } = await supabaseAdmin.from('content_kits')
+    .select('id', { count: 'exact', head: true })
+    .eq('creator_id', creatorId)
+    .lt('criado_em', dayStart);
+  if (error) {
+    logger.error({ err: error }, 'Failed to count previous free kits');
+    throw new Error('Free kit quota unavailable');
+  }
+  const remainingToday = totalLimit - (count ?? 0);
+  return remainingToday > 0 && reserveDatabaseQuota(userId, 'kit', remainingToday);
+}
+
+export async function releaseFreeQuota(userId: string, kind: QuotaKind): Promise<void> {
+  const { error } = await supabaseAdmin.rpc('release_ai_quota', { p_user_id: userId, p_kind: kind });
+  if (error) logger.error({ err: error, kind }, 'Failed to release free quota');
+}
+
 export async function reserveKitQuota(
   userId: string,
   dailyLimit: number = AI_QUOTA.KIT_PER_DAY,

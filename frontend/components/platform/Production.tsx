@@ -3,9 +3,10 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import Icon from "@/components/ui/Icon";
 import { copyText, fullProductName, normalizeScenes, validTikTokUrl } from "@/lib/format";
 import { supabase } from "@/lib/supabase";
-import { api } from "@/lib/api";
+import { api, friendlyError } from "@/lib/api";
 import { track } from "@/lib/track";
 import type { CreatorContent } from "@/lib/types";
 import { usePlatform } from "./store";
@@ -69,6 +70,9 @@ export default function Production() {
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState<Sort>("prioridade");
   const [recorded, setRecorded] = useState<Record<string, number[]>>({});
+  const [removing, setRemoving] = useState<CreatorContent | null>(null);
+  const [removingBusy, setRemovingBusy] = useState(false);
+  const [removingError, setRemovingError] = useState("");
   useEffect(() => {
     const progress: Record<string, number[]> = {};
     productions.forEach((item) => { if (item.content_kit_id) progress[item.content_kit_id] = readGuideProgress(item.content_kit_id).scenes; });
@@ -107,7 +111,25 @@ export default function Production() {
   }
 
   function findProduct() {
-    router.push("/app");
+    router.push("/app/descobrir");
+  }
+
+  async function confirmRemove() {
+    if (!removing || removingBusy) return;
+    setRemovingBusy(true);
+    setRemovingError("");
+    try {
+      const { data } = await supabase().auth.getSession();
+      await api(`/creator-content/${removing.id}`, data.session?.access_token, { method: "DELETE" });
+      track("production_removed", { status: removing.status });
+      await loadProductions();
+      toast("Produto removido da produção.");
+      setRemoving(null);
+    } catch (error) {
+      setRemovingError(friendlyError(error, "Não conseguimos remover agora. Tente novamente."));
+    } finally {
+      setRemovingBusy(false);
+    }
   }
 
   return (
@@ -130,7 +152,7 @@ export default function Production() {
               onChange={(event) => setQuery(event.target.value)}
             />
             {query && (
-              <button type="button" aria-label="Limpar busca" onClick={() => setQuery("")}>×</button>
+              <button type="button" aria-label="Limpar busca" onClick={() => setQuery("")}><Icon name="x" size={16} /></button>
             )}
           </label>
           <label className="production-sort">
@@ -172,7 +194,7 @@ export default function Production() {
         </div>
       )}
       <div id="my-content" className="production-grid">
-        {productionsError ? <div className="empty-state" role="alert"><h3>Não conseguimos atualizar sua produção.</h3><p>Seus conteúdos continuam salvos. Tente carregar novamente.</p><button className="ghost" type="button" disabled={productionsLoading} onClick={() => void loadProductions().catch(() => {})}>{productionsLoading ? "Carregando…" : "Tentar novamente"}</button></div> : productionsLoading && !productions.length ? (
+        {productionsError ? <div className="empty-state" role="alert"><p className="tt-dash-empty-kicker">Sem conexão</p><h3>Não conseguimos atualizar sua produção.</h3><p>Seus conteúdos continuam salvos. Tente carregar novamente.</p><button className="ghost" type="button" disabled={productionsLoading} onClick={() => void loadProductions().catch(() => {})}>{productionsLoading ? "Carregando…" : "Tentar novamente"}</button></div> : productionsLoading && !productions.length ? (
           <><p className="production-loading-status" role="status">Carregando seus conteúdos e próximas ações…</p>{[0, 1, 2].map((item) => (
             <div key={item} className="production-card production-skeleton" aria-hidden="true">
               <div className="skeleton production-skeleton-image" />
@@ -181,6 +203,7 @@ export default function Production() {
           ))}</>
         ) : !productions.length ? (
           <div className="empty-state">
+            <p className="tt-dash-empty-kicker">Primeiro passo</p>
             <h3>Você ainda não começou nenhuma produção.</h3>
             <p>Conte o que quer vender e escolha seu primeiro produto.</p>
             <button className="ghost" type="button" onClick={findProduct}>
@@ -189,6 +212,7 @@ export default function Production() {
           </div>
         ) : !visible.length ? (
           <div className="empty-state">
+            <p className="tt-dash-empty-kicker">Nada por aqui</p>
             <h3>Nenhum conteúdo encontrado.</h3>
             <p>{filter === "gravado" ? "Quando você marcar todas as cenas como gravadas, o conteúdo aparece aqui." : filter === "publicado" ? "Depois de publicar um vídeo, ele aparece aqui." : filter === "em_producao" ? "Escolha um roteiro para começar uma produção." : filter === "salvo" ? "Salve um produto para encontrá-lo aqui." : "Limpe a busca ou escolha outro filtro para ver sua produção."}</p>
             {productions.some((item) => item.status === "em_producao") ? <button className="ghost" type="button" onClick={() => { setQuery(""); setFilter("em_producao"); }}>Continuar item em produção</button> : <button className="ghost" type="button" onClick={() => { setQuery(""); setFilter("todos"); }}>Ver todos</button>}
@@ -248,7 +272,7 @@ export default function Production() {
                     )}
                     {kit?.hook && (
                       <button className="production-action production-copy-hook" type="button" title="Copiar hook" aria-label="Copiar hook" onClick={() => copyHook(c)}>
-                        ⧉
+                        <Icon name="copy" size={18} />
                       </button>
                     )}
                     {status === "publicado" && c.published_url && (
@@ -259,6 +283,15 @@ export default function Production() {
                         Ver roteiro
                       </Link>
                     )}
+                    <button
+                      className="production-action production-remove"
+                      type="button"
+                      title="Remover da produção"
+                      aria-label={`Remover ${fullProductName(product)} da produção`}
+                      onClick={() => { setRemovingError(""); setRemoving(c); }}
+                    >
+                      <Icon name="trash" size={18} />
+                    </button>
                   </div>
                 </div>
               </article>
@@ -266,6 +299,27 @@ export default function Production() {
           })
         )}
       </div>
+      {removing && (
+        <Modal titleId="remove-production-title" busy={removingBusy} onClose={() => setRemoving(null)}>
+          <div className="stack">
+            <p className="eyebrow">Remover produto</p>
+            <h2 id="remove-production-title">Remover da produção?</h2>
+            <p className="muted">
+              <b>{removing.products?.nome || "Este produto"}</b> sai da sua produção e some do painel.
+              O produto do catálogo continua disponível e você pode salvá-lo de novo quando quiser.
+            </p>
+            {removingError && <p className="form-message error" role="alert">{removingError}</p>}
+            <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+              <button className="danger-button" type="button" disabled={removingBusy} onClick={confirmRemove}>
+                {removingBusy ? "Removendo..." : "Remover da produção"}
+              </button>
+              <button className="ghost" type="button" disabled={removingBusy} onClick={() => setRemoving(null)}>
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </Modal>
+      )}
     </section>
   );
 }
@@ -324,7 +378,7 @@ export function PublicationDialog({
     <Modal onClose={onClose} busy={busy} titleId="publication-dialog-title">
       <form className="stack" onSubmit={submit}>
         <button className="dialog-close" type="button" aria-label="Fechar" disabled={busy} onClick={onClose}>
-          ×
+          <Icon name="x" size={18} />
         </button>
         <p className="eyebrow">Publicação</p>
         <h2 id="publication-dialog-title">Seu vídeo já foi publicado?</h2>

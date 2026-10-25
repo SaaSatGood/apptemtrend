@@ -12,6 +12,14 @@ import {
   getCreatorTicket,
   listCreatorTickets,
 } from './support.service.js';
+import {
+  geminiSupportAnswer,
+  openrouterSupportAnswer,
+  supportContext,
+  supportFallbackAnswer,
+  type SupportChatMessage,
+} from './support-chat.service.js';
+import { getCreatorContent } from '../creator-content/creator-content.service.js';
 
 const idParam = z.object({ id: z.string().uuid() });
 
@@ -23,6 +31,14 @@ const createSchema = z.object({
 
 const messageSchema = z.object({
   body: z.string().trim().min(1).max(2000),
+}).strict();
+
+const chatSchema = z.object({
+  message: z.string().trim().min(2).max(2000),
+  history: z.array(z.object({
+    role: z.enum(['user', 'assistant']),
+    content: z.string().trim().min(1).max(2000),
+  })).max(10).optional(),
 }).strict();
 
 async function supportRoutes(app: FastifyInstance) {
@@ -57,6 +73,24 @@ async function supportRoutes(app: FastifyInstance) {
     const { id } = idParam.parse(request.params);
     const creator = await requireActiveCreator(request.authUser.id);
     return closeCreatorTicket(creator.id, id);
+  });
+
+  // POST /support/chat — assistente de suporte com a mesma IA da plataforma.
+  app.post('/support/chat', write, async (request) => {
+    const creator = await requireActiveCreator(request.authUser.id);
+    const { message, history } = chatSchema.parse(request.body);
+    const productions = await getCreatorContent(request.authUser.id);
+    const context = supportContext({
+      plan: creator.plan,
+      planStatus: creator.plan_status,
+      productions: productions.length,
+      onboardingDone: Boolean(creator.onboarding_completo),
+    });
+    const turns = history as SupportChatMessage[] | undefined;
+    const reply = await geminiSupportAnswer(message, turns, context)
+      ?? await openrouterSupportAnswer(message, turns, context)
+      ?? supportFallbackAnswer();
+    return { reply };
   });
 }
 

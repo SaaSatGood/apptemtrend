@@ -18,7 +18,7 @@ export default function PrivacidadePage() {
     >
       <section aria-labelledby="privacidade-controlador">
         <h2 id="privacidade-controlador">Quem trata seus dados</h2>
-        <p>A <strong>TemTrend</strong> (“TemTrend”, “nós”) é a <strong>controladora</strong> dos dados pessoais tratados na plataforma disponível em <strong>temtrend.online</strong> (“Plataforma”). Esta política vale para quem visita o site, cria conta, usa o teste grátis ou contrata um plano.</p>
+        <p>A <strong>TemTrend</strong> (“TemTrend”, “nós”) é a <strong>controladora</strong> dos dados pessoais tratados na plataforma disponível em <strong>temtrend.online</strong> (“Plataforma”). Esta política vale para quem visita o site, cria conta, usa o plano Grátis ou contrata um plano pago.</p>
         <p>Nosso canal para assuntos de privacidade e para o exercício de direitos, incluindo a atuação do encarregado (DPO), é o <strong>Suporte dentro da Plataforma</strong>: abra uma conversa com o assunto “Privacidade”. Para pedidos de titulares, respondemos em até 15 dias, na forma do art. 19 da LGPD.</p>
       </section>
 

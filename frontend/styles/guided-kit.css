@@ -82,7 +82,7 @@
   font-size: 11px;
   font-weight: 850;
 }
-#app-view .recording-guide-steps button.active .recording-guide-step-number { background: #10110f; color: #fff; }
+#app-view .recording-guide-steps button.active .recording-guide-step-number { background: var(--tt-ink); color: #fff; }
 #app-view .recording-guide-steps button.is-done:not(.active) .recording-guide-step-number { background: #365214; color: #fff; }
 
 #app-view .recording-guide-progress { width: 100%; height: 5px; margin: 0 0 14px; overflow: hidden; border-radius: 999px; background: #e9eee0; }
@@ -175,7 +175,8 @@
 #app-view .recording-guide-more summary { display: flex; align-items: center; justify-content: space-between; min-height: 48px; padding: 13px 16px; color: #3c4e2c; font-size: 12px; font-weight: 800; cursor: pointer; list-style: none; }
 #app-view .recording-guide-more summary::-webkit-details-marker { display: none; }
 #app-view .recording-guide-more[open] summary { background: #f7faf1; border-bottom: 1px solid #e7ebe1; }
-#app-view .recording-guide-more[open] summary span { transform: rotate(180deg); }
+#app-view .recording-guide-more[open] summary span,
+#app-view .recording-guide-more[open] summary .tt-icon { transform: rotate(180deg); }
 #app-view .recording-guide-more-content { display: grid; gap: 15px; padding: 18px; }
 #app-view .recording-guide-more-content section { min-width: 0; }
 #app-view .recording-guide-more-content h3 { margin: 0 0 7px; font-size: 15px; }

@@ -88,14 +88,28 @@ export interface BillingPlanMeta {
   precoAnualCents: number | null;
   precoMensal: string | null;
   precoAnual: string | null;
+  precoLancamentoMensalCents?: number | null;
+  precoLancamentoAnualCents?: number | null;
+  precoLancamentoMensal?: string | null;
+  precoLancamentoAnual?: string | null;
   bullets: string[];
   destaque: boolean;
   limits: BillingLimits;
 }
 
+export interface BillingLaunchOffer {
+  active: boolean;
+  seats_total: number;
+  seats_left: number;
+  monthly_cents: number;
+  annual_cents: number;
+}
+
 export interface BillingCatalogResponse {
   enabled: boolean;
   trial_days: number;
+  free?: { searches_total: number; kits_total: number };
+  launch?: BillingLaunchOffer | null;
   plans: BillingPlanMeta[];
 }
 
@@ -109,6 +123,9 @@ export interface BillingSubscriptionSummary {
   current_period_end?: string | null;
   cancel_at_period_end?: boolean;
   has_active_subscription?: boolean;
+  payment_mode?: "recurring" | "one_time" | null;
+  launch_price?: boolean;
+  renewal_due?: boolean;
   pending_plan?: string | null;
   pending_plan_label?: string | null;
   pending_period?: string | null;
@@ -116,10 +133,12 @@ export interface BillingSubscriptionSummary {
   usage?: {
     kits_total: number;
     kits_month: number;
-    kits_limit: number;
-    kits_limit_period: "month";
+    kits_limit: number | null;
+    kits_limit_period: "month" | "lifetime";
     searches_today: number;
+    searches_total?: number | null;
     searches_limit: number | null;
+    searches_limit_period?: "day" | "lifetime";
   };
 }
 
@@ -159,4 +178,21 @@ export interface AssistantResponse {
   message: string;
   products: Product[];
   needs_clarification?: boolean;
+}
+
+/** Item resumido do histórico de buscas do Descobrir. */
+export interface DiscoverySearchSummary {
+  id: string;
+  query: string;
+  result_count: number;
+  needs_clarification: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+/** Busca completa: reabrir restaura a resposta sem nova chamada de IA. */
+export interface DiscoverySearch extends DiscoverySearchSummary {
+  message: string;
+  results: Product[];
+  context_ids: string[];
 }

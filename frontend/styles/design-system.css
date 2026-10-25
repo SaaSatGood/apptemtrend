@@ -836,7 +836,7 @@ select {
 .account-password-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .account-plan-card .eyebrow { margin-bottom: 14px; }
 .account-plan-card .plan-card { padding: 0; background: transparent; }
-.account-plan-card .plan-card > div { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.account-plan-card .plan-card > div:first-child { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .account-plan-card .plan-card strong { font-size: 1.25rem; letter-spacing: -.03em; }
 .account-plan-card .plan-card p { margin-bottom: 0; font-size: .78rem; line-height: 1.55; }
 .account-preference-list { display: flex; flex-wrap: wrap; gap: 7px; margin: 0 0 18px; }

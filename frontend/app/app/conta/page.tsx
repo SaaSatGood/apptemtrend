@@ -3,8 +3,6 @@
 import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { usePlatform } from "@/components/platform/store";
-import RequireAuth from "@/components/platform/RequireAuth";
-import Topbar from "@/components/platform/Topbar";
 import Account from "@/components/platform/Account";
 import Onboarding from "@/components/platform/Onboarding";
 
@@ -20,28 +18,27 @@ function Content() {
     router.replace("/app/conta");
   }
 
+  if (showEditor) {
+    return (
+      <div className="account-editing">
+        <Onboarding editing onDone={closeEditor} />
+      </div>
+    );
+  }
+
   return (
-    <main id="app-view" className={showEditor ? "app-view--editing-onboarding" : undefined}>
-      <Topbar />
-      <section id="page-content" className="page-wrap">
-        {showEditor ? (
-          <Onboarding editing onDone={closeEditor} />
-        ) : (
-          <Account onEditPreferences={() => {
-            if (!admin) setEditing(true);
-          }} />
-        )}
-      </section>
-    </main>
+    <Account
+      onEditPreferences={() => {
+        if (!admin) setEditing(true);
+      }}
+    />
   );
 }
 
 export default function ContaPage() {
   return (
-    <RequireAuth allowOnboarding>
-      <Suspense fallback={null}>
-        <Content />
-      </Suspense>
-    </RequireAuth>
+    <Suspense fallback={null}>
+      <Content />
+    </Suspense>
   );
 }

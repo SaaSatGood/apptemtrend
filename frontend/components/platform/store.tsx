@@ -12,6 +12,7 @@ import {
 import type { Session } from "@/lib/supabase";
 import { e2eHookSession, resolveSession, supabase } from "@/lib/supabase";
 import { api, friendlyError } from "@/lib/api";
+import { primeProductDetail } from "@/lib/product-detail-cache";
 import type { CreatorContent, MeResponse } from "@/lib/types";
 
 interface ToastItem {
@@ -81,6 +82,16 @@ function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+// Produtos e roteiros já chegam na lista de produção. Aproveitamos esses
+// dados para abrir produto/roteiro instantaneamente, revalidando depois.
+function primeProductDetails(list: CreatorContent[]) {
+  for (const item of list) {
+    if (item.products && item.content_kits) {
+      primeProductDetail(item.products, item.content_kits);
+    }
+  }
+}
+
 function isRetryableStatus(status: number | undefined): boolean {
   // 401 NÃO é retryable: token expirado/inválido se resolve com 1x
   // refreshSession em loadMeForSession, não com retry cego (evita 3x /me).
@@ -126,6 +137,7 @@ export function PlatformProvider({ children }: { children: React.ReactNode }) {
   // Evita rajadas de GET /me + refresh em login/OAuth/aba restaurada.
   const fetchingForRef = useRef<string | null>(null);
   const fetchingPromiseRef = useRef<Map<string, Promise<void>>>(new Map());
+  const productionsRequestRef = useRef(0);
 
   const toast = useCallback((message: string) => {
     const id = ++toastId;
@@ -136,16 +148,20 @@ export function PlatformProvider({ children }: { children: React.ReactNode }) {
   const loadProductions = useCallback(async () => {
     const session = await resolveSession();
     if (!session) return;
+    const requestId = ++productionsRequestRef.current;
     setProductionsLoading(true);
     setProductionsError(false);
     try {
       const list = await fetchAllProductions(session.access_token);
-      setProductions(list);
+      if (requestId === productionsRequestRef.current) {
+        primeProductDetails(list);
+        setProductions(list);
+      }
     } catch (error) {
-      setProductionsError(true);
+      if (requestId === productionsRequestRef.current) setProductionsError(true);
       throw error;
     } finally {
-      setProductionsLoading(false);
+      if (requestId === productionsRequestRef.current) setProductionsLoading(false);
     }
   }, []);
 
@@ -199,23 +215,37 @@ export function PlatformProvider({ children }: { children: React.ReactNode }) {
         if (fetchingForRef.current === userId) fetchingForRef.current = null;
         setMeLoading(false);
       }
-      // Produção carrega em segundo plano: a primeira tela aparece logo
-      // após o /me, sem esperar a paginação completa.
+      // Produção carrega em segundo plano: a casca aparece logo após o /me,
+      // sem esperar a paginação completa. O requestId evita que uma resposta
+      // antiga sobrescreva uma lista mais nova.
       if (!profile || profile.is_admin || !profile.onboarding_completo) {
+        productionsRequestRef.current += 1;
         setProductions([]);
+        setProductionsError(false);
+        setProductionsLoading(false);
         return;
       }
+      const productionRequestId = ++productionsRequestRef.current;
+      setProductionsError(false);
       setProductionsLoading(true);
-      try {
-        const list = await fetchAllProductions(token);
-        // Evita trocar a lista se o usuário saiu/entrou no meio do fetch.
-        if (meRef.current?.user_id === userId) setProductions(list);
-      } catch {
-        setProductionsError(true);
-        toast("Sua conta abriu, mas a produção não pôde ser atualizada.");
-      } finally {
-        setProductionsLoading(false);
-      }
+      void (async () => {
+        try {
+          const list = await fetchAllProductions(token);
+          if (meRef.current?.user_id === userId && productionRequestId === productionsRequestRef.current) {
+            primeProductDetails(list);
+            setProductions(list);
+          }
+        } catch {
+          if (meRef.current?.user_id === userId && productionRequestId === productionsRequestRef.current) {
+            setProductionsError(true);
+            toast("Sua conta abriu, mas a produção não pôde ser atualizada.");
+          }
+        } finally {
+          if (meRef.current?.user_id === userId && productionRequestId === productionsRequestRef.current) {
+            setProductionsLoading(false);
+          }
+        }
+      })();
       })();
       fetchingPromiseRef.current.set(userId, task);
       try {

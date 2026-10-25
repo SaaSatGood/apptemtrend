@@ -2,13 +2,11 @@
 
 import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import RequireAuth from "@/components/platform/RequireAuth";
-import Topbar from "@/components/platform/Topbar";
 import ProductDetail from "@/components/platform/ProductKit";
 import ContentKitDialog from "@/components/platform/ContentKitDialog";
 import type { Product } from "@/lib/types";
 
-function Content() {
+export default function ProdutoPage() {
   const params = useParams<{ productId: string }>();
   const router = useRouter();
   const [kitDialog, setKitDialog] = useState<{
@@ -19,15 +17,12 @@ function Content() {
   } | null>(null);
 
   return (
-    <main id="app-view">
-      <Topbar />
-      <section id="page-content" className="page-wrap">
-        <ProductDetail
-          key={params.productId}
-          productId={params.productId}
-          onNeedKit={(productId, mode, forceNew, product) => setKitDialog({ productId, mode, forceNew, product })}
-        />
-      </section>
+    <>
+      <ProductDetail
+        key={params.productId}
+        productId={params.productId}
+        onNeedKit={(productId, mode, forceNew, product) => setKitDialog({ productId, mode, forceNew, product })}
+      />
       {kitDialog && (
         <ContentKitDialog
           productId={kitDialog.productId}
@@ -41,14 +36,6 @@ function Content() {
           }}
         />
       )}
-    </main>
-  );
-}
-
-export default function ProdutoPage() {
-  return (
-    <RequireAuth>
-      <Content />
-    </RequireAuth>
+    </>
   );
 }

@@ -27,6 +27,10 @@ const contentSecurityPolicy = [
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
+  // O indicador de dev do Next cobre o rodapé da sidebar (menu da conta).
+  devIndicators: false,
+  // O Playwright acessa 127.0.0.1 enquanto o dev server pode ouvir em localhost.
+  allowedDevOrigins: ["127.0.0.1", "localhost"],
   images: {
     formats: ["image/avif", "image/webp"],
     remotePatterns: [

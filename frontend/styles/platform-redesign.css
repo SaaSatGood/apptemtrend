@@ -820,7 +820,7 @@
   object-fit: contain;
 }
 #app-view .content-kit-product > div { display: grid; gap: 3px; padding: 12px 10px 9px; }
-#app-view .content-kit-product span { color: #75806e; font-size: 9px; font-weight: 750; letter-spacing: .07em; text-transform: uppercase; }
+#app-view .content-kit-product-label { color: #75806e; font-size: 9px; font-weight: 750; letter-spacing: .07em; text-transform: uppercase; }
 #app-view .content-kit-product strong { color: #20291c; font-size: 13px; }
 #app-view .content-kit-product a { margin-top: 5px; color: #496523; font-size: 10px; font-weight: 850; text-decoration: none; }
 

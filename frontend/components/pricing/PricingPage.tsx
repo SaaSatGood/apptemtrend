@@ -3,16 +3,18 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Icon from "@/components/ui/Icon";
 import { resolveSession } from "@/lib/supabase";
 import { api, friendlyError } from "@/lib/api";
 import { track } from "@/lib/track";
-import type { BillingCatalogResponse, BillingSubscriptionSummary } from "@/lib/types";
+import type { BillingCatalogResponse, BillingPlanMeta, BillingSubscriptionSummary } from "@/lib/types";
+import PublicFooter from "@/components/PublicFooter";
 import PublicNav from "@/components/PublicNav";
 import { displayPlanName } from "@/lib/plan-display";
-import { FALLBACK_CATALOG } from "@/lib/billing-catalog";
+import { FALLBACK_CATALOG, PLAN_OUTCOME, planBullets } from "@/lib/billing-catalog";
 
 type Period = "monthly" | "annual";
-type PaidPlan = "essencial" | "pro" | "scale";
+type PaidPlan = "pro";
 type AuthState = "checking" | "guest" | "authenticated";
 type AccountPlan = { nome?: string; status?: string; trial_ends_at?: string | null; current_period_end?: string | null };
 
@@ -23,15 +25,19 @@ const FAQS = [
   },
   {
     q: "Como funciona o pagamento?",
-    a: "PIX ou cartão, com cobrança recorrente no período escolhido e recibo por email. No plano anual, você paga 10 meses e leva 12.",
+    a: "PIX ou cartão, conforme a disponibilidade no checkout. No cartão, a renovação é automática; no PIX, o período é pré-pago e você renova pela sua conta. No plano anual, você paga 10 meses e leva 12.",
+  },
+  {
+    q: "Como funciona o preço de lançamento?",
+    a: "Os primeiros 100 clientes mantêm R$ 39,90/mês ou R$ 399/ano enquanto a assinatura estiver ativa. A condição é aplicada automaticamente no checkout, enquanto houver vaga. Se você cancelar, o acesso continua até o fim do período pago.",
   },
   {
     q: "Meus roteiros ficam salvos se eu cancelar?",
-    a: "Ficam. Seu histórico continua visível e nada é apagado — para voltar a criar novos roteiros, é só reativar a assinatura.",
+    a: "Ficam. Seu histórico continua visível e nada é apagado. Sem assinatura, você pode usar os créditos restantes do Grátis; depois, basta assinar para continuar criando.",
   },
   {
-    q: "Tem garantia?",
-    a: `Você começa com ${FALLBACK_CATALOG.trial_days} dias de Pro por nossa conta, sem cartão. Se não fizer sentido, é só não assinar: nada é cobrado sem você decidir.`,
+    q: "Como funciona o plano Grátis?",
+    a: "Cada conta pode fazer 3 pesquisas e criar 3 roteiros no total, sem prazo e sem cartão. Depois disso, seus conteúdos continuam salvos e você pode assinar o Pro se quiser continuar criando.",
   },
   {
     q: "E se eu me arrepender depois de assinar?",
@@ -42,12 +48,6 @@ const FAQS = [
     a: "A TemTrend não grava nem publica por você e não promete vendas. Ela entrega o plano de gravação completo e organiza sua produção do roteiro ao publicado.",
   },
 ];
-
-const PLAN_OUTCOME: Record<PaidPlan, string> = {
-  essencial: "Teste ideias de produto e mantenha seus primeiros vídeos organizados.",
-  pro: "Crie roteiros com frequência e acompanhe cada vídeo até a publicação.",
-  scale: "Divida a criação entre três pessoas e acompanhe a produção em equipe.",
-};
 
 function monthlyEquivalent(cents: number | null): string | null {
   if (!cents) return null;
@@ -63,7 +63,7 @@ function fmtDate(iso: string | null | undefined): string {
 
 const STATUS_LABEL: Record<string, string> = {
   active: "Ativo",
-  trialing: "Trial",
+  trialing: "Grátis",
   canceled: "Cancelado",
   past_due: "Pagamento pendente",
   inactive: "",
@@ -132,12 +132,12 @@ export default function PricingPage({ initialPeriod = "annual" }: { initialPerio
   const data = catalog ?? FALLBACK_CATALOG;
   const checkoutEnabled = catalog?.enabled === true;
   const loggedIn = authState === "authenticated";
-  const plans = data.plans.filter((p) => p.id !== "enterprise");
+  const pro = data.plans.find((p) => p.id === "pro");
   const enterprise = data.plans.find((p) => p.id === "enterprise");
+  const launchActive = data.launch?.active === true && Boolean(pro);
   const hasActiveSub = sub?.has_active_subscription === true;
   const paidPlan = sub && sub.plan && sub.plan !== "free" ? sub.plan : null;
   const currentPlanName = displayPlanName(accountPlan?.nome || sub?.plan_label);
-  const currentPlanStatus = accountPlan?.status || sub?.status;
 
   async function token(): Promise<string | undefined> {
     try {
@@ -170,7 +170,7 @@ export default function PricingPage({ initialPeriod = "annual" }: { initialPerio
     setNotice("");
     try {
       const accessToken = await token();
-      const result = await api<{ url: string }>("/billing/checkout", accessToken, {
+      const result = await api<{ url: string; mode?: string; launch?: boolean }>("/billing/checkout", accessToken, {
         method: "POST",
         body: JSON.stringify({ plan, period }),
       });
@@ -207,12 +207,19 @@ export default function PricingPage({ initialPeriod = "annual" }: { initialPerio
     }
   }
 
-  function planCta(p: (typeof plans)[number]) {
+  function planCta(p: BillingPlanMeta) {
     if (authState === "checking") {
       return { label: "Verificando sua conta…", disabled: true, onClick: undefined as (() => void) | undefined };
     }
     const current = hasActiveSub && paidPlan === p.id && sub?.period === period;
     if (current) {
+      if (sub?.renewal_due) {
+        return {
+          label: busy === p.id ? "Abrindo pagamento…" : "Renovar acesso",
+          disabled: busy !== null,
+          onClick: () => void subscribe(p.id as PaidPlan),
+        };
+      }
       return { label: "Seu plano atual", disabled: true, onClick: undefined as (() => void) | undefined };
     }
     if (hasActiveSub) {
@@ -224,17 +231,34 @@ export default function PricingPage({ initialPeriod = "annual" }: { initialPerio
     }
     if (!checkoutEnabled) {
       return loggedIn
-        ? currentPlanStatus === "trialing" || currentPlanName !== "Sem plano"
-          ? { label: "Usar meu acesso", disabled: false, onClick: () => router.push("/app") }
-          : { label: "Falar com suporte", disabled: false, onClick: () => router.push("/app/suporte") }
-        : { label: "Começar trial grátis", disabled: false, onClick: () => goToSignup(p.id as PaidPlan) };
+        ? { label: "Assinaturas em breve", disabled: true, onClick: undefined }
+        : { label: "Criar conta grátis", disabled: false, onClick: () => router.push("/app?mode=signup") };
     }
     return {
-      label: busy === p.id ? "Abrindo pagamento…" : `Assinar ${p.nome}`,
+      label: busy === p.id ? "Abrindo pagamento…" : "Assinar Pro",
       disabled: busy !== null,
       onClick: () => void subscribe(p.id as PaidPlan),
     };
   }
+
+  const amount = pro
+    ? period === "annual"
+      ? launchActive ? pro.precoLancamentoAnual : pro.precoAnual
+      : launchActive ? pro.precoLancamentoMensal : pro.precoMensal
+    : null;
+  const listAmount = pro ? (period === "annual" ? pro.precoAnual : pro.precoMensal) : null;
+  const amountCents = pro
+    ? period === "annual"
+      ? launchActive ? pro.precoLancamentoAnualCents ?? null : pro.precoAnualCents
+      : launchActive ? pro.precoLancamentoMensalCents ?? null : pro.precoMensalCents
+    : null;
+  const equivalent = period === "annual" ? monthlyEquivalent(amountCents) : null;
+  const launchMonthly = pro?.precoLancamentoMensal ?? "R$ 39,90";
+  const launchAnnual = pro?.precoLancamentoAnual ?? "R$ 399,00";
+  const standardMonthly = pro?.precoMensal ?? "R$ 49,90";
+  const standardAnnual = pro?.precoAnual ?? "R$ 499,00";
+  const compareMonthly = launchActive ? launchMonthly : standardMonthly;
+  const compareAnnual = launchActive ? launchAnnual : standardAnnual;
 
   return (
     <div className="tt-pricing">
@@ -242,14 +266,13 @@ export default function PricingPage({ initialPeriod = "annual" }: { initialPerio
 
       <main>
         <section className="tt-pricing-hero">
-          <h1>Escolha seu plano.</h1>
+          <p className="tt-pricing-kicker"><span aria-hidden="true" /> Planos</p>
+          <h1>Comece grátis. Crie sem limites no Pro.</h1>
           <p className="tt-pricing-sub">
             Encontre o produto e receba um plano de gravação em 8 partes, do roteiro à publicação.
           </p>
-          <p className="tt-pricing-trial-chip">
-            {data.trial_days} dias de Pro por nossa conta · sem cartão de crédito
-          </p>
-          {!checkoutEnabled && <p className="tt-pricing-availability">O trial de Pro começa no cadastro. As assinaturas dos planos ainda não estão abertas.</p>}
+          <p className="tt-pricing-trial-chip">3 pesquisas e 3 roteiros grátis por conta · sem cartão</p>
+          {!checkoutEnabled && <p className="tt-pricing-availability">O Grátis já está disponível. As assinaturas Pro ainda não estão abertas.</p>}
         </section>
 
         {loggedIn && (
@@ -259,22 +282,34 @@ export default function PricingPage({ initialPeriod = "annual" }: { initialPerio
                 Seu plano: {currentPlanName}
               </strong>
               <span>
-                {currentPlanStatus === "trialing" && (accountPlan?.trial_ends_at || sub?.trial_ends_at)
-                  ? `Trial Pro até ${fmtDate(accountPlan?.trial_ends_at || sub?.trial_ends_at)}`
-                  : sub?.current_period_end
-                    ? `${STATUS_LABEL[sub?.status ?? ""] || "Ativo"} · renova em ${fmtDate(sub.current_period_end)}`
-                    : currentPlanName === "Sem plano" ? "Escolha um plano para começar" : "Acesso disponível na sua conta"}
-                {sub?.cancel_at_period_end && sub?.current_period_end
-                  ? ` · acesso até ${fmtDate(sub.current_period_end)}`
-                  : ""}
+                {sub?.current_period_end && sub?.plan !== "free"
+                    ? `${STATUS_LABEL[sub?.status ?? ""] || "Ativo"} · ${sub?.status === "canceled" ? "acesso até" : "renova em"} ${fmtDate(sub.current_period_end)}`
+                    : "3 pesquisas e 3 roteiros por conta, sem prazo"}
+                {sub?.launch_price ? " · preço de lançamento" : ""}
+                {sub?.payment_mode === "one_time" ? " · pagamento por período" : ""}
               </span>
               {sub?.pending_plan_label && (
                 <span className="tt-pricing-current-pending">
                   Mudança para {sub.pending_plan_label} agendada para o próximo ciclo
                 </span>
               )}
+              {sub?.renewal_due && (
+                <span className="tt-pricing-current-pending">
+                  Seu período termina em {fmtDate(sub.current_period_end)}. Renove para não perder o acesso.
+                </span>
+              )}
             </div>
             <Link className="tt-pricing-manage" href="/app/conta">Gerenciar na conta</Link>
+          </section>
+        )}
+
+        {launchActive && data.launch && (
+          <section className="tt-launch-band" aria-label="Condição de lançamento">
+            <span className="tt-launch-kicker">Lançamento · primeiros 100 clientes</span>
+            <strong>{launchMonthly}/mês ou {launchAnnual}/ano enquanto a assinatura estiver ativa.</strong>
+            <p>
+              Restam {data.launch.seats_left} de {data.launch.seats_total} vagas. A condição é aplicada automaticamente no checkout.
+            </p>
           </section>
         )}
 
@@ -297,7 +332,7 @@ export default function PricingPage({ initialPeriod = "annual" }: { initialPerio
               disabled={hasActiveSub}
             >
               Anual
-              {plans.every((plan) => plan.precoMensalCents != null && plan.precoAnualCents === plan.precoMensalCents * 10) && <span className="tt-pricing-badge">2 meses grátis</span>}
+              {pro && pro.precoMensalCents != null && pro.precoAnualCents === pro.precoMensalCents * 10 && <span className="tt-pricing-badge">2 meses grátis</span>}
             </button>
           </div>
           {hasActiveSub && (
@@ -311,87 +346,94 @@ export default function PricingPage({ initialPeriod = "annual" }: { initialPerio
           </p>
         )}
 
-        <section className="tt-pricing-grid" aria-label="Planos e preços">
-          {plans.map((p) => {
-            const cta = planCta(p);
-            const amount = period === "annual" ? p.precoAnual : p.precoMensal;
-            const equivalent = period === "annual" ? monthlyEquivalent(p.precoAnualCents) : null;
-            const bullets = p.id === "scale"
-              ? [...p.bullets, ...(!p.bullets.some((item) => /roteiros salvos/i.test(item)) && p.limits.kitsPerProduct === null ? ["Roteiros salvos ilimitados"] : []), ...(!p.bullets.some((item) => /produção ilimitada/i.test(item)) && p.limits.productionItems === null ? ["Produção ilimitada"] : [])]
-              : p.bullets;
+        <section className="tt-pricing-grid is-duo" aria-label="Planos e preços">
+          <article id="plan-free" className="tt-price-card">
+            <span className="tt-price-seal">Para começar</span>
+            <header><h2>Grátis</h2><p>Explore a plataforma no seu ritmo.</p></header>
+            <div className="tt-price-amount">R$ 0<small>/para sempre</small></div>
+            <div className="tt-price-outcome"><span>Incluído por conta</span><p>Pesquise, escolha um produto e crie seus primeiros vídeos.</p></div>
+            <ul className="tt-price-bullets">
+              <li><Icon name="check" size={14} /><span>3 pesquisas no total</span></li>
+              <li><Icon name="check" size={14} /><span>3 roteiros no total</span></li>
+              <li><Icon name="check" size={14} /><span>Conteúdo salvo na conta</span></li>
+              <li><Icon name="check" size={14} /><span>Sem cartão e sem prazo de teste</span></li>
+            </ul>
+            <Link className="tt-price-cta is-ghost" href={loggedIn ? "/app" : "/app?mode=signup"}>{loggedIn ? "Ir para o app" : "Criar conta grátis"}</Link>
+            <p className="tt-price-fineprint">Os limites não se renovam a cada mês.</p>
+          </article>
+          {pro && (() => {
+            const cta = planCta(pro);
+            const bullets = planBullets(pro);
             return (
-              <article id={`plan-${p.id}`} key={p.id} className={`tt-price-card${p.destaque ? " is-featured" : ""}`}>
-                {p.destaque && <span className="tt-price-seal">Mais escolhido</span>}
+              <article id={`plan-${pro.id}`} className="tt-price-card is-featured">
+                <span className="tt-price-seal">{launchActive ? "Preço de lançamento" : "Plano único"}</span>
                 <header>
-                  <h2>{p.nome}</h2>
-                  <p>{p.resumo}</p>
+                  <h2>{pro.nome}</h2>
+                  <p>{pro.resumo}</p>
                 </header>
                 <div className="tt-price-amount">
                   {amount ?? "Sob consulta"}
                   {amount && <small>{period === "annual" ? "/ano" : "/mês"}</small>}
                 </div>
+                {launchActive && listAmount && (
+                  <p className="tt-price-launch-note">
+                    <s>{listAmount}{period === "annual" ? "/ano" : "/mês"}</s> · condição dos primeiros 100 clientes
+                  </p>
+                )}
                 {equivalent && (
-                  <p className="tt-price-equivalent"><s>{p.precoMensal}/mês</s> Equivale a {equivalent}/mês, cobrado uma vez por ano</p>
+                  <p className="tt-price-equivalent">
+                    Mensal: {compareMonthly}/mês · Anual: {equivalent}/mês, cobrado uma vez por ano
+                  </p>
                 )}
                 <div className="tt-price-outcome">
                   <span>Na prática</span>
-                  <p>{PLAN_OUTCOME[p.id as PaidPlan] || p.resumo}</p>
+                  <p>{PLAN_OUTCOME[pro.id] || pro.resumo}</p>
                 </div>
                 <ul className="tt-price-bullets">
                   {bullets.map((bullet) => (
-                    <li key={bullet}>{bullet}</li>
+                    <li key={bullet}><Icon name="check" size={14} /><span>{bullet}</span></li>
                   ))}
                 </ul>
                 <button
                   type="button"
-                  className={`tt-price-cta${p.destaque ? "" : " is-ghost"}`}
+                  className="tt-price-cta"
                   disabled={cta.disabled}
                   onClick={cta.onClick}
                 >
                   {cta.label}
                 </button>
+                <p className="tt-price-fineprint">
+                  Uso justo conforme os Termos. O preço de lançamento vale enquanto a assinatura estiver ativa.
+                </p>
               </article>
             );
-          })}
+          })()}
+
         </section>
 
-        {enterprise && (
-          <section className="tt-enterprise-band" aria-label="Plano Enterprise">
-            <div>
-              <strong>{enterprise.nome} · sob consulta</strong>
-              <p>Preço e período de cobrança definidos em proposta.</p>
-              <p>{enterprise.bullets.join(" · ")}</p>
-            </div>
-            <Link className="tt-enterprise-cta" href="/app/suporte">Falar sobre Enterprise</Link>
-          </section>
-        )}
+        {enterprise && <p className="tt-pricing-enterprise-note">Precisa de uma operação sob medida? <Link href="/app/suporte">Converse com o suporte interno</Link>.</p>}
 
         <section className="tt-compare">
           <details open>
-            <summary>Comparar todos os recursos</summary>
+            <summary>Comparar todos os recursos <span className="tt-details-toggle" aria-hidden="true"><Icon name="plus" size={18} className="tt-details-open" /><Icon name="minus" size={18} className="tt-details-close" /></span></summary>
             <div className="tt-compare-scroll">
               <table>
                 <caption className="sr-only">Comparação de recursos por plano</caption>
                 <thead>
                   <tr>
                     <th scope="col">Recurso</th>
-                    <th scope="col">Essencial</th>
+                    <th scope="col">Grátis</th>
                     <th scope="col">Pro</th>
-                    <th scope="col">Scale</th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr><th scope="row">Teste grátis</th><td colSpan={3}>7 dias de Pro completo, sem cartão de crédito</td></tr>
-                  <tr><th scope="row">Kits de conteúdo</th><td>30/mês</td><td>100/mês</td><td>300/mês</td></tr>
-                  <tr><th scope="row">Buscas de IA</th><td>50/dia</td><td>200/dia</td><td>500/dia</td></tr>
-                  <tr><th scope="row">Gerar outra versão</th><td>a cada 60s</td><td>a cada 30s</td><td>a cada 30s</td></tr>
-                  <tr><th scope="row">Voz personalizada</th><td>✓</td><td>✓</td><td>✓</td></tr>
-                  <tr><th scope="row">Roteiros salvos por produto</th><td>5</td><td>ilimitado</td><td>ilimitado</td></tr>
-                  <tr><th scope="row">Itens na produção</th><td>50</td><td>ilimitado</td><td>ilimitado</td></tr>
-                  <tr><th scope="row">Assentos</th><td>1</td><td>1</td><td>3</td></tr>
-                  <tr><th scope="row">Exportação CSV</th><td>—</td><td>✓</td><td>✓</td></tr>
-                  <tr><th scope="row">Suporte</th><td>email 48h</td><td>prioritário 24h</td><td>dedicado</td></tr>
-                  <tr><th scope="row">Enterprise</th><td colSpan={3}>1.000 kits/mês (fair use) · buscas ilimitadas · 10+ assentos · SLA</td></tr>
+                  <tr><th scope="row">Roteiros</th><td>3 no total</td><td>Ilimitados (uso justo)</td></tr>
+                  <tr><th scope="row">Pesquisas</th><td>3 no total</td><td>Ilimitadas (uso justo)</td></tr>
+                  <tr><th scope="row">Gerar outra versão</th><td>Não incluído</td><td>A cada 30s</td></tr>
+                  <tr><th scope="row">Voz personalizada</th><td>Não incluído</td><td>Incluído</td></tr>
+                  <tr><th scope="row">Itens na produção</th><td>3</td><td>Ilimitados</td></tr>
+                  <tr><th scope="row">Suporte</th><td>Interno</td><td>Interno</td></tr>
+                  <tr><th scope="row">Preço</th><td>R$ 0</td><td>{compareMonthly}/mês ou {compareAnnual}/ano</td></tr>
                 </tbody>
               </table>
             </div>
@@ -403,7 +445,7 @@ export default function PricingPage({ initialPeriod = "annual" }: { initialPerio
           <div className="tt-faq-pricing-list">
             {FAQS.map((item) => (
               <details key={item.q}>
-                <summary>{item.q}</summary>
+                <summary>{item.q} <span className="tt-details-toggle" aria-hidden="true"><Icon name="plus" size={18} className="tt-details-open" /><Icon name="minus" size={18} className="tt-details-close" /></span></summary>
                 <p>{item.a}</p>
               </details>
             ))}
@@ -411,23 +453,14 @@ export default function PricingPage({ initialPeriod = "annual" }: { initialPerio
         </section>
 
         <section className="tt-pricing-trust" aria-label="Garantias">
-          <span>Sem cartão no trial</span>
-          <span>Cancele quando quiser</span>
-          <span>7 dias de arrependimento (CDC)</span>
-          <span>Seus kits continuam seus</span>
+          <span><Icon name="check" size={14} />Grátis sem cartão</span>
+          <span><Icon name="check" size={14} />Cancele quando quiser</span>
+          <span><Icon name="check" size={14} />7 dias de arrependimento (CDC)</span>
+          <span><Icon name="check" size={14} />Seus kits continuam seus</span>
         </section>
       </main>
 
-      <footer className="tt-pricing-footer">
-        <span>© 2026 TemTrend</span>
-        <nav aria-label="Links">
-          <Link href="/">Início</Link>
-          <Link href="/app">Entrar</Link>
-          <Link href="/termos">Termos de uso</Link>
-          <Link href="/privacidade">Privacidade</Link>
-          <Link href="/reembolso">Reembolso</Link>
-        </nav>
-      </footer>
+      <PublicFooter />
     </div>
   );
 }

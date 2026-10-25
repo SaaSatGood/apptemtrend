@@ -2,38 +2,85 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
+import Icon, { type IconName } from "@/components/ui/Icon";
+import AppSidebar from "./AppSidebar";
 import { usePlatform } from "./store";
 import PlanBanner from "./PlanBanner";
+import NotificationCenter from "./NotificationCenter";
+import ThemeToggle from "./ThemeToggle";
+import UserMenu from "./UserMenu";
+
+function isKitDetail(pathname: string | null) {
+  return pathname?.startsWith("/app/produtos") === true && pathname.includes("/kits/");
+}
+
+function sectionLabel(pathname: string | null): string {
+  if (pathname?.startsWith("/app/descobrir")) return "Descobrir";
+  if (pathname?.startsWith("/app/producao")) return "Minha produção";
+  if (pathname?.startsWith("/app/produtos")) return isKitDetail(pathname) ? "Roteiro" : "Produto";
+  if (pathname?.startsWith("/app/conta")) return "Minha conta";
+  if (pathname?.startsWith("/app/suporte")) return "Suporte";
+  if (pathname === "/planos") return "Planos";
+  return "Dashboard";
+}
+
+function sectionIcon(pathname: string | null): IconName {
+  if (pathname?.startsWith("/app/descobrir")) return "search";
+  if (pathname?.startsWith("/app/producao")) return "production";
+  if (pathname?.startsWith("/app/produtos")) return isKitDetail(pathname) ? "file-text" : "box";
+  if (pathname?.startsWith("/app/conta")) return "user";
+  if (pathname?.startsWith("/app/suporte")) return "support";
+  if (pathname === "/planos") return "plan";
+  return "dashboard";
+}
 
 export default function Topbar() {
-  const { me, signOut } = usePlatform();
+  const { me } = usePlatform();
   const pathname = usePathname();
   const admin = me?.is_admin === true;
   const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
-    const update = () => setScrolled(window.scrollY > 40);
+    const update = () => setScrolled(window.scrollY > 16);
     update();
     window.addEventListener("scroll", update, { passive: true });
     return () => window.removeEventListener("scroll", update);
   }, []);
 
+  const isDashboard = pathname === "/app";
+
   return (
     <>
-      <header className={`topbar${scrolled ? " is-scrolled" : ""}`}>
-        <a className="app-skip-link" href="#page-content">Pular para conteúdo</a>
-        <Link className="app-logo" href="/app" aria-label="TemTrend, início">
+      {!admin && <AppSidebar />}
+      <header className={`topbar${admin ? " is-admin" : ""}${scrolled ? " is-scrolled" : ""}`}>
+        <a className="app-skip-link" href="#page-content">Pular para o conteúdo</a>
+        <Link className="app-logo" href="/app" aria-label="TemTrend, painel">
           <span aria-hidden="true">T</span><b>TemTrend</b>
         </Link>
+
+        {!admin && (
+          <div className="tt-topbar-crumb">
+            <span className="tt-topbar-crumb-icon"><Icon name={sectionIcon(pathname)} size={16} /></span>
+            <strong>{sectionLabel(pathname)}</strong>
+          </div>
+        )}
+
         {!admin && (
           <nav className="app-nav" aria-label="Navegação da plataforma">
             <Link
-              href="/app"
-              aria-current={pathname === "/app" || pathname.startsWith("/app/produtos") ? "page" : undefined}
-              className={pathname === "/app" || pathname.startsWith("/app/produtos") ? "active" : ""}
+              href="/app/descobrir"
+              aria-current={pathname?.startsWith("/app/descobrir") || pathname?.startsWith("/app/produtos") ? "page" : undefined}
+              className={pathname?.startsWith("/app/descobrir") || pathname?.startsWith("/app/produtos") ? "active" : ""}
             >
               Descobrir
+            </Link>
+            <Link
+              href="/app"
+              aria-current={isDashboard ? "page" : undefined}
+              className={isDashboard ? "active" : ""}
+            >
+              Dashboard
             </Link>
             <Link
               href="/app/producao"
@@ -42,59 +89,25 @@ export default function Topbar() {
             >
               Produção
             </Link>
-            <Link href="/planos">Planos</Link>
             <Link
-              href="/app/suporte"
-              aria-current={pathname?.startsWith("/app/suporte") ? "page" : undefined}
-              className={pathname?.startsWith("/app/suporte") ? "active" : ""}
+              href="/app/conta"
+              aria-current={pathname?.startsWith("/app/conta") ? "page" : undefined}
+              className={pathname?.startsWith("/app/conta") ? "active" : ""}
             >
-              Suporte
+              Conta
             </Link>
           </nav>
         )}
-        {admin && <span className="admin-nav-label">Painel administrativo</span>}
-        {!admin && <Link className="app-create-link" href="/app#assistant-section"><span aria-hidden="true">+</span> Novo conteúdo</Link>}
-        <UserMenu onSignOut={() => void signOut()} active={pathname?.startsWith("/app/conta") === true} />
+
+        <div className="tt-topbar-actions">
+          {!admin && <ThemeToggle />}
+          {!admin && <NotificationCenter />}
+          {admin && <span className="admin-nav-label">Painel administrativo</span>}
+          {/* No desktop o menu da conta vive na sidebar; no celular, aqui. */}
+          <UserMenu variant="topbar" />
+        </div>
       </header>
       {!admin && <PlanBanner />}
     </>
-  );
-}
-
-function UserMenu({ onSignOut, active }: { onSignOut: () => void; active: boolean }) {
-  const { session, admin } = usePlatform();
-  const ref = useRef<HTMLDetailsElement>(null);
-  useEffect(() => {
-    const close = (event: PointerEvent) => { if (!ref.current?.contains(event.target as Node)) ref.current?.removeAttribute("open"); };
-    const escape = (event: KeyboardEvent) => { if (event.key === "Escape" && ref.current?.open) { ref.current.open = false; ref.current.querySelector("summary")?.focus(); } };
-    document.addEventListener("pointerdown", close); document.addEventListener("keydown", escape);
-    return () => { document.removeEventListener("pointerdown", close); document.removeEventListener("keydown", escape); };
-  }, []);
-  const meta = (session?.user.user_metadata ?? {}) as { full_name?: string; name?: string };
-  const display = meta.full_name ?? meta.name ?? session?.user.email?.split("@")[0] ?? "Minha conta";
-  return (
-    <details ref={ref} className={`user-menu${active ? " active" : ""}`}>
-      <summary aria-label="Abrir menu da conta">
-        <span className="user-copy">
-          <strong>{display}</strong>
-          <small>{session?.user.email || ""}</small>
-        </span>
-        <span className="user-avatar">{display.trim().charAt(0).toUpperCase() || "T"}</span>
-        <span className="user-menu-chevron" aria-hidden="true">⌄</span>
-      </summary>
-      <div className="user-menu-panel">
-        <div className="user-menu-heading">
-          <strong>{display}</strong>
-          <small>{session?.user.email || ""}</small>
-        </div>
-        <Link href="/app/conta" onClick={() => ref.current?.removeAttribute("open")}>Minha conta</Link>
-        {!admin && <Link href="/planos" onClick={() => ref.current?.removeAttribute("open")}>Planos e assinatura</Link>}
-        {!admin && <Link href="/app/conta?preferencias=1" onClick={() => ref.current?.removeAttribute("open")}>Preferências</Link>}
-        {!admin && <Link href="/app/suporte" onClick={() => ref.current?.removeAttribute("open")}>Suporte</Link>}
-        <button type="button" onClick={onSignOut}>
-          Sair
-        </button>
-      </div>
-    </details>
   );
 }

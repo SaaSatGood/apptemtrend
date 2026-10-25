@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { supabase } from "@/lib/supabase";
-import { api, friendlyError } from "@/lib/api";
+import { friendlyError } from "@/lib/api";
+import { loadProductDetail, peekProductDetail, type ProductDetail } from "@/lib/product-detail-cache";
 import { copyText, fullProductName, formatUpdated, normalizeScenes, type Scene } from "@/lib/format";
 import type { ContentKit, Product } from "@/lib/types";
 import { usePlatform } from "./store";
@@ -43,22 +43,24 @@ export function Skeletons() {
 }
 
 export default function ProductDetail({ productId, onNeedKit }: { productId: string; onNeedKit: (productId: string, mode: "save" | "kit", forceNew: boolean, product: Product) => void }) {
-  const { productions, toast } = usePlatform();
-  const [detail, setDetail] = useState<{ product: Product; content_kits: ContentKit[] } | null>(null);
+  const { productions, toast, session } = usePlatform();
+  const [detail, setDetail] = useState<ProductDetail | null>(() => peekProductDetail(productId));
   const [failed, setFailed] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
-        const { data } = await supabase().auth.getSession();
-        const loaded = await api<{ product: Product; content_kits: ContentKit[] }>(
-          `/products/${productId}`,
-          data.session?.access_token
-        );
-        if (!cancelled) setDetail(loaded);
-      } catch (error) {
+        const loaded = await loadProductDetail(productId, session?.access_token);
         if (!cancelled) {
+          setDetail(loaded);
+          setFailed(false);
+        }
+      } catch (error) {
+        if (cancelled) return;
+        // Cache antigo continua utilizável: revalidação com falha não deve
+        // derrubar a tela que já está preenchida.
+        if (!peekProductDetail(productId)) {
           setFailed(true);
           toast(friendlyError(error, "Não conseguimos abrir este produto. Tente novamente."));
         }
@@ -67,7 +69,7 @@ export default function ProductDetail({ productId, onNeedKit }: { productId: str
     return () => {
       cancelled = true;
     };
-  }, [productId, toast]);
+  }, [productId, session?.access_token, toast]);
 
   if (failed) {
     return (

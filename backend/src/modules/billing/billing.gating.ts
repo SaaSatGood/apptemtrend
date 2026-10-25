@@ -3,7 +3,7 @@ import { supabaseAdmin } from '../../lib/supabase.js';
 import { logger } from '../../lib/logger.js';
 import { AI_QUOTA } from '../../lib/ai-metrics.js';
 import { createAppError, type AppError, type Creator } from '../../types/index.js';
-import { PLAN_LIMITS, planLabel, type PaidPlanId, type PlanId, type PlanLimits } from './plans.js';
+import { PLAN_LIMITS, FAIR_USE_KITS_PER_MONTH, FREE_KITS_TOTAL, planLabel, type PaidPlanId, type PlanId, type PlanLimits } from './plans.js';
 
 /**
  * Gating por plano. Tudo aqui é no-op quando o billing está desligado
@@ -12,6 +12,8 @@ import { PLAN_LIMITS, planLabel, type PaidPlanId, type PlanId, type PlanLimits }
  */
 
 export function billingActive(): boolean {
+  // Nunca cria cobranças reais durante a suíte de testes, mesmo com .env local preenchido.
+  if (env.NODE_ENV === 'test') return false;
   return env.BILLING_ENABLED === true && Boolean(env.ABACATEPAY_API_KEY);
 }
 
@@ -31,7 +33,8 @@ export function effectivePlan(creator: PlanStateFields): PlanId {
     case 'active':
       return ts(creator.current_period_end) > now ? plan : 'free';
     case 'trialing':
-      return ts(creator.trial_ends_at) > now ? plan : 'free';
+      // Trials antigos não concedem mais acesso Pro.
+      return 'free';
     case 'past_due':
     case 'canceled':
       // Cancelou ou falhou pagamento: mantém o acesso até o fim do período pago.
@@ -42,7 +45,7 @@ export function effectivePlan(creator: PlanStateFields): PlanId {
 }
 
 export function planContextForCreator(creator: Creator): { plan: PlanId; limits: PlanLimits } {
-  const plan = billingActive() ? effectivePlan(creator) : 'free';
+  const plan = effectivePlan(creator);
   return { plan, limits: PLAN_LIMITS[plan] };
 }
 
@@ -50,25 +53,25 @@ export function planLimitError(message: string): AppError {
   return createAppError('PLAN_LIMIT', message, 402);
 }
 
-// Dica de upgrade por plano: "no próximo degrau são N — e você mantém tudo".
+// Dica de upgrade por plano: hoje existe um único plano pago (Pro). Mantemos
+// os planos antigos apenas para assinaturas legadas.
 const NEXT_PLAN: Partial<Record<PlanId, PaidPlanId>> = {
-  free: 'essencial',
+  free: 'pro',
   essencial: 'pro',
-  pro: 'scale',
 };
 
 export function kitUpgradeHint(plan: PlanId): string {
   const next = NEXT_PLAN[plan];
   if (!next) return '';
   const nextLimit = PLAN_LIMITS[next].kitsPerMonth;
-  return nextLimit ? ` No ${planLabel(next)} são ${nextLimit} roteiros por mês — e você mantém tudo o que já fez.` : '';
+  return nextLimit ? ` No ${planLabel(next)} são ${nextLimit} roteiros por mês — e você mantém tudo o que já fez.` : ` Assine ${planLabel(next)} para continuar criando com uso justo.`;
 }
 
 export function searchUpgradeHint(plan: PlanId): string {
   const next = NEXT_PLAN[plan];
   if (!next) return '';
   const nextLimit = PLAN_LIMITS[next].searchesPerDay;
-  return nextLimit ? ` No ${planLabel(next)} são ${nextLimit} buscas por dia.` : '';
+  return nextLimit ? ` No ${planLabel(next)} são ${nextLimit} buscas por dia.` : ` Assine ${planLabel(next)} para continuar buscando com uso justo.`;
 }
 
 export function productionUpgradeHint(plan: PlanId): string {
@@ -123,24 +126,26 @@ export async function countProductionItems(creatorId: string): Promise<number> {
   return count ?? 0;
 }
 
-/** Kits: pagos = cota mensal; sem plano (free) = 0 novos. Com `reusableProductId`,
+/** Kits: Grátis = 3 por conta; pagos = ilimitado com uso justo.
+ *  O número do uso justo não é exposto na tabela de planos — quando o teto é
+ *  atingido, o contato vira conversa comercial. Com `reusableProductId`,
  *  permite reutilizar um kit já existente do produto (navegar roteiros salvos
  *  nunca é bloqueado). */
 export async function assertKitQuota(creator: Creator, reusableProductId?: string): Promise<void> {
-  if (!billingActive()) return;
   const { plan, limits } = planContextForCreator(creator);
   if (reusableProductId && (await countKitsForProduct(creator.id, reusableProductId)) > 0) return;
   if (plan === 'free') {
+    if (await countKits(creator.id) < FREE_KITS_TOTAL) return;
     throw planLimitError(
-      `Sua conta está sem plano ativo — assine para criar novos roteiros. Tudo o que você já fez continua salvo.${kitUpgradeHint('free')}`,
+      `Você usou os ${FREE_KITS_TOTAL} roteiros do plano Grátis. Tudo o que criou continua salvo.${kitUpgradeHint('free')}`,
     );
   }
-  if (limits.kitsPerMonth === null) return;
-  const allowed = limits.kitsPerMonth;
+  if (!billingActive()) return;
   const used = await countKits(creator.id, startOfMonthIso());
-  if (used < allowed) return;
+  const planCap = limits.kitsPerMonth ?? FAIR_USE_KITS_PER_MONTH;
+  if (used < planCap) return;
   throw planLimitError(
-    `Você já criou ${used} de ${allowed} roteiros do plano ${planLabel(plan)}. Faça upgrade para criar mais.${kitUpgradeHint(plan)}`,
+    'Você atingiu o limite de uso justo deste mês. Fale com a gente para ajustar seu plano e continuar criando.',
   );
 }
 
@@ -150,20 +155,20 @@ export interface VariationsPolicy {
 }
 
 export function variationsPolicy(creator: Creator): VariationsPolicy {
-  if (!billingActive()) return { allowed: true, cooldownMs: AI_QUOTA.FORCE_NEW_COOLDOWN_MS };
-  const { limits } = planContextForCreator(creator);
+  const { plan, limits } = planContextForCreator(creator);
+  if (plan !== 'free' && !billingActive()) return { allowed: true, cooldownMs: AI_QUOTA.FORCE_NEW_COOLDOWN_MS };
   return { allowed: limits.variations, cooldownMs: Math.max(1_000, limits.variationCooldownSeconds * 1_000) };
 }
 
 /** Roteiros salvos por produto (aplicado antes de criar uma nova versão). */
 export async function assertVariationQuota(creator: Creator, productId: string): Promise<void> {
-  if (!billingActive()) return;
   const { plan, limits } = planContextForCreator(creator);
   if (plan === 'free') {
     throw planLimitError(
-      `Sua conta está sem plano ativo — assine para salvar novas versões de roteiro.${kitUpgradeHint('free')}`,
+      `Novas versões de roteiro estão disponíveis no Pro.${kitUpgradeHint('free')}`,
     );
   }
+  if (!billingActive()) return;
   if (limits.kitsPerProduct === null) return;
   const used = await countKitsForProduct(creator.id, productId);
   if (used >= limits.kitsPerProduct) {
@@ -174,19 +179,15 @@ export async function assertVariationQuota(creator: Creator, productId: string):
 }
 
 export function vozPersonalizadaAllowed(creator: Creator): boolean {
+  if (effectivePlan(creator) === 'free') return false;
   if (!billingActive()) return true;
   return planContextForCreator(creator).limits.vozPersonalizada;
 }
 
 /** Itens na área Produção (creator_content). */
 export async function assertProductionQuota(creator: Creator): Promise<void> {
-  if (!billingActive()) return;
   const { plan, limits } = planContextForCreator(creator);
-  if (plan === 'free') {
-    throw planLimitError(
-      `Sua conta está sem plano ativo — assine para adicionar itens à produção.${productionUpgradeHint('free')}`,
-    );
-  }
+  if (plan !== 'free' && !billingActive()) return;
   if (limits.productionItems === null) return;
   const used = await countProductionItems(creator.id);
   if (used >= limits.productionItems) {

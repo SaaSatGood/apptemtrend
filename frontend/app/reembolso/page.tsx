@@ -13,7 +13,7 @@ export default function ReembolsoPage() {
     <LegalPageFrame
       eyebrow="Compras e assinaturas"
       title="Política de Reembolso"
-      updated="18 de outubro de 2026"
+      updated="24 de outubro de 2026"
       intro="O que acontece se você desistir da compra: o direito de arrependimento de 7 dias do Código de Defesa do Consumidor, o cancelamento a qualquer momento e como o dinheiro volta."
     >
       <section aria-labelledby="reembolso-resumo">
@@ -127,7 +127,7 @@ export default function ReembolsoPage() {
         <ul>
           <li>pedidos de arrependimento e cobranças indevidas são tratados com prioridade pelo Suporte (categoria Cobrança);</li>
           <li>confirmamos o recebimento e mantemos você informado em cada etapa até a devolução;</li>
-          <li>prazos gerais de resposta por plano: Essencial em até 48h, Pro em até 24h e Scale com atendimento dedicado.</li>
+          <li>prazos gerais de resposta: até 1 dia útil, de segunda a sexta; pedidos de arrependimento e cobranças indevidas têm prioridade.</li>
         </ul>
         <p>Se você não ficar satisfeito com a solução, pode recorrer à plataforma <strong>consumidor.gov.br</strong>, ao Procon do seu estado, ao Juizado Especial Cível ou à Justiça Comum. Para consumidores, é competente o foro do seu domicílio (art. 101, I, do CDC).</p>
         <p>Este documento faz parte do contrato com a TemTrend, junto dos <Link href="/termos">Termos de Uso</Link> e da <Link href="/privacidade">Política de Privacidade</Link>, e pode ser atualizado para refletir mudanças na legislação ou no serviço, sempre com a versão vigente publicada nesta página e data de atualização visível.</p>

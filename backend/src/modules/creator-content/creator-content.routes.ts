@@ -59,6 +59,15 @@ async function creatorContentRoutes(fastify: FastifyInstance) {
     return reply.send(await creatorContentService.selectContentKit(request.authUser.id, id, body.content_kit_id));
   });
 
+  // DELETE /creator-content/:id — remove o produto da produção do creator
+  fastify.delete('/creator-content/:id', {
+    preHandler: [requireAuth],
+    config: { rateLimit: RATE_LIMITS.AUTH_WRITE },
+  }, async (request, reply) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(request.params);
+    return reply.send(await creatorContentService.deleteCreatorContent(request.authUser.id, id));
+  });
+
   // PATCH /creator-content/:id — update status
   fastify.patch('/creator-content/:id', {
     preHandler: [requireAuth],

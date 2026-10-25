@@ -11,6 +11,7 @@ import {
   findAnyByCreatorAndProduct,
   createCreatorContent,
   updateCreatorContent,
+  deleteCreatorContent as removeCreatorContent,
 } from './creator-content.repository.js';
 import { Errors } from '../../types/index.js';
 import type { UpdateCreatorContentInput } from './creator-content.schema.js';
@@ -182,4 +183,11 @@ export async function updateCreatorContentStatus(
     throw Errors.BAD_REQUEST('O link só pode ser salvo ao marcar a produção como publicada.');
   }
   return updateCreatorContent(contentId, data);
+}
+
+/** Remove a produção do creator. O produto do catálogo e o roteiro continuam existindo. */
+export async function deleteCreatorContent(userId: string, contentId: string) {
+  const { content } = await requireOwnedProduction(userId, contentId);
+  await removeCreatorContent(content.id);
+  return { id: content.id };
 }

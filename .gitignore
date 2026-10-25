@@ -14,3 +14,4 @@ frontend/test-results/
 .playwright-cli/
 .tmp-shots/
 .taste-skill/
+__pycache__/

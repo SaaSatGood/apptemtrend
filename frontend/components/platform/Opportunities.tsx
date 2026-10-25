@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import Icon from "@/components/ui/Icon";
 import { usePlatform } from "./store";
 import { normalizeScenes } from "@/lib/format";
 import ProductImage from "./ProductImage";
@@ -56,7 +57,7 @@ export default function Opportunities() {
               <strong title={item.products?.nome || "Seu produto salvo"}>{item.products?.nome || "Seu produto salvo"}</strong>
               <div className="resume-progress" aria-label={`Etapa ${({ salvo: 1, em_producao: 2, gravado: 3, publicado: 4 })[item.status]} de 4`}><span style={{ width: `${({ salvo: 25, em_producao: 50, gravado: 75, publicado: 100 })[item.status]}%` }} /></div>
               <small>{nextAction(item.status, item.content_kit_id, normalizeScenes(item.content_kits?.cenas).length, recorded)}</small>
-              {index === 0 && <span className="resume-focus-action">Continuar <span aria-hidden="true">↗</span></span>}
+              {index === 0 && <span className="resume-focus-action">Continuar <Icon name="arrow-up-right" size={13} /></span>}
             </div>
           </Link>
         ))}

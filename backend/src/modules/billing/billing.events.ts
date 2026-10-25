@@ -33,9 +33,15 @@ export interface SubscriptionSnapshot {
 
 export function extractSubscription(data: Record<string, unknown>): SubscriptionSnapshot {
   const subscription = asRecord(data.subscription) ?? data;
+  const checkout = asRecord(data.checkout);
   return {
     subscriptionId: asString(subscription.id),
-    checkoutId: asString(subscription.checkoutId) ?? asString(data.checkoutId),
+    // O webhook de assinatura traz o checkout em data.checkout.id (não em
+    // subscription.checkoutId). Sem esse fallback, a ativação seria ignorada.
+    checkoutId:
+      asString(subscription.checkoutId) ??
+      asString(checkout?.id) ??
+      asString(data.checkoutId),
     status: asString(subscription.status),
     trialEndsAt: asString(subscription.trialEndsAt),
   };

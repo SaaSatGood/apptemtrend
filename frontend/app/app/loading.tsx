@@ -1,5 +1,5 @@
-import { AppBoot } from "@/components/platform/PlatformState";
+import PageLoading from "@/components/platform/PageLoading";
 
 export default function Loading() {
-  return <AppBoot />;
+  return <PageLoading />;
 }

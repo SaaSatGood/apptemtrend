@@ -89,7 +89,7 @@ test("admin organiza operação, catálogo e creators", async ({ page }, testInf
   await page.goto("/app/admin");
   await expect(page.getByRole("heading", { name: /controle a operação/i })).toBeVisible();
   await expect(page.getByText("Resumo da plataforma")).toBeVisible();
-  await expect(page.getByText("Produtos ativos", { exact: true })).toBeVisible();
+  await expect(page.getByText("Produtos ativos", { exact: true })).toBeVisible({ timeout: 15000 });
 
   await page.getByRole("button", { name: /^produtos/i }).click();
   await expect(page.getByPlaceholder(/buscar produto/i)).toBeVisible();

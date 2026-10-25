@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { api, friendlyError } from "@/lib/api";
 import { resolveSession } from "@/lib/supabase";
 import { usePlatform } from "./store";
+import SupportChat from "./SupportChat";
 import {
   SUPPORT_CATEGORY_LABEL,
   SUPPORT_STATUS_CLASS,
@@ -158,6 +159,8 @@ export default function Support() {
         </button>
       </header>
 
+      <SupportChat onOpenTicket={() => { setComposeOpen(true); setFormError(""); }} />
+
       {composeOpen && (
         <section className="card support-compose" aria-label="Nova conversa">
           <h2>Nova conversa</h2>
@@ -200,7 +203,7 @@ export default function Support() {
               <button className="primary" type="submit" disabled={sending}>
                 {sending ? "Enviando…" : "Enviar mensagem"}
               </button>
-              <small className="muted">Respondemos em até 1 dia útil — planos Pro e Scale têm prioridade.</small>
+              <small className="muted">Respondemos em até 1 dia útil, de segunda a sexta.</small>
             </div>
           </form>
         </section>

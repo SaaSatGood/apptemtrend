@@ -8,8 +8,7 @@ type PublicNavProps = { page: "home" | "pricing" | "legal" };
 
 const links = [
   { label: "Como funciona", href: "/#como-funciona" },
-  { label: "Plano de gravação", href: "/#content-kits" },
-  { label: "Produtos", href: "/#produtos" },
+  { label: "Plano de gravação", href: "/#plano" },
   { label: "Planos", href: "/planos" },
   { label: "Dúvidas", href: "/#faq" },
 ];

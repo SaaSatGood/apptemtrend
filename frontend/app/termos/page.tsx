@@ -5,7 +5,7 @@ import LegalPageFrame from "@/components/legal/LegalPageFrame";
 export const metadata: Metadata = {
   title: "Termos de Uso | TemTrend",
   description:
-    "Regras de uso da TemTrend: o que a plataforma entrega, teste grátis, planos, renovação, cancelamento, direito de arrependimento (CDC) e responsabilidades.",
+    "Regras de uso da TemTrend: o que a plataforma entrega, plano grátis, planos pagos, renovação, cancelamento, direito de arrependimento (CDC) e responsabilidades.",
 };
 
 export default function TermosPage() {
@@ -13,13 +13,13 @@ export default function TermosPage() {
     <LegalPageFrame
       eyebrow="Uso da plataforma"
       title="Termos de Uso"
-      updated="18 de outubro de 2026"
-      intro="As regras entre você e a TemTrend: o que a plataforma entrega, como funcionam o teste grátis, os planos e o cancelamento, seus direitos como consumidor e os limites de responsabilidade de cada lado."
+      updated="24 de outubro de 2026"
+      intro="As regras entre você e a TemTrend: o que a plataforma entrega, como funcionam o plano Grátis, os planos pagos e o cancelamento, seus direitos como consumidor e os limites de responsabilidade de cada lado."
     >
       <section aria-labelledby="termos-aceitacao">
         <h2 id="termos-aceitacao">Aceitação e abrangência</h2>
         <p>Estes Termos de Uso (“Termos”) regulam a relação entre você e a TemTrend (“TemTrend”, “nós”) no uso da plataforma disponível em <strong>temtrend.online</strong> (“Plataforma”), incluindo o site, a área logada, o catálogo de produtos, a geração de roteiros e as ferramentas de produção.</p>
-        <p>Ao criar a conta, iniciar o teste grátis ou contratar um plano, você declara que leu, entendeu e aceita estes Termos, a <Link href="/privacidade">Política de Privacidade</Link> e a <Link href="/reembolso">Política de Reembolso</Link>, que juntos formam o contrato entre as partes. O aceite é eletrônico, feito depois que os documentos ficam disponíveis para leitura — como exige o Decreto nº 7.962/2013.</p>
+        <p>Ao criar a conta ou contratar um plano, você declara que leu, entendeu e aceita estes Termos, a <Link href="/privacidade">Política de Privacidade</Link> e a <Link href="/reembolso">Política de Reembolso</Link>, que juntos formam o contrato entre as partes. O aceite é eletrônico, feito depois que os documentos ficam disponíveis para leitura — como exige o Decreto nº 7.962/2013.</p>
         <p>Se você não concordar com alguma cláusula, não crie conta nem contrate. Dúvidas são atendidas pelo <strong>Suporte</strong> dentro da Plataforma.</p>
       </section>
 
@@ -51,46 +51,49 @@ export default function TermosPage() {
         <h2 id="termos-conta">Conta e elegibilidade</h2>
         <p>Para usar a Plataforma você precisa ter <strong>18 anos ou mais</strong> e capacidade civil (ou ser emancipado, nos termos do Código Civil). Ao se cadastrar, você confirma que atende a esses requisitos e que as informações fornecidas são verdadeiras, exatas e suas.</p>
         <ul>
-          <li>É permitida <strong>uma conta por pessoa</strong>. Os assentos adicionais previstos em planos específicos (como o Scale) devem ser usados pela mesma equipe ou empresa, nunca revendidos a terceiros.</li>
+          <li>É permitida <strong>uma conta por pessoa</strong>. O plano é individual: o acesso não pode ser compartilhado, revendido ou usado por terceiros como se fosse uma conta própria.</li>
           <li>Você é responsável por manter sua senha em segurança e por toda atividade realizada na sua conta. Se suspeitar de acesso indevido, avise o Suporte imediatamente.</li>
           <li>Cadastros com dados falsos, incompletos ou de terceiros podem ser recusados ou bloqueados.</li>
         </ul>
       </section>
 
-      <section aria-labelledby="termos-trial">
-        <h2 id="termos-trial">Teste grátis</h2>
-        <p>Novas contas podem começar com <strong>7 dias do plano Pro, sem cartão de crédito</strong> e sem cobrança automática. O teste é liberado uma única vez por pessoa e não é cumulativo.</p>
+      <section aria-labelledby="termos-gratis">
+        <h2 id="termos-gratis">Plano Grátis</h2>
+        <p>Cada conta pode realizar <strong>3 pesquisas e criar 3 roteiros no total</strong>, sem cartão de crédito e sem prazo de teste. Esses limites são por conta e não se renovam mensalmente.</p>
         <ul>
-          <li>Ao fim do teste, a conta passa para o modo gratuito: você continua acessando a conta e tudo o que criou, mas as funções com limite por plano ficam indisponíveis até a contratação.</li>
-          <li>Criar contas em série para repetir o teste é uso indevido (cláusula “Uso aceitável”) e pode levar ao bloqueio.</li>
-          <li>Desistir do teste antes do fim não gera nenhuma cobrança.</li>
+          <li>Ao atingir um limite, o conteúdo já criado continua salvo e acessível; para continuar pesquisando ou criando roteiros, é necessário contratar um plano pago.</li>
+          <li>Criar contas em série para repetir os créditos gratuitos é uso indevido (cláusula “Uso aceitável”) e pode levar ao bloqueio.</li>
+          <li>O plano Grátis não gera cobrança automática.</li>
         </ul>
       </section>
 
       <section aria-labelledby="termos-planos">
         <h2 id="termos-planos">Planos, preços e formas de pagamento</h2>
-        <p>Os planos pagos são <strong>Essencial</strong>, <strong>Pro</strong> e <strong>Scale</strong> (cobrança mensal ou anual) e <strong>Enterprise</strong> (condições sob consulta). Os valores vigentes nesta versão dos Termos são:</p>
+        <p>O plano pago é o <strong>Pro</strong>, com cobrança mensal ou anual. O <strong>Enterprise</strong> é contratado por conversa, com condições definidas caso a caso, sem preço de tabela. Os valores vigentes nesta versão dos Termos são:</p>
         <ul>
-          <li><strong>Essencial</strong>: R$ 29,90 por mês ou R$ 299,00 por ano;</li>
-          <li><strong>Pro</strong>: R$ 59,90 por mês ou R$ 599,00 por ano;</li>
-          <li><strong>Scale</strong>: R$ 149,00 por mês ou R$ 1.490,00 por ano.</li>
+          <li><strong>Pro</strong>: R$ 49,90 por mês ou R$ 499,00 por ano;</li>
+          <li><strong>Pro — condição de lançamento</strong>: R$ 39,90 por mês ou R$ 399,00 por ano, exclusiva para os primeiros 100 clientes, enquanto a assinatura estiver ativa;</li>
+          <li><strong>Enterprise</strong>: condições e valor definidos em conversa com o nosso time.</li>
         </ul>
-        <p>No plano anual, quando indicado, você paga o equivalente a 10 meses e usa 12. A página <Link href="/planos">Planos</Link> é a fonte atualizada de preços, limites e recursos — e o valor, a periodicidade e os limites aplicáveis são sempre os exibidos no momento da contratação.</p>
+        <p>No plano anual, você paga o equivalente a 10 meses e usa 12. A página <Link href="/planos">Planos</Link> é a fonte atualizada de preços e recursos — e o valor, a periodicidade e as condições aplicáveis são sempre os exibidos no momento da contratação.</p>
         <ul>
-          <li>Os pagamentos são processados por parceiro especializado (AbacatePay), por PIX ou cartão. <strong>Não armazenamos os dados completos do seu cartão</strong>.</li>
-          <li>Limites de uso (buscas de IA por dia, kits de conteúdo por mês e outros) constam do plano contratado e podem ser ampliados quando você muda de plano.</li>
+          <li>Os pagamentos são processados por parceiro especializado (AbacatePay), por PIX ou cartão, conforme a disponibilidade do meio no checkout. <strong>Não armazenamos os dados completos do seu cartão</strong>.</li>
+          <li>Quando o meio de pagamento permitir cobrança recorrente, a renovação é automática. Quando o pagamento for avulso (por exemplo, PIX por período), o acesso vale até o fim do período pago e a renovação é feita por um novo checkout na sua conta.</li>
           <li>O comprovante da compra é enviado por email; documentos fiscais seguem a legislação aplicável e podem ser solicitados pelo Suporte.</li>
-          <li>Preços podem ser ajustados, mas <strong>nunca retroativamente</strong>: o período já pago é respeitado e o novo valor vale a partir do ciclo seguinte, com aviso prévio pelos canais da Plataforma.</li>
+          <li>Preços podem ser ajustados para novas contratações, mas <strong>nunca retroativamente</strong>: o período já pago é respeitado. Para assinaturas recorrentes, o novo valor vale a partir do ciclo seguinte, com aviso prévio pelos canais da Plataforma. A condição de lançamento é preservada nas renovações enquanto a assinatura permanecer ativa.</li>
         </ul>
+        <h3>Uso justo</h3>
+        <p>O plano Pro entrega kits de conteúdo e buscas de IA <strong>ilimitados na experiência normal de um creator</strong>. Para proteger a estabilidade da Plataforma, o custo de IA e os termos da fonte do catálogo, podemos aplicar limites técnicos de proteção contra automação, compartilhamento de conta, revenda ou volumes anormalmente altos. Se o seu uso se aproximar desse patamar, entraremos em contato para ajustar o plano — sem apagar o que você já criou.</p>
       </section>
 
       <section aria-labelledby="termos-renovacao">
-        <h2 id="termos-renovacao">Renovação automática</h2>
-        <p>As assinaturas são <strong>recorrentes</strong>: ao fim de cada ciclo (mensal ou anual), a cobrança é renovada automaticamente, pelo mesmo meio de pagamento, no valor informado na contratação ou no valor atualizado que tenha sido comunicado com antecedência.</p>
+        <h2 id="termos-renovacao">Renovação</h2>
+        <p>Quando a assinatura é feita no cartão ou em outro meio que permita cobrança recorrente, ela é <strong>renovada automaticamente</strong> ao fim de cada ciclo (mensal ou anual), pelo mesmo meio de pagamento, no valor informado na contratação ou no valor atualizado que tenha sido comunicado com antecedência.</p>
         <ul>
-          <li>A data da próxima renovação fica sempre visível na sua conta, em Conta → Plano.</li>
+          <li>Quando o pagamento é avulso (por exemplo, PIX por período), não há cobrança automática: o acesso vale até a data final do período pago e a renovação depende de um novo checkout. A data fica visível na sua conta, em Conta → Plano.</li>
           <li>Para não renovar, cancele antes da data de renovação — o cancelamento impede qualquer cobrança seguinte.</li>
           <li>Se uma cobrança não for concluída, o acesso às funções pagas pode ser suspenso até a regularização, sem apagar seus dados.</li>
+          <li>Clientes da condição de lançamento mantêm R$ 39,90/mês ou R$ 399/ano nas renovações enquanto a assinatura estiver ativa.</li>
           <li>Renovações involuntárias ou com erro de cobrança têm tratamento na <Link href="/reembolso">Política de Reembolso</Link>.</li>
         </ul>
       </section>
@@ -100,7 +103,7 @@ export default function TermosPage() {
         <p>Você pode <strong>cancelar a assinatura a qualquer momento</strong>, sem multa e sem precisar justificar, direto na conta (Conta → Plano). O cancelamento interrompe novas cobranças e você mantém o acesso até o fim do período já pago.</p>
         <ul>
           <li>Depois do período pago, a conta passa para o modo gratuito. <strong>Nada é apagado</strong>: seus roteiros, produtos salvos e itens de produção continuam salvos para quando você quiser voltar.</li>
-          <li>Mudanças de plano (upgrade ou downgrade) são agendadas para o próximo ciclo, com o ajuste de valor e a data exibidos na conta.</li>
+          <li>Se houver mudança de plano ou de ciclo no futuro, o ajuste de valor e a data serão exibidos na conta antes da cobrança.</li>
           <li>Valores já pagos seguem a <Link href="/reembolso">Política de Reembolso</Link>, inclusive o direito de arrependimento de 7 dias.</li>
         </ul>
       </section>
@@ -149,10 +152,10 @@ export default function TermosPage() {
 
       <section aria-labelledby="termos-disponibilidade">
         <h2 id="termos-disponibilidade">Disponibilidade, evolução e versões beta</h2>
-        <p>Trabalhamos para manter a Plataforma disponível e estável, mas ela pode ficar temporariamente fora do ar por manutenção, falhas de fornecedores (autenticação, inteligência artificial, pagamentos, hospedagem) ou eventos fora do nosso controle. Versões beta e planos padrão não têm SLA contratual; acordos específicos de nível de serviço podem ser firmados à parte, por exemplo no Enterprise.</p>
+        <p>Trabalhamos para manter a Plataforma disponível e estável, mas ela pode ficar temporariamente fora do ar por manutenção, falhas de fornecedores (autenticação, inteligência artificial, pagamentos, hospedagem) ou eventos fora do nosso controle. Não há SLA contratual nos planos autoatendimento; condições específicas, quando houver, são definidas em conversa e registradas à parte.</p>
         <ul>
           <li>Podemos adicionar, alterar ou descontinuar funcionalidades para evoluir o produto e proteger a estabilidade — mudanças que reduzam direitos relevantes seguem a cláusula “Comunicações e alterações”.</li>
-          <li>Limites diários e mensais protegem a estabilidade e o custo da operação; planos com “fair use” são acompanhados e podem ser ajustados em caso de uso anormal.</li>
+          <li>Limites técnicos de uso justo protegem a estabilidade e o custo da operação. Eles não aparecem como números na tabela de planos e são aplicados apenas contra abuso, automação, compartilhamento de conta, revenda ou volumes anormais.</li>
         </ul>
       </section>
 
@@ -188,7 +191,7 @@ export default function TermosPage() {
 
       <section aria-labelledby="termos-atendimento">
         <h2 id="termos-atendimento">Atendimento, lei aplicável e foro</h2>
-        <p>Dúvidas, reclamações e pedidos são atendidos pelo <strong>Suporte</strong> dentro da Plataforma, nas categorias Dúvida, Problema, Cobrança, Sugestão e Outro. Prazos de resposta variam por plano: Essencial em até 48h, Pro em até 24h e Scale com atendimento dedicado.</p>
+        <p>Dúvidas, reclamações e pedidos são atendidos pelo <strong>Suporte</strong> dentro da Plataforma, nas categorias Dúvida, Problema, Cobrança, Sugestão e Outro. O atendimento do plano Pro é por email; condições específicas de Enterprise são definidas em conversa, sem promessa de assentos ou de nível de serviço (SLA) neste documento.</p>
         <p>Você também pode recorrer aos canais oficiais de defesa do consumidor, como a plataforma <strong>consumidor.gov.br</strong> e o Procon do seu estado.</p>
         <p>Estes Termos são regidos pelas leis brasileiras, em especial o Código de Defesa do Consumidor (Lei nº 8.078/1990), o Marco Civil da Internet (Lei nº 12.965/2014) e a Lei Geral de Proteção de Dados (Lei nº 13.709/2018). Para consumidores, é competente o foro do domicílio da pessoa consumidora (art. 101, I, do CDC). Se alguma cláusula for considerada inválida, as demais permanecem em vigor.</p>
       </section>

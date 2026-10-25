@@ -38,7 +38,7 @@ async function withSession(page: Page) {
 function setupApi(page: Page, options: { tickets: TicketFixture[]; messages: Record<string, MessageFixture[]> }) {
   let list = [...options.tickets];
   const messages = { ...options.messages };
-  const tracker = { createBody: null as unknown, replyBody: null as unknown, closedIds: [] as string[], replyStatus: "open" };
+  const tracker = { createBody: null as unknown, replyBody: null as unknown, closedIds: [] as string[], replyStatus: "open", chatBody: null as unknown };
   let messageSeq = 100;
 
   return page.route("http://localhost:3333/**", async (route) => {
@@ -57,6 +57,14 @@ function setupApi(page: Page, options: { tickets: TicketFixture[]; messages: Rec
       });
     }
     if (path === "/creator-content") return route.fulfill({ json: [] });
+
+    if (path === "/support/chat" && method === "POST") {
+      const body = req.postDataJSON() as { message: string; history?: { role: string; content: string }[] };
+      tracker.chatBody = body;
+      return route.fulfill({
+        json: { reply: "Salve o produto em Descobrir: ele entra como Salvo na sua producao." },
+      });
+    }
 
     if (path === "/support/tickets" && method === "GET") {
       return route.fulfill({ json: { items: list } });
@@ -109,6 +117,25 @@ function setupApi(page: Page, options: { tickets: TicketFixture[]; messages: Rec
     return route.fulfill({ status: 404, json: { error: { message: `Unmocked: ${method} ${path}` } } });
   }).then(() => tracker);
 }
+
+test("suporte: assistente responde com a IA da plataforma", async ({ page }) => {
+  await withSession(page);
+  const tracker = await setupApi(page, { tickets: [], messages: {} });
+
+  await page.goto("/app/suporte");
+  const chat = page.locator(".support-chat");
+  await expect(chat.getByRole("heading", { name: "Assistente de suporte" })).toBeVisible();
+
+  await chat.getByRole("button", { name: "Como salvo um produto na produção?" }).click();
+  await expect(chat.getByText("Como salvo um produto na produção?")).toBeVisible();
+  await expect(chat.getByText(/Salve o produto em Descobrir/)).toBeVisible();
+  expect(tracker.chatBody).toMatchObject({ message: "Como salvo um produto na produção?" });
+
+  await chat.getByLabel("Mensagem para o assistente de suporte").fill("E como publico o vídeo?");
+  await chat.getByRole("button", { name: "Perguntar" }).click();
+  await expect(chat.getByText("E como publico o vídeo?")).toBeVisible();
+  expect((tracker.chatBody as { history?: unknown[] }).history).toHaveLength(2);
+});
 
 test("suporte: creator abre conversa, responde e encerra", async ({ page }) => {
   await withSession(page);

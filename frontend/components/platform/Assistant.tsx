@@ -1,18 +1,21 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { useRouter, useSearchParams } from "next/navigation";
-import { supabase } from "@/lib/supabase";
+import Icon from "@/components/ui/Icon";
+import { resolveSession, supabase } from "@/lib/supabase";
 import { api, friendlyError } from "@/lib/api";
 import { track } from "@/lib/track";
+import { loadProductDetail, peekProductDetail } from "@/lib/product-detail-cache";
 import { displayProductName } from "@/lib/format";
-import type { AssistantResponse, Product } from "@/lib/types";
+import type { AssistantResponse, DiscoverySearch, DiscoverySearchSummary, Product } from "@/lib/types";
 import { usePlatform } from "./store";
-import Opportunities from "./Opportunities";
 import { productionForProduct } from "./production-helpers";
 import ProductImage from "./ProductImage";
 import UpgradeDialog from "./UpgradeDialog";
+import HowItWorks from "./HowItWorks";
+import { RecentSearches, SearchHistoryDialog } from "./DiscoveryHistory";
 
 // Diálogo carregado sob demanda: fora do bundle inicial do Descobrir.
 const ContentKitDialog = dynamic(() => import("./ContentKitDialog"), {
@@ -66,6 +69,19 @@ function isSensitive(product: Product): boolean {
   return /lingerie|camisola|moda íntima|moda intima|roupa íntima|roupa intima|adulto/i.test(`${product.categoria || ""} ${product.nome}`);
 }
 
+/** Guarda a última busca fora do escopo de render (o carimbo de tempo é impuro). */
+function saveDiscoveryState(storageKey: string, snapshot: {
+  query: string;
+  message: string;
+  results: Product[];
+  needsClarification: boolean;
+  contextIds: string[];
+}) {
+  try {
+    sessionStorage.setItem(storageKey, JSON.stringify({ savedAt: Date.now(), ...snapshot }));
+  } catch { /* Storage is optional. */ }
+}
+
 function videoReason(reason?: string | null): string | null {
   if (!reason) return null;
   // TODO: pedir ao serviço uma justificativa própria para vídeo, sem repetir métricas do card.
@@ -80,7 +96,9 @@ export function ProductCard({
   highlightLabel,
   onOpen,
   onSave,
+  onRemove,
   onGenerate,
+  onPrefetch,
   compared = false,
   onCompare,
 }: {
@@ -90,7 +108,9 @@ export function ProductCard({
   highlightLabel?: string;
   onOpen: (id: string) => void;
   onSave: (id: string) => void;
+  onRemove?: (id: string) => void;
   onGenerate: (id: string) => void;
+  onPrefetch?: (id: string) => void;
   compared?: boolean;
   onCompare?: (id: string) => void;
 }) {
@@ -117,10 +137,27 @@ export function ProductCard({
         {onCompare && <button className="opportunity-compare-toggle" type="button" aria-pressed={compared} onClick={() => onCompare(product.id)}>{compared ? "✓ Na comparação" : "Comparar produto"}</button>}
         <div className="product-actions">
           <div className="opportunity-secondary-actions">
-            <button type="button" disabled={saved || saving} aria-label={`Salvar ${name}`} onClick={() => onSave(product.id)}>{saving ? "Salvando…" : saved ? "Salvo ✓" : "Salvar"}</button>
+            <button
+              type="button"
+              className={saved ? "is-saved" : ""}
+              disabled={saving || (saved && !onRemove)}
+              aria-label={saved ? `Remover ${name} dos salvos` : `Salvar ${name}`}
+              onClick={() => (saved && onRemove ? onRemove(product.id) : onSave(product.id))}
+            >
+              {saving ? "Salvando…" : saved ? "Salvo ✓" : "Salvar"}
+            </button>
             <button className="generate-script" type="button" aria-label={`Gerar roteiro para ${name}`} onClick={() => onGenerate(product.id)}>Gerar roteiro</button>
           </div>
-          <button className="ghost open-product" type="button" aria-label={`Ver produto ${name}`} onClick={() => onOpen(product.id)}>Ver produto</button>
+          <button
+            className="ghost open-product"
+            type="button"
+            aria-label={`Ver produto ${name}`}
+            onPointerEnter={() => onPrefetch?.(product.id)}
+            onFocus={() => onPrefetch?.(product.id)}
+            onClick={() => onOpen(product.id)}
+          >
+            Ver produto
+          </button>
         </div>
       </div>
     </article>
@@ -131,7 +168,13 @@ export default function Assistant({ onOpen }: { onOpen: (id: string) => void }) 
   const router = useRouter();
   const params = useSearchParams();
   const landingSearch = params.get("search");
-  const { toast, productions, me, session, loadProductions } = usePlatform();
+  const { toast, productions, me, loadProductions, session } = usePlatform();
+  function prefetchProduct(id: string) {
+    router.prefetch(`/app/produtos/${id}`);
+    if (session?.access_token && !peekProductDetail(id)) {
+      void loadProductDetail(id, session.access_token).catch(() => {});
+    }
+  }
   const [query, setQuery] = useState(() => (landingSearch || "").slice(0, 500));
   const [querySuggested, setQuerySuggested] = useState(false);
   const [searching, setSearching] = useState(false);
@@ -147,17 +190,18 @@ export default function Assistant({ onOpen }: { onOpen: (id: string) => void }) 
   const [hideSensitive, setHideSensitive] = useState(false);
   const [sortBy, setSortBy] = useState<"vendas" | "preco" | "comissao">("vendas");
   const [compareIds, setCompareIds] = useState<string[]>([]);
+  const [searchHistory, setSearchHistory] = useState<DiscoverySearchSummary[]>([]);
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [historyBusyId, setHistoryBusyId] = useState<string | null>(null);
+  const [historyClearing, setHistoryClearing] = useState(false);
+  const [historyError, setHistoryError] = useState("");
+  const historyRequestId = useRef(0);
   const hasPendingSearch = useRef(false);
   const inFlight = useRef(false);
   const scrollAfterSearch = useRef(false);
   const responseRef = useRef<HTMLDivElement>(null);
   const storageKey = `${DISCOVERY_STATE_KEY}:${me?.user_id}`;
-  const interestShortcuts = [...new Set([...(me?.creator?.temas_interesse || []), ...productions.map((item) => item.products?.categoria || "")])]
-    .filter((theme) => theme && theme !== "Outros")
-    .slice(0, 2);
   const recurring = productions.length > 0;
-  const inProgress = productions.filter((item) => item.status === "em_producao").length;
-  const firstName = String((session?.user?.user_metadata?.full_name as string | undefined) || session?.user?.email?.split("@")[0] || "creator").trim().split(/\s+/)[0];
 
   useEffect(() => {
     let active = true;
@@ -220,6 +264,28 @@ export default function Assistant({ onOpen }: { onOpen: (id: string) => void }) 
     };
   }, [storageKey, landingSearch]);
 
+  const refreshSearchHistory = useCallback(async () => {
+    const requestId = ++historyRequestId.current;
+    try {
+      const session = await resolveSession();
+      if (!session?.access_token) {
+        if (requestId === historyRequestId.current) setSearchHistory([]);
+        return;
+      }
+      const result = await api<{ items: DiscoverySearchSummary[] }>("/assistant/searches", session.access_token);
+      if (requestId === historyRequestId.current) {
+        setSearchHistory(Array.isArray(result.items) ? result.items : []);
+      }
+    } catch {
+      // Histórico é um extra: se falhar, o Descobrir continua funcionando.
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!me?.user_id) return;
+    queueMicrotask(() => { void refreshSearchHistory(); });
+  }, [me?.user_id, refreshSearchHistory]);
+
   const topResults = useMemo(() => results.filter((product) => !hideSensitive || !isSensitive(product)).slice(0, TOP_RESULTS).sort((a, b) => {
     if (sortBy === "preco") return (a.preco_min_brl ?? Infinity) - (b.preco_min_brl ?? Infinity);
     if (sortBy === "comissao") return (commissionOf(b) ?? -1) - (commissionOf(a) ?? -1);
@@ -247,6 +313,24 @@ export default function Assistant({ onOpen }: { onOpen: (id: string) => void }) 
       toast("Produto salvo ✓ Encontre seu roteiro na área Produção.");
     } catch (err) {
       toast(friendlyError(err, "Não conseguimos salvar este produto. Tente novamente."));
+    } finally {
+      setSavingProductId(null);
+    }
+  }
+
+  async function removeSaved(id: string) {
+    if (savingProductId) return;
+    const target = productions.find((item) => item.product_id === id);
+    if (!target) return;
+    setSavingProductId(id);
+    try {
+      const { data } = await supabase().auth.getSession();
+      await api(`/creator-content/${target.id}`, data.session?.access_token, { method: "DELETE" });
+      await loadProductions();
+      track("saved_product_removed", { product_id: id });
+      toast("Produto removido dos salvos.");
+    } catch (err) {
+      toast(friendlyError(err, "Não conseguimos remover este produto. Tente novamente."));
     } finally {
       setSavingProductId(null);
     }
@@ -287,14 +371,14 @@ export default function Assistant({ onOpen }: { onOpen: (id: string) => void }) 
       setResults(list);
       setNeedsClarification(Boolean(result.needs_clarification));
       track("search_performed", { q_len: trimmed.length, results: list.length, clarification: Boolean(result.needs_clarification) });
-      try { sessionStorage.setItem(storageKey, JSON.stringify({
-        savedAt: Date.now(),
+      saveDiscoveryState(storageKey, {
         query: trimmed,
         message: result.message || "Nenhum produto encontrado.",
         results: list,
         needsClarification: Boolean(result.needs_clarification),
         contextIds: list.map((product) => product.id),
-      })); } catch { /* Storage is optional. */ }
+      });
+      void refreshSearchHistory();
     } catch (err) {
       const code = (err as { code?: string }).code;
       setError(true);
@@ -333,63 +417,83 @@ export default function Assistant({ onOpen }: { onOpen: (id: string) => void }) 
     setCompareIds((current) => current.includes(id) ? current.filter((item) => item !== id) : [...current.slice(-1), id]);
   }
 
+  async function openSavedSearch(id: string) {
+    if (historyBusyId || historyClearing) return;
+    setHistoryBusyId(id);
+    setHistoryError("");
+    try {
+      const session = await resolveSession();
+      const saved = await api<DiscoverySearch>(`/assistant/searches/${id}`, session?.access_token);
+      const list = Array.isArray(saved.results) ? saved.results : [];
+      const savedMessage = saved.message || "Nenhum produto encontrado.";
+      const ids = Array.isArray(saved.context_ids) ? saved.context_ids : list.map((product) => product.id);
+      setQuery(saved.query || "");
+      setMessage(savedMessage);
+      setResults(list);
+      setNeedsClarification(Boolean(saved.needs_clarification));
+      setContextIds(ids);
+      setSearched(true);
+      setError(false);
+      setCompareIds([]);
+      setQuerySuggested(false);
+      saveDiscoveryState(storageKey, {
+        query: saved.query || "",
+        message: savedMessage,
+        results: list,
+        needsClarification: Boolean(saved.needs_clarification),
+        contextIds: ids,
+      });
+      scrollAfterSearch.current = true;
+      setHistoryOpen(false);
+    } catch (err) {
+      const failure = friendlyError(err, "Não conseguimos abrir esta busca. Tente novamente.");
+      setHistoryError(failure);
+      if (!historyOpen) toast(failure);
+      void refreshSearchHistory();
+    } finally {
+      setHistoryBusyId(null);
+    }
+  }
+
+  async function deleteSavedSearch(id: string) {
+    if (historyBusyId || historyClearing) return;
+    setHistoryBusyId(id);
+    setHistoryError("");
+    try {
+      const session = await resolveSession();
+      await api(`/assistant/searches/${id}`, session?.access_token, { method: "DELETE" });
+      historyRequestId.current += 1;
+      setSearchHistory((current) => current.filter((item) => item.id !== id));
+    } catch (err) {
+      setHistoryError(friendlyError(err, "Não conseguimos remover esta busca. Tente novamente."));
+    } finally {
+      setHistoryBusyId(null);
+    }
+  }
+
+  async function clearSavedSearches() {
+    if (historyClearing) return;
+    setHistoryClearing(true);
+    setHistoryError("");
+    try {
+      const session = await resolveSession();
+      await api("/assistant/searches", session?.access_token, { method: "DELETE" });
+      historyRequestId.current += 1;
+      setSearchHistory([]);
+      toast("Histórico de buscas limpo.");
+    } catch (err) {
+      setHistoryError(friendlyError(err, "Não conseguimos limpar o histórico. Tente novamente."));
+    } finally {
+      setHistoryClearing(false);
+    }
+  }
+
   return (
-    <section id="assistant-section" className={`dashboard-hero assistant-hero discovery-workspace${recurring || searched ? " is-compact" : ""}`} aria-labelledby="dashboard-title">
-      {recurring && !searched && <Opportunities />}
-      <div className="discovery-hero">
-      <div className="discover-intro">
-        <p className="eyebrow">Da ideia ao seu próximo vídeo</p>
-        {recurring ? <><h1 id="dashboard-title">Olá, <em>{firstName || "creator"}.</em></h1><p>{inProgress > 0 ? `Você tem ${inProgress} ${inProgress === 1 ? "conteúdo em produção" : "conteúdos em produção"}.` : `${productions.length} ${productions.length === 1 ? "conteúdo" : "conteúdos"} na sua produção.`} Encontre a próxima ideia quando quiser.</p></> : <><h1 id="dashboard-title">Encontre seu produto.</h1><p>Busque uma oportunidade ou receba uma sugestão para começar.</p></>}
-      </div>
-      <form
-        className="assistant-form"
-        onSubmit={(e) => {
-          e.preventDefault();
-          search(query);
-        }}
-      >
-        <label htmlFor="assistant-input">
-          O que você quer vender?
-        </label>
-        <div className="assistant-input-row">
-          <input
-            id="assistant-input"
-            type="text"
-            minLength={2}
-            maxLength={500}
-            required
-            autoComplete="off"
-            placeholder="Ex.: Quero um produto barato para demonstrar em 15 segundos"
-            value={query}
-            onChange={(e) => { setQuery(e.target.value); setQuerySuggested(false); }}
-          />
-          <button id="assistant-submit" className="primary" type="submit" disabled={searching}>
-            {searching ? "Encontrando produtos…" : "Encontrar produtos"}
-          </button>
-          <button className="ghost discovery-surprise" type="button" disabled={searching} onClick={() => { setQuerySuggested(true); void search("Não sei o que vender. Sugira oportunidades do catálogo para começar a criar conteúdo.", true); }}>{recurring ? "Me surpreenda" : "Não sei o que vender"}</button>
-        </div>
-        {querySuggested && <p className="assistant-query-source">Busca sugerida pela TemTrend. Edite o texto para personalizar.</p>}
-      </form>
-      <div className="assistant-shortcut-groups">
-      {interestShortcuts.length > 0 && <div className="assistant-interest-shortcuts" role="group" aria-label="Buscas dos seus interesses"><span>Para você</span>{interestShortcuts.map((theme) => (
-            <button
-              key={theme}
-              type="button"
-              disabled={searching}
-              onClick={() => {
-                const text = `Quero vender produtos de ${theme.toLocaleLowerCase("pt-BR")} para criar vídeos`;
-                setQuery(text);
-                setQuerySuggested(true);
-                setContextIds([]);
-                search(text, true);
-              }}
-            >
-              {theme}
-            </button>
-          ))}</div>}
+    <section id="assistant-section" className={`dashboard-hero assistant-hero discovery-workspace${searched ? " is-compact" : ""}`} aria-labelledby="dashboard-title">
+      <div className="assistant-shortcut-groups discovery-shortcuts">
       <div className="assistant-examples" role="group" aria-label="Exemplos de busca">
         <span>Preço, nicho ou nível</span>
-        {EXAMPLES.slice(0, interestShortcuts.length ? 4 : 5).map(([label, text]) => (
+        {EXAMPLES.map(([label, text]) => (
           <button
             key={label}
             type="button"
@@ -406,9 +510,65 @@ export default function Assistant({ onOpen }: { onOpen: (id: string) => void }) 
         ))}
       </div>
       </div>
-      <p className="discovery-note">Produtos reais. Você escolhe a oportunidade, a TemTrend ajuda com o roteiro.</p>
+      <div className="discovery-hero">
+      <div className="discover-intro">
+        <p className="eyebrow">Criar conteúdo</p>
+        <h1 id="dashboard-title">Encontre seu produto.</h1>
+        <p>Busque uma oportunidade, compare os dados e gere um roteiro pronto para gravar.</p>
       </div>
-      {!searched && !recurring && <Opportunities />}
+      <form
+        className="assistant-form"
+        onSubmit={(e) => {
+          e.preventDefault();
+          search(query);
+        }}
+      >
+        <label htmlFor="assistant-input">
+          O que você quer vender?
+        </label>
+        <div className="assistant-input-row">
+          <span className="assistant-input-icon">
+            <Icon name="search" size={17} />
+          </span>
+          <input
+            id="assistant-input"
+            type="text"
+            minLength={2}
+            maxLength={500}
+            required
+            autoComplete="off"
+            placeholder="Ex.: produto barato para demonstrar em vídeo"
+            value={query}
+            onChange={(e) => { setQuery(e.target.value); setQuerySuggested(false); }}
+          />
+        </div>
+        <div className="assistant-actions">
+          <button id="assistant-submit" className="primary" type="submit" disabled={searching}>
+            {searching ? "Encontrando produtos…" : "Encontrar produtos"}
+          </button>
+          <button className="ghost discovery-surprise" type="button" disabled={searching} onClick={() => { setQuerySuggested(true); void search("Não sei o que vender. Sugira oportunidades do catálogo para começar a criar conteúdo.", true); }}>
+            <span className="discovery-sparkle">
+              <Icon name="sparkles" size={15} filled />
+            </span>
+            {recurring ? "Me surpreenda" : "Não sei o que vender"}
+          </button>
+        </div>
+        {querySuggested && <p className="assistant-query-source">Busca sugerida pela TemTrend. Edite o texto para personalizar.</p>}
+        <p className="discovery-note">
+          <span className="discovery-check"><Icon name="check" size={15} /></span>
+          Produtos reais. Você escolhe a oportunidade, a TemTrend ajuda com o roteiro.
+        </p>
+      </form>
+      </div>
+      {!searching && (
+        <RecentSearches
+          items={searchHistory}
+          busyId={historyBusyId}
+          onOpen={(id) => void openSavedSearch(id)}
+          onShowAll={() => { setHistoryError(""); setHistoryOpen(true); }}
+        />
+      )}
+      {!searched && <HowItWorks />}
       {searched && (
         <div className="assistant-response" ref={responseRef} aria-live="polite" aria-busy={searching}>
           <div className="assistant-message">
@@ -457,7 +617,9 @@ export default function Assistant({ onOpen }: { onOpen: (id: string) => void }) 
                   saving={savingProductId === p.id}
                   highlightLabel={highlight?.id === p.id ? highlight.label : undefined}
                   onOpen={onOpen}
+                  onPrefetch={prefetchProduct}
                   onSave={(id) => void saveProduct(id)}
+                  onRemove={(id) => void removeSaved(id)}
                   onGenerate={setKitProductId}
                   compared={compareIds.includes(p.id)}
                   onCompare={toggleCompare}
@@ -482,6 +644,18 @@ export default function Assistant({ onOpen }: { onOpen: (id: string) => void }) 
             )}
           </div>
         </div>
+      )}
+      {historyOpen && (
+        <SearchHistoryDialog
+          items={searchHistory}
+          busyId={historyBusyId}
+          clearing={historyClearing}
+          error={historyError}
+          onClose={() => setHistoryOpen(false)}
+          onOpen={(id) => void openSavedSearch(id)}
+          onDelete={(id) => void deleteSavedSearch(id)}
+          onClear={() => void clearSavedSearches()}
+        />
       )}
       {kitProductId && (
         <ContentKitDialog

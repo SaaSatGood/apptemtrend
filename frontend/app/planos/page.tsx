@@ -4,7 +4,7 @@ import PricingPage from "@/components/pricing/PricingPage";
 export const metadata: Metadata = {
   title: "Planos | TemTrend",
   description:
-    "Comece com 7 dias de Pro por nossa conta e cresça quando fizer sentido: planos mensais ou anuais com PIX ou cartão, variações de roteiro e produção ilimitada. Cancele quando quiser.",
+    "Comece grátis com 3 pesquisas e 3 roteiros por conta, sem prazo de teste. Para criar sem limites, conheça o Pro mensal ou anual. Cancele quando quiser.",
 };
 
 export default async function PlanosPage({

@@ -2,9 +2,11 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
+import Icon from "@/components/ui/Icon";
 import { supabase } from "@/lib/supabase";
 import { api, friendlyError, type ApiError } from "@/lib/api";
 import { track, ttvMs } from "@/lib/track";
+import { upsertProductKit } from "@/lib/product-detail-cache";
 import { usePlatform } from "./store";
 import ProductImage from "./ProductImage";
 import { displayProductName } from "@/lib/format";
@@ -98,6 +100,7 @@ export default function ContentKitDialog({
         onClose();
         if (result?.content_kit) {
           track("kit_created", { fallback: Boolean(result.fallback), force_new: forceNew ? 1 : 0, ttv_ms: ttvMs() ?? 0 });
+          upsertProductKit(productId, result.content_kit);
           onCreated(result.content_kit, Boolean(result.fallback));
         }
         toast(
@@ -136,13 +139,21 @@ export default function ContentKitDialog({
     >
       <form className="stack content-kit-form" onSubmit={submit}>
         <button className="dialog-close" type="button" aria-label="Fechar" disabled={busy} onClick={onClose}>
-          ×
+          <Icon name="x" size={18} />
         </button>
         <div className="content-kit-workspace">
           <header className="content-kit-form-header">
             <p className="eyebrow">{mode === "save" ? "Salvar produto" : forceNew ? "Nova versão" : "Roteiro para vídeo"}</p>
             <h2 id="content-kit-dialog-title">{mode === "save" ? "Salve este produto." : forceNew ? "Teste outro ângulo." : "Gere seu roteiro."}</h2>
             <p className="muted">{mode === "save" ? "Guarde o produto e sua direção para criar o roteiro depois." : "Escolha uma direção. A TemTrend organiza cenas, fala e legenda para você revisar."}</p>
+            <div className="content-kit-preview">
+              <span>O roteiro inclui</span>
+              <ul>
+                <li>Gancho e ideia central</li>
+                <li>Cenas com fala e enquadramento</li>
+                <li>Legenda, CTA e hashtags</li>
+              </ul>
+            </div>
             {product && <div className="content-kit-product-context"><ProductImage product={product} width={64} height={64} /><div><span>Produto do roteiro</span><strong>{displayProductName(product)}</strong></div></div>}
           </header>
           <div className="content-kit-editor">
@@ -160,7 +171,7 @@ export default function ContentKitDialog({
                       className={isSelected ? "selected" : ""}
                       onClick={() => toggleSuggestion(label)}
                     >
-                      <span className="content-kit-option-mark" aria-hidden="true">{isSelected ? "✓" : ""}</span>
+                      <span className="content-kit-option-mark">{isSelected ? <Icon name="check" size={13} strokeWidth={2.2} /> : null}</span>
                       <span className="content-kit-option-copy"><span className="content-kit-option-group">{SUGGESTIONS.find((item) => item.label === label)?.group}</span><strong>{label}</strong><small aria-hidden="true">{description}</small></span>
                     </button>
                   );
@@ -184,7 +195,7 @@ export default function ContentKitDialog({
             {error && <p className="form-message error" role="alert">{error}</p>}
             {planLimit && (
               <p className="form-message">
-                <Link href="/planos" onClick={onClose}>Ver planos e limites →</Link>
+                <Link href="/planos" onClick={onClose}>Ver planos e limites <Icon name="arrow-right" size={13} /></Link>
               </p>
             )}
           </div>

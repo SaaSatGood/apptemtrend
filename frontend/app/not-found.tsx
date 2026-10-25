@@ -5,7 +5,7 @@ export default function NotFound() {
     <main className="tt-not-found">
       <div className="tt-not-found-shell">
         <Link className="tt-document-logo" href="/" aria-label="TemTrend, página inicial">
-          <span aria-hidden="true">T↗</span><strong>TemTrend</strong>
+          <span aria-hidden="true" /><strong>TemTrend</strong>
         </Link>
         <div className="tt-not-found-content">
           <p className="tt-document-eyebrow"><span aria-hidden="true" /> Página não encontrada</p>

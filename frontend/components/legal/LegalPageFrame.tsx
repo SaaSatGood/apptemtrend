@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
+import PublicFooter from "@/components/PublicFooter";
 import PublicNav from "@/components/PublicNav";
 
 type Props = {
@@ -27,16 +28,7 @@ export default function LegalPageFrame({ eyebrow, title, updated, intro, childre
           <Link className="tt-document-secondary" href="/">Voltar para a landing</Link>
         </nav>
       </main>
-      <footer className="tt-document-footer">
-        <div className="tt-document-shell">
-          <span>© 2026 TemTrend</span>
-          <nav aria-label="Páginas legais">
-            <Link href="/termos">Termos</Link>
-            <Link href="/privacidade">Privacidade</Link>
-            <Link href="/reembolso">Reembolso</Link>
-          </nav>
-        </div>
-      </footer>
+      <PublicFooter />
     </div>
   );
 }

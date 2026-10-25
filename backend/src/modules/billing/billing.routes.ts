@@ -13,13 +13,14 @@ import { parseWebhookEvent } from './billing.events.js';
 import {
   PLAN_LIMITS,
   PLAN_META,
-  TRIAL_DAYS,
+  FREE_KITS_TOTAL,
+  FREE_SEARCHES_TOTAL,
   formatCents,
   type CatalogPlanId,
 } from './plans.js';
 
 const checkoutSchema = z.object({
-  plan: z.enum(['essencial', 'pro', 'scale']),
+  plan: z.enum(['pro']),
   period: z.enum(['monthly', 'annual']).optional().default('monthly'),
 }).strict();
 
@@ -29,7 +30,7 @@ function safeEqual(a: string, b: string): boolean {
   return bufA.length === bufB.length && crypto.timingSafeEqual(bufA, bufB);
 }
 
-const PUBLIC_PLANS: CatalogPlanId[] = ['essencial', 'pro', 'scale', 'enterprise'];
+const PUBLIC_PLANS: CatalogPlanId[] = ['pro', 'enterprise'];
 
 async function billingRoutes(app: FastifyInstance) {
   // Catálogo público para a página de planos.
@@ -37,13 +38,19 @@ async function billingRoutes(app: FastifyInstance) {
     config: { rateLimit: RATE_LIMITS.AUTH_GET },
   }, async (_request, reply) => {
     reply.header('cache-control', 'public, max-age=300');
+    const enabled = billingActive();
+    const launch = enabled ? await billingService.getLaunchAvailability() : null;
     return {
-      enabled: billingActive(),
-      trial_days: TRIAL_DAYS,
+      enabled,
+      trial_days: 0,
+      free: { searches_total: FREE_SEARCHES_TOTAL, kits_total: FREE_KITS_TOTAL },
+      launch,
       plans: PUBLIC_PLANS.map((id) => ({
         ...PLAN_META[id],
         precoMensal: formatCents(PLAN_META[id].precoMensalCents),
         precoAnual: formatCents(PLAN_META[id].precoAnualCents),
+        precoLancamentoMensal: formatCents(PLAN_META[id].precoLancamentoMensalCents),
+        precoLancamentoAnual: formatCents(PLAN_META[id].precoLancamentoAnualCents),
         limits: PLAN_LIMITS[id],
       })),
     };
@@ -84,7 +91,7 @@ async function billingRoutes(app: FastifyInstance) {
     config: { rateLimit: RATE_LIMITS.BILLING_CHECKOUT },
   }, async (request) => {
     const body = z.object({
-      plan: z.enum(['essencial', 'pro', 'scale']),
+      plan: z.enum(['pro']),
       period: z.enum(['monthly', 'annual']).optional().default('monthly'),
     }).strict().parse(request.body ?? {});
     const creator = await requireActiveCreator(request.authUser.id);

@@ -13,6 +13,7 @@ export function isProviderConfigured(): boolean {
 interface RequestResult<T> {
   data: T | null;
   error: string | null;
+  status: number | null;
 }
 
 async function request<T>(path: string, body: Record<string, unknown>): Promise<RequestResult<T>> {
@@ -32,13 +33,19 @@ async function request<T>(path: string, body: Record<string, unknown>): Promise<
       | { data?: T; error?: unknown; success?: boolean }
       | null;
     if (!response.ok || !payload || payload.success !== true || payload.data == null) {
-      logger.error({ path, status: response.status, payload }, 'AbacatePay request rejected');
-      return { data: null, error: `status_${response.status}` };
+      const detail =
+        typeof payload?.error === 'string'
+          ? payload.error
+          : payload?.error && typeof payload.error === 'object' && 'message' in payload.error
+            ? String((payload.error as { message?: unknown }).message ?? '')
+            : null;
+      logger.error({ path, status: response.status, detail }, 'AbacatePay request rejected');
+      return { data: null, error: detail ?? `status_${response.status}`, status: response.status };
     }
-    return { data: payload.data, error: null };
+    return { data: payload.data, error: null, status: response.status };
   } catch (error) {
     logger.error({ err: error, path }, 'AbacatePay request failed');
-    return { data: null, error: 'network' };
+    return { data: null, error: 'network', status: null };
   } finally {
     clearTimeout(timer);
   }
@@ -61,15 +68,38 @@ function parseCheckout(data: unknown): ProviderCheckout | null {
   return { id, url };
 }
 
-export async function createSubscriptionCheckout(input: {
+interface CheckoutInput {
   productId: string;
   externalId: string;
   returnUrl: string;
   completionUrl: string;
-}): Promise<ProviderCheckout | null> {
+}
+
+/**
+ * Assinatura recorrente. A AbacatePay só aceita PIX quando a loja tem Pix
+ * Automático habilitado; cartão é o método padrão de assinatura.
+ */
+export async function createSubscriptionCheckout(input: CheckoutInput): Promise<ProviderCheckout | null> {
   const { data } = await request<unknown>('/subscriptions/create', {
     items: [{ id: input.productId, quantity: 1 }],
-    methods: ['PIX', 'CARD'],
+    methods: ['CARD'],
+    externalId: input.externalId,
+    returnUrl: input.returnUrl,
+    completionUrl: input.completionUrl,
+    metadata: { creator_id: input.externalId, source: 'temtrend' },
+  });
+  return parseCheckout(data);
+}
+
+/**
+ * Cobrança avulsa por período (PIX). Usada quando a loja ainda não tem
+ * cartão/Pix Automático habilitados para assinaturas. O acesso vale até o fim
+ * do período pago e a renovação é feita por um novo checkout.
+ */
+export async function createOneTimeCheckout(input: CheckoutInput): Promise<ProviderCheckout | null> {
+  const { data } = await request<unknown>('/checkouts/create', {
+    items: [{ id: input.productId, quantity: 1 }],
+    methods: ['PIX'],
     externalId: input.externalId,
     returnUrl: input.returnUrl,
     completionUrl: input.completionUrl,

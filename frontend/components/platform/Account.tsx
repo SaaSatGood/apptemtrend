@@ -24,10 +24,10 @@ interface AccountData {
 
 const PLAN_STATUS_LABEL: Record<string, string> = {
   active: "Ativo",
-  trialing: "Trial Pro",
+  trialing: "Grátis",
   canceled: "Cancelado",
   past_due: "Pagamento pendente",
-  inactive: "Sem plano",
+  inactive: "Grátis",
 };
 const VOICE_TONES = ["Descontraído", "Direto", "Bem-humorado", "Técnico"];
 
@@ -361,10 +361,11 @@ export default function Account({ onEditPreferences }: { onEditPreferences: () =
         <aside className="account-sidebar">
         {account?.plan?.nome && (() => {
           const usage = billing?.usage;
-          const locked = billing?.enabled === true && billing.plan === "free";
-          const kitsUsed = usage ? usage.kits_month : 0;
+          const isFree = billing?.plan === "free";
+          const kitsUsed = usage ? (isFree ? usage.kits_total : usage.kits_month) : 0;
           const kitsPct = usage ? pct(kitsUsed, usage.kits_limit) : null;
-          const searchPct = usage ? pct(usage.searches_today, usage.searches_limit) : null;
+          const searchesUsed = isFree ? (usage?.searches_total ?? 0) : (usage?.searches_today ?? 0);
+          const searchPct = usage ? pct(searchesUsed, usage.searches_limit) : null;
           return (
             <section className="card account-card account-plan-card">
               <p className="eyebrow">Plano atual</p>
@@ -373,30 +374,28 @@ export default function Account({ onEditPreferences }: { onEditPreferences: () =
                   <strong>{displayPlanName(account?.plan?.nome)}</strong>
                   <span className="status">{planStatusLabel(account?.plan?.status)}</span>
                 </div>
-                {locked ? (
+                {billing?.enabled && usage ? (
                   <>
                     <p className="plan-status-line">
-                      Sua conta está sem plano ativo — assine para voltar a buscar produtos e criar roteiros.
-                      Tudo o que você já fez continua salvo.
-                    </p>
-                    <div className="plan-plan-actions">
-                      <Link className="primary" href="/planos">Ver planos</Link>
-                    </div>
-                  </>
-                ) : billing?.enabled && usage ? (
-                  <>
-                    <p className="plan-status-line">
-                      {billing.status === "trialing" && billing.trial_ends_at
-                        ? <>Trial Pro até <b>{fmtDate(billing.trial_ends_at)}</b> — tudo liberado, sem cartão.</>
-                        : billing.current_period_end && billing.has_active_subscription
-                          ? <>{billing.cancel_at_period_end ? "Cancelado · acesso até" : "Renova em"} <b>{fmtDate(billing.current_period_end)}</b>.</>
+                      {isFree
+                        ? "Plano Grátis: 3 pesquisas e 3 roteiros no total, sem prazo de teste."
+                        : billing.current_period_end && (billing.has_active_subscription || billing.status === "canceled")
+                          ? <>
+                              {billing.status === "canceled" || billing.cancel_at_period_end || billing.payment_mode === "one_time"
+                                ? "Acesso até"
+                                : "Renova em"} <b>{fmtDate(billing.current_period_end)}</b>.
+                              {billing.payment_mode === "one_time" && billing.status !== "canceled" ? " Pagamento por período — renove para continuar." : ""}
+                            </>
                           : "Sem cobrança recorrente no momento."}
                     </p>
+                    {billing.launch_price && (
+                      <p className="plan-status-line is-accent">Preço de lançamento ativo — R$ 39,90/mês ou R$ 399/ano enquanto a assinatura estiver ativa.</p>
+                    )}
                     <div className="plan-usage">
                       <div className="plan-usage-row">
                         <span className="row">
-                          <span>Kits este mês</span>
-                          <span>{kitsUsed}/{usage.kits_limit}</span>
+                          <span>{isFree ? "Roteiros no total" : "Kits este mês"}</span>
+                          <span>{kitsUsed}{usage.kits_limit ? `/${usage.kits_limit}` : " · uso justo"}</span>
                         </span>
                         <span className="plan-usage-bar" aria-hidden="true">
                           <i style={{ width: `${kitsPct ?? 0}%` }} />
@@ -404,8 +403,8 @@ export default function Account({ onEditPreferences }: { onEditPreferences: () =
                       </div>
                       <div className="plan-usage-row">
                         <span className="row">
-                          <span>Buscas hoje</span>
-                          <span>{usage.searches_today}{usage.searches_limit ? `/${usage.searches_limit}` : " · fair use"}</span>
+                          <span>{isFree ? "Pesquisas no total" : "Buscas hoje"}</span>
+                          <span>{searchesUsed}{usage.searches_limit ? `/${usage.searches_limit}` : " · uso justo"}</span>
                         </span>
                         <span className="plan-usage-bar" aria-hidden="true">
                           <i style={{ width: `${searchPct ?? 0}%` }} />
@@ -419,7 +418,7 @@ export default function Account({ onEditPreferences }: { onEditPreferences: () =
                     )}
                     <div className="plan-plan-actions">
                       <Link className="primary" href="/planos">
-                        {billing.plan === "scale" ? "Ver planos" : "Fazer upgrade"}
+                        {billing.renewal_due ? "Renovar acesso" : "Ver planos"}
                       </Link>
                       {billing.has_active_subscription && !billing.cancel_at_period_end && (
                         <button className="ghost" type="button" onClick={() => { setCancelError(""); setCancelOpen(true); }}>
@@ -435,7 +434,9 @@ export default function Account({ onEditPreferences }: { onEditPreferences: () =
                       : "Acesso completo durante o pré-lançamento, sem cobrança recorrente. A data de término ainda não foi informada."}
                   </p>
                 )}
-                <Link className="account-plans-link" href="/planos">Ver planos</Link>
+                {!(billing?.enabled && usage) && (
+                  <Link className="account-plans-link" href="/planos">Ver planos</Link>
+                )}
               </div>
             </section>
           );

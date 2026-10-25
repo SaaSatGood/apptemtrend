@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
-import { Fustat, Inter_Tight } from "next/font/google";
+import { Inter_Tight, Poppins } from "next/font/google";
+import { themeBootstrapScript } from "@/components/platform/ThemeToggle";
 import "../styles/landing.css";
 import "../styles/landing-refinements.css";
 import "../styles/landing-fixes.css";
@@ -25,15 +26,22 @@ import "../styles/platform-redesign.css";
 import "../styles/pricing.css";
 import "../styles/support.css";
 import "../styles/canonical.css";
+import "../styles/landing-lime.css";
+import "../styles/auth-lime.css";
+import "../styles/app-dashboard.css";
+import "../styles/icons.css";
 
 const interTight = Inter_Tight({
   subsets: ["latin"],
   variable: "--font-inter-tight",
 });
 
-const fustat = Fustat({
+// Fonte de exibicao do produto: landing, painel e descoberta.
+const poppins = Poppins({
   subsets: ["latin"],
-  variable: "--font-fustat",
+  weight: ["400", "500", "600", "700", "800", "900"],
+  variable: "--font-poppins",
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -47,7 +55,10 @@ export const viewport: Viewport = { themeColor: "#fbfcf8" };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="pt-BR" data-scroll-behavior="smooth" className={`${interTight.variable} ${fustat.variable}`}>
+    <html lang="pt-BR" data-scroll-behavior="smooth" className={`${interTight.variable} ${poppins.variable}`} suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeBootstrapScript }} />
+      </head>
       <body className={interTight.className}>{children}</body>
     </html>
   );

@@ -5,73 +5,94 @@ test("landing apresenta a proposta e leva ao cadastro", async ({ page }) => {
   await expect(page).toHaveTitle(/TemTrend/);
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
   await page.getByRole("link", { name: /começar agora/i }).first().click();
-  await expect(page).toHaveURL(/\/app\?mode=signup/);
+  await expect(page).toHaveURL(/\/app\/descobrir\?mode=signup/);
   await expect(page.getByRole("heading", { name: /comece a vender/i })).toBeVisible();
 });
 
-test("hero mantém o produto visível e o plano legível no celular", async ({ page }) => {
+test("hero mantém produto real e busca legível no celular", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/");
-  const image = page.locator(".tt-hero-creators-image");
+  await expect(page.getByRole("heading", { level: 1, name: /Do produto ao vídeo/ })).toBeVisible();
+  const image = page.locator(".tt-lp-product-thumb");
   await expect(image).toHaveAttribute("src", /hero-tumbler-v2/);
   await expect.poll(() => image.evaluate((element: HTMLImageElement) => element.naturalWidth)).toBeGreaterThan(0);
-  const caption = page.locator(".tt-hero-product-preview");
-  const imageBox = await image.boundingBox();
-  const captionBox = await caption.boundingBox();
-  expect(captionBox!.y).toBeGreaterThanOrEqual(imageBox!.y + imageBox!.height - 1);
-  const captionText = caption.locator("p");
-  const stepText = page.locator(".tt-hero-plan-preview li").first();
-  expect(Number.parseFloat(await captionText.evaluate((element) => getComputedStyle(element).fontSize))).toBeGreaterThanOrEqual(14);
-  expect(Number.parseFloat(await stepText.evaluate((element) => getComputedStyle(element).fontSize))).toBeGreaterThanOrEqual(14);
-  const planLink = page.getByRole("link", { name: /Veja o plano completo/ });
-  await expect(planLink).toHaveAttribute("href", "#content-kits");
-  await expect(planLink).toContainText("↓");
+  await expect(page.locator(".tt-lp-product-info strong")).toContainText("Garrafa térmica");
+  const search = page.getByLabel("O que você quer vender?");
+  const searchFont = await search.evaluate((element) => Number.parseFloat(getComputedStyle(element).fontSize));
+  expect(searchFont).toBeGreaterThanOrEqual(15);
+  const submit = page.getByRole("button", { name: /Encontrar produtos/ });
+  const submitBox = await submit.boundingBox();
+  expect(submitBox!.width).toBeGreaterThanOrEqual(240);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
 });
 
-test("prévia do plano distribui três etapas no desktop e empilha no celular", async ({ page }) => {
+test("artes renascentistas mostram o telefone nos três passos sem criar rolagem lateral", async ({ page }) => {
+  for (const width of [390, 768, 1440]) {
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto("/");
+    const section = page.locator("#como-funciona");
+    await expect(section.getByRole("heading", { name: "Três passos para gravar." })).toBeVisible();
+    for (const image of [section.locator(".tt-lp-steps-hand-left"), section.locator(".tt-lp-steps-hand-right")]) {
+      await expect(image).toBeVisible();
+      await expect.poll(() => image.evaluate((element: HTMLImageElement) => element.naturalWidth)).toBeGreaterThan(0);
+    }
+    await expect(section.locator(".tt-lp-steps-hand-right")).toHaveAttribute("src", /renaissance-phone-hand/);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
+  }
+});
+
+test("demo do plano alterna exemplos e mantém as três cenas acessíveis", async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto("/");
-  const steps = page.locator(".tt-hero-plan-preview li");
-  await expect(steps).toHaveCount(3);
-  const desktop = await steps.evaluateAll((elements) => elements.map((element) => {
-    const box = element.getBoundingClientRect();
-    return { x: box.x, y: box.y };
-  }));
-  expect(desktop[0].x).toBeLessThan(desktop[1].x);
-  expect(desktop[1].x).toBeLessThan(desktop[2].x);
-  expect(Math.abs(desktop[0].y - desktop[2].y)).toBeLessThan(2);
+  const tabs = page.getByRole("tab");
+  await expect(tabs).toHaveCount(3);
+  await expect(tabs.first()).toHaveAttribute("aria-selected", "true");
+  const panel = page.getByRole("tabpanel");
+  await expect(panel).toContainText("Garrafa térmica");
+  await expect(panel.locator(".tt-lp-plan-scenes li")).toHaveCount(3);
+  await expect(panel.locator(".tt-lp-plan-parts span")).toHaveCount(5);
 
-  const firstStepStyle = await steps.first().evaluate((element) => {
-    const style = getComputedStyle(element);
-    const number = getComputedStyle(element.querySelector("b")!);
-    return { color: style.color, fontSize: Number.parseFloat(style.fontSize), numberBackground: number.backgroundColor, numberRadius: number.borderRadius };
-  });
-  expect(firstStepStyle.color).toBe("rgb(61, 74, 46)");
-  expect(firstStepStyle.fontSize).toBeGreaterThanOrEqual(14);
-  const [red, green, blue] = firstStepStyle.numberBackground.match(/\d+/g)!.map(Number);
-  expect(green).toBeGreaterThan(red);
-  expect(green).toBeGreaterThan(200);
-  expect(blue).toBeLessThan(100);
-  expect(firstStepStyle.numberRadius).toBe("50%");
+  await page.getByRole("tab", { name: "Beleza" }).click();
+  await expect(page.getByRole("tab", { name: "Beleza" })).toHaveAttribute("aria-selected", "true");
+  await expect(panel).toContainText("Escova facial");
+  await expect(panel.locator(".tt-lp-plan-scenes li")).toHaveCount(3);
+
+  await page.getByRole("tab", { name: "Beleza" }).press("ArrowRight");
+  await expect(page.getByRole("tab", { name: "Tech" })).toBeFocused();
+  await expect(page.getByRole("tab", { name: "Tech" })).toHaveAttribute("aria-selected", "true");
+  await expect(panel).toContainText("Fone sem fio");
 
   await page.setViewportSize({ width: 390, height: 844 });
-  const mobile = await steps.evaluateAll((elements) => elements.map((element) => {
+  const tabBoxes = await tabs.evaluateAll((elements) => elements.map((element) => {
     const box = element.getBoundingClientRect();
-    return { x: box.x, y: box.y };
+    return { left: box.left, right: box.right };
   }));
-  expect(Math.abs(mobile[0].x - mobile[2].x)).toBeLessThan(2);
-  expect(mobile[0].y).toBeLessThan(mobile[1].y);
-  expect(mobile[1].y).toBeLessThan(mobile[2].y);
+  expect(tabBoxes.every((box) => box.left >= 0 && box.right <= 390)).toBe(true);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
 });
 
-test("todas as seções da landing aparecem mesmo antes da rolagem", async ({ page }) => {
+test("revelação progressiva mostra o conteúdo ao rolar e respeita menos movimento", async ({ page }) => {
   await page.goto("/");
-  await expect(page.locator(".tt-home.tt-motion-ready")).toHaveCount(1);
-  await expect(page.getByRole("heading", { name: /Ideias de produto para explorar/ })).toHaveCount(1);
-  const hiddenSections = await page.locator("[data-motion]").evaluateAll((elements) =>
+  await expect(page.locator(".tt-home.tt-lp.tt-lp-reveal-ready")).toHaveCount(1);
+  const reveals = page.locator("[data-reveal]");
+  expect(await reveals.count()).toBeGreaterThan(10);
+  for (const reveal of await reveals.all()) {
+    await reveal.scrollIntoViewIfNeeded();
+    await expect(reveal).toHaveClass(/is-visible/);
+  }
+  await expect(page.getByRole("heading", { name: /Três passos/ })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /Comece grátis/ })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Grátis", exact: true })).toBeVisible();
+  await expect(page.getByText(/não é afiliada, patrocinada/i)).toBeVisible();
+  await expect(page.getByRole("button", { name: /reproduzir|play/i })).toHaveCount(0);
+
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.reload();
+  await expect(page.locator(".tt-lp.tt-lp-reveal-ready")).toHaveCount(0);
+  const hidden = await page.locator("[data-reveal]").evaluateAll((elements) =>
     elements.filter((element) => getComputedStyle(element).opacity === "0").length
   );
-  expect(hiddenSections).toBe(0);
+  expect(hidden).toBe(0);
 });
 
 test("busca da landing acompanha o creator até o cadastro", async ({ page }) => {
@@ -124,7 +145,7 @@ test("navegação pública é consistente e utilizável no celular", async ({ pa
   }
 });
 
-test("tipografia compartilhada usa Fustat nos títulos e Inter Tight na leitura", async ({ page }) => {
+test("tipografia compartilhada usa Poppins nos títulos e Inter Tight na leitura", async ({ page }) => {
   for (const path of ["/", "/planos", "/termos", "/app?mode=signup"]) {
     await page.goto(path);
     await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
@@ -135,7 +156,7 @@ test("tipografia compartilhada usa Fustat nos títulos e Inter Tight na leitura"
         body: getComputedStyle(document.body).fontFamily.replaceAll(" ", "_"),
       };
     });
-    expect(fonts.heading).toContain("Fustat");
+    expect(fonts.heading).toContain("Poppins");
     expect(fonts.body).toContain("Inter_Tight");
   }
 });

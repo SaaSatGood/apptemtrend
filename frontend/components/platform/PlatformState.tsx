@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import Icon from "@/components/ui/Icon";
 import { friendlyError } from "@/lib/api";
 import { usePlatform } from "./store";
 
@@ -35,7 +36,7 @@ export function AccountLoadError() {
   return (
     <main className="auth-view account-load-error">
       <div className="empty-state" role="alert">
-        <span className="state-icon" aria-hidden="true">!</span>
+        <span className="state-icon"><Icon name="alert-triangle" size={21} /></span>
         <p className="eyebrow">Falha de conexão</p>
         <h1>Não conseguimos carregar sua conta.</h1>
         <p>{retryError || globalError || "A TemTrend pode estar temporariamente indisponível."}</p>

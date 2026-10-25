@@ -1,0 +1,22 @@
+/* Base única dos ícones da plataforma. */
+.tt-icon {
+  display: inline-block;
+  flex: none;
+  vertical-align: middle;
+  overflow: visible;
+}
+
+#app-view .resume-focus-action,
+#app-view .tt-notifications-foot a,
+#app-view .content-kit-dialog .form-message a {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+#app-view .resume-focus-action .tt-icon,
+#app-view .tt-notifications-foot a .tt-icon,
+#app-view .content-kit-dialog .form-message a .tt-icon {
+  vertical-align: 0;
+}
+

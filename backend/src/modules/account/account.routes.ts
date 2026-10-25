@@ -7,7 +7,7 @@ import { supabaseAdmin } from '../../lib/supabase.js';
 import { Errors } from '../../types/index.js';
 import { logger } from '../../lib/logger.js';
 import { findCreatorByUserId, updateCreator } from '../creators/creator.repository.js';
-import { billingActive, effectivePlan } from '../billing/billing.gating.js';
+import { effectivePlan } from '../billing/billing.gating.js';
 import { planLabel } from '../billing/plans.js';
 
 const profileSchema = z.object({
@@ -30,20 +30,11 @@ async function routes(app: FastifyInstance) {
   const write = { preHandler: [requireAuth], config: { rateLimit: RATE_LIMITS.AUTH_WRITE } };
 
   app.get('/account', read, async (request, reply) => {
-    const billing = billingActive();
-    // Colunas de plano só são lidas com billing ativo (migration 028 aplicada).
-    // Strings literais: o cliente Supabase tipa o select em tempo de compilação.
-    const creatorQuery = billing
-      ? supabaseAdmin
-          .from('creators')
-          .select('id, status, nicho, plataformas, tem_conta_afiliada, plan, plan_status, plan_period, trial_ends_at, current_period_end, cancel_at_period_end')
-          .eq('user_id', request.authUser.id)
-          .maybeSingle()
-      : supabaseAdmin
-          .from('creators')
-          .select('id, status, nicho, plataformas, tem_conta_afiliada')
-          .eq('user_id', request.authUser.id)
-          .maybeSingle();
+    const creatorQuery = supabaseAdmin
+      .from('creators')
+      .select('id, status, nicho, plataformas, tem_conta_afiliada, plan, plan_status, plan_period, trial_ends_at, current_period_end, cancel_at_period_end')
+      .eq('user_id', request.authUser.id)
+      .maybeSingle();
     const [{ data: userData, error: userError }, { data: creator, error: creatorError }] = await Promise.all([
       supabaseAdmin.auth.admin.getUserById(request.authUser.id),
       creatorQuery,
@@ -59,15 +50,15 @@ async function routes(app: FastifyInstance) {
       nome: metadata.full_name ?? metadata.name ?? metadata.nome ?? '',
       provider: userData.user.app_metadata?.provider ?? 'email',
       status: creator?.status ?? 'ativo',
-      plan: billing && creatorPlan
+      plan: creatorPlan
         ? {
             nome: planLabel(effectivePlan(creatorPlan)),
-            status: creatorPlan.plan_status ?? 'inactive',
+            status: effectivePlan(creatorPlan) === 'free' ? 'active' : (creatorPlan.plan_status ?? 'active'),
             billing: true,
             trial_ends_at: creatorPlan.trial_ends_at ?? null,
             current_period_end: creatorPlan.current_period_end ?? null,
           }
-        : { nome: 'Acesso completo (pré-lançamento)', status: 'ativo', billing: false },
+        : { nome: 'Grátis', status: 'active', billing: true },
     };
   });
 

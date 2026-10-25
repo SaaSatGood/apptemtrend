@@ -2,17 +2,18 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import Icon, { type IconName } from "@/components/ui/Icon";
 import { supabase } from "@/lib/supabase";
 import { api, friendlyError } from "@/lib/api";
 import { track } from "@/lib/track";
 import { usePlatform } from "./store";
 
-const OBJECTIVES = [
-  { value: "comecar_vender", label: "Quero começar a vender", detail: "Encontre um produto e dê o primeiro passo.", icon: "●" },
-  { value: "vender_mais", label: "Já vendo e quero vender mais", detail: "Crie novas ideias para o seu catálogo.", icon: "✦" },
-  { value: "criar_videos", label: "Quero criar vídeos para produtos", detail: "Transforme produtos em roteiros graváveis.", icon: "▣" },
-  { value: "explorando", label: "Estou só explorando", detail: "Conheça a plataforma no seu ritmo.", icon: "◎" },
-] as const;
+const OBJECTIVES: Array<{ value: string; label: string; detail: string; icon: IconName }> = [
+  { value: "comecar_vender", label: "Quero começar a vender", detail: "Encontre um produto e dê o primeiro passo.", icon: "target" },
+  { value: "vender_mais", label: "Já vendo e quero vender mais", detail: "Crie novas ideias para o seu catálogo.", icon: "trending-up" },
+  { value: "criar_videos", label: "Quero criar vídeos para produtos", detail: "Transforme produtos em roteiros graváveis.", icon: "video" },
+  { value: "explorando", label: "Estou só explorando", detail: "Conheça a plataforma no seu ritmo.", icon: "compass" },
+];
 
 const STYLES = [
   "Mostrando produtos", "Reviews", "Falando para a câmera", "Unboxing",
@@ -212,7 +213,7 @@ export default function Onboarding({ editing, onDone }: { editing: boolean; onDo
               const number = index + 1;
               return (
                 <li key={label} className={number === step ? "is-current" : number < step ? "is-complete" : ""} aria-current={number === step ? "step" : undefined}>
-                  <span>{number < step ? "✓" : number}</span>{label}
+                  <span>{number < step ? <Icon name="check" size={11} strokeWidth={2.2} /> : number}</span>{label}
                 </li>
               );
             })}
@@ -241,7 +242,7 @@ export default function Onboarding({ editing, onDone }: { editing: boolean; onDo
                   aria-checked={objetivo === value}
                   onClick={() => setObjetivo(value)}
                 >
-                  <span className="selection-icon" aria-hidden="true">{icon}</span>
+                  <span className="selection-icon"><Icon name={icon} size={19} /></span>
                   <span className="selection-copy"><strong>{label}</strong><small>{detail}</small></span>
                   <i></i>
                 </button>
@@ -267,6 +268,7 @@ export default function Onboarding({ editing, onDone }: { editing: boolean; onDo
                   onClick={() => toggle(estilos, style, setEstilos)}
                 >
                   {style}
+                  <span className="chip-check" aria-hidden="true">{estilos.includes(style) ? <Icon name="check" size={12} strokeWidth={2.4} /> : null}</span>
                 </button>
               ))}
             </div>
@@ -290,6 +292,7 @@ export default function Onboarding({ editing, onDone }: { editing: boolean; onDo
                   onClick={() => toggle(temas, theme, setTemas)}
                 >
                   {theme}
+                  <span className="chip-check" aria-hidden="true">{temas.includes(theme) ? <Icon name="check" size={12} strokeWidth={2.4} /> : null}</span>
                 </button>
               ))}
             </div>
@@ -317,7 +320,7 @@ export default function Onboarding({ editing, onDone }: { editing: boolean; onDo
           </div>
 
           <div className={`onboarding-step onboarding-done${done ? " is-active" : ""}`} data-step="5">
-            <span className="done-mark" aria-hidden="true">✓</span>
+            <span className="done-mark"><Icon name="check" size={22} strokeWidth={2.1} /></span>
             <div className="onboarding-heading">
               <p className="eyebrow">Tudo certo</p>
               <h1>Pronto.</h1>
@@ -358,7 +361,7 @@ export default function Onboarding({ editing, onDone }: { editing: boolean; onDo
               disabled={(step === 1 && !objetivo) || saving}
               onClick={() => advance(false)}
             >
-              {saving ? "Salvando preferências..." : done ? editing ? "Voltar à conta" : "Ir para Descobrir" : step === 4 ? "Concluir configuração" : "Continuar"}
+              {saving ? "Salvando preferências..." : done ? editing ? "Voltar à conta" : "Ir para o painel" : step === 4 ? "Concluir configuração" : "Continuar"}
             </button>
           </div>
         </div>

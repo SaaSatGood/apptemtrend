@@ -21,7 +21,9 @@ import {
   parseWebhookEvent,
 } from '../src/modules/billing/billing.events.js';
 import {
+  FAIR_USE_KITS_PER_MONTH,
   PLAN_LIMITS,
+  TRIAL_KITS_PER_MONTH,
   planPeriodForProductId,
   productIdFor,
 } from '../src/modules/billing/plans.js';
@@ -32,28 +34,44 @@ const past = (days: number) => new Date(Date.now() - days * 24 * 60 * 60 * 1000)
 
 describe('billing plan catalog', () => {
   it('maps plan+period to AbacatePay products and back', () => {
-    expect(productIdFor('pro', 'monthly')).toBe('prod_p4cS64H2MtnhrrU4YjBCDmKp');
-    expect(productIdFor('pro', 'annual')).toBe('prod_f1hLdGkZnkmfu4ab2Pu4Jrt5');
-    expect(planPeriodForProductId('prod_p4cS64H2MtnhrrU4YjBCDmKp')).toEqual({ plan: 'pro', period: 'monthly' });
+    expect(productIdFor('pro', 'monthly')).toBe('prod_Jt2hbA4rBeCeGrbaPsUUEccb');
+    expect(productIdFor('pro', 'annual')).toBe('prod_xR2MWUbe1AkdHqjK5EN6yPpJ');
+    expect(productIdFor('pro', 'monthly', { mode: 'one_time' })).toBe('prod_XxNqutEGTfFTs4QHxf2WtbpA');
+    expect(productIdFor('pro', 'monthly', { launch: true })).toBe('prod_X35W1dnyXLA055ZewPZG6gMK');
+    expect(productIdFor('pro', 'annual', { launch: true, mode: 'one_time' })).toBe('prod_XjpDTmMur4wqMQtZAJ0fGA5T');
+    expect(planPeriodForProductId('prod_Jt2hbA4rBeCeGrbaPsUUEccb')).toEqual({
+      plan: 'pro',
+      period: 'monthly',
+      launch: false,
+      mode: 'recurring',
+    });
+    expect(planPeriodForProductId('prod_XjpDTmMur4wqMQtZAJ0fGA5T')).toEqual({
+      plan: 'pro',
+      period: 'annual',
+      launch: true,
+      mode: 'one_time',
+    });
     expect(planPeriodForProductId('prod_unknown')).toBeNull();
     expect(planPeriodForProductId(null)).toBeNull();
   });
 
-  it('keeps the report price matrix (sem plano grátis, sem avulso)', () => {
-    expect(PLAN_LIMITS.essencial.kitsPerMonth).toBe(30);
-    expect(PLAN_LIMITS.pro.kitsPerMonth).toBe(100);
-    expect(PLAN_LIMITS.scale.kitsPerMonth).toBe(300);
-    expect(PLAN_LIMITS.enterprise.kitsPerMonth).toBe(1000);
+  it('keeps one sold plan with unlimited table limits and a hidden fair-use cap', () => {
+    expect(PLAN_LIMITS.pro.kitsPerMonth).toBeNull();
+    expect(PLAN_LIMITS.pro.searchesPerDay).toBeNull();
+    expect(PLAN_LIMITS.pro.kitsPerProduct).toBeNull();
+    expect(PLAN_LIMITS.pro.productionItems).toBeNull();
     expect(PLAN_LIMITS.essencial.variationCooldownSeconds).toBe(60);
     expect(PLAN_LIMITS.pro.variationCooldownSeconds).toBe(30);
-    expect(PLAN_LIMITS.enterprise.searchesPerDay).toBeNull();
+    expect(PLAN_LIMITS.enterprise.kitsPerMonth).toBeNull();
+    expect(FAIR_USE_KITS_PER_MONTH).toBe(1_000);
+    expect(TRIAL_KITS_PER_MONTH).toBe(100);
   });
 
-  it('locks usage for the post-trial state (free = sem plano ativo)', () => {
-    expect(PLAN_LIMITS.free.searchesPerDay).toBe(0);
-    expect(PLAN_LIMITS.free.kitsPerMonth).toBe(0);
-    expect(PLAN_LIMITS.free.kitsPerProduct).toBe(0);
-    expect(PLAN_LIMITS.free.productionItems).toBe(0);
+  it('allows three lifetime searches and scripts on the permanent free plan', () => {
+    expect(PLAN_LIMITS.free.searchesPerDay).toBe(3);
+    expect(PLAN_LIMITS.free.kitsPerMonth).toBe(3);
+    expect(PLAN_LIMITS.free.kitsPerProduct).toBe(3);
+    expect(PLAN_LIMITS.free.productionItems).toBe(3);
     expect(PLAN_LIMITS.free.variations).toBe(false);
     expect(PLAN_LIMITS.free.vozPersonalizada).toBe(false);
   });
@@ -66,8 +84,8 @@ describe('effective plan resolution', () => {
     expect(effectivePlan({ plan: 'paid_ultra', plan_status: 'active', trial_ends_at: null, current_period_end: future(10) })).toBe('free');
   });
 
-  it('grants trial only while trial_ends_at is in the future', () => {
-    expect(effectivePlan({ plan: 'pro', plan_status: 'trialing', trial_ends_at: future(5), current_period_end: null })).toBe('pro');
+  it('does not grant Pro for legacy trial states', () => {
+    expect(effectivePlan({ plan: 'pro', plan_status: 'trialing', trial_ends_at: future(5), current_period_end: null })).toBe('free');
     expect(effectivePlan({ plan: 'pro', plan_status: 'trialing', trial_ends_at: past(1), current_period_end: null })).toBe('free');
   });
 
@@ -103,14 +121,14 @@ describe('webhook parsing (v2 shape)', () => {
     expect(parseWebhookEvent('nope')).toBeNull();
   });
 
-  it('extracts the subscription snapshot from data.subscription', () => {
+  it('extracts the subscription snapshot from data.subscription and data.checkout', () => {
     const snapshot = extractSubscription({
       subscription: {
         id: 'subs_1',
-        checkoutId: 'bill_1',
         status: 'ACTIVE',
         trialEndsAt: null,
       },
+      checkout: { id: 'bill_1' },
     });
     expect(snapshot).toEqual({ subscriptionId: 'subs_1', checkoutId: 'bill_1', status: 'ACTIVE', trialEndsAt: null });
   });
@@ -127,7 +145,7 @@ describe('webhook parsing (v2 shape)', () => {
     expect(snapshot.checkoutId).toBe('bill_9');
     expect(snapshot.externalId).toBe('3f2c4b8a-9d21-4f0e-8a55-6b7c8d9e0f11');
     expect(snapshot.metadataCreatorId).toBe('8a1f0a7e-1f6d-4d3c-9b3e-2f0f3a4b5c6d');
-    expect(snapshot.productId).toBe('prod_p4cS64H2MtnhrrU4YjBCDmKp');
+    expect(snapshot.productId).toBe('prod_Jt2hbA4rBeCeGrbaPsUUEccb');
   });
 
   it('extends periods from the farthest date (now vs stored end)', () => {
@@ -148,11 +166,13 @@ describe('billing routes', () => {
     expect(res.statusCode).toBe(200);
     const body = res.json();
     expect(body.enabled).toBe(false);
-    expect(body.trial_days).toBe(7);
-    expect(body.plans).toHaveLength(4);
+    expect(body.trial_days).toBe(0);
+    expect(body.plans).toHaveLength(2);
+    expect(body.plans.map((p: { id: string }) => p.id)).toEqual(['pro', 'enterprise']);
     expect(body.plans.find((p: { id: string }) => p.id === 'pro').destaque).toBe(true);
+    expect(body.launch).toBeNull();
     expect(body.avulso).toBeUndefined();
-    expect(body.free).toBeUndefined();
+    expect(body.free).toEqual({ searches_total: 3, kits_total: 3 });
     await app.close();
   });
 

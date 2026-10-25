@@ -275,13 +275,15 @@
   text-align: left;
   white-space: normal;
 }
-.onboarding .chip-grid button::after {
-  content: "";
+.onboarding .chip-grid button .chip-check {
+  display: grid;
+  place-items: center;
   flex: 0 0 18px;
   width: 18px;
   height: 18px;
   border: 1px solid #bdc5b6;
   border-radius: 5px;
+  color: #fff;
 }
 .onboarding .chip-grid button:hover { border-color: #9cba68; background: #fbfdf7; transform: none; }
 .onboarding .chip-grid button.selected {
@@ -291,14 +293,9 @@
   color: #20350c;
   box-shadow: none;
 }
-.onboarding .chip-grid button.selected::after {
-  content: "✓";
-  display: grid;
-  place-items: center;
+.onboarding .chip-grid button.selected .chip-check {
   border-color: #79a72d;
   background: #79a72d;
-  color: #fff;
-  font-size: 12px;
 }
 
 .onboarding .voice-field textarea {

@@ -23,34 +23,35 @@ def read_rows(paths: list[Path]):
         if "FastMoss" not in workbook.sheetnames:
             raise ValueError(f"Aba FastMoss ausente em {path.name}")
         sheet = workbook["FastMoss"]
+        headers = list(next(sheet.iter_rows(max_row=1, values_only=True)))
+        columns = {str(header).strip(): index for index, header in enumerate(headers) if header}
+
+        def field(values, label):
+            if label not in columns:
+                raise ValueError(f"Coluna {label!r} ausente em {path.name}")
+            return values[columns[label]]
+
         for row_number, values in enumerate(
             sheet.iter_rows(min_row=2, values_only=True), start=2
         ):
-            values = values[:20]
             if not any(value is not None for value in values):
                 continue
-            (
-                nome,
-                status_origem,
-                loja_nome,
-                pais_regiao,
-                categoria,
-                preco,
-                comissao,
-                vendas_7_dias,
-                gmv_7_dias,
-                vendas_totais,
-                gmv_total,
-                _total_criadores,
-                _conversao_criadores,
-                _videos_promocionais,
-                _lives_promocionais,
-                imagem_url,
-                fastmoss_produto_url,
-                tiktok_shop_url,
-                fastmoss_loja_url,
-                data_upload,
-            ) = values
+            nome = field(values, "Nome do produto")
+            status_origem = field(values, "Status do produto")
+            loja_nome = field(values, "Nome da loja")
+            pais_regiao = field(values, "País / Região")
+            categoria = field(values, "Categoria do produto")
+            preco = field(values, "Preço de venda")
+            comissao = field(values, "Taxa de comissão")
+            vendas_7_dias = field(values, "Vendas nos últimos 7 dias")
+            gmv_7_dias = field(values, "GMV – 7 dias")
+            vendas_totais = field(values, "Vendas totais")
+            gmv_total = field(values, "GMV total")
+            imagem_url = field(values, "Imagem do produto")
+            fastmoss_produto_url = field(values, "Link da página de detalhes do produto no FastMoss")
+            tiktok_shop_url = field(values, "Link da landing page do produto no TikTok")
+            fastmoss_loja_url = field(values, "Link da página da loja no FastMoss")
+            data_upload = field(values, "Data estimada de upload")
             match = PRODUCT_ID_PATTERN.search(str(fastmoss_produto_url or ""))
             if not match:
                 raise ValueError(f"ID ausente em {path.name}, linha {row_number}")
@@ -96,7 +97,7 @@ def read_rows(paths: list[Path]):
 
 def migration_sql(products, source_names):
     payload = json.dumps(products, ensure_ascii=False, separators=(",", ":"))
-    return f"""-- FastMoss product searches supplied by the administrator on 2026-10-18.
+    return f"""-- FastMoss product searches supplied by the administrator.
 -- Sources: {', '.join(source_names)}.
 -- Period metrics represent the last 7 days. Repeated external IDs are collapsed; the later file wins.
 -- Existing UUIDs and editorial fields (status, destaque and ordem_destaque) are preserved.

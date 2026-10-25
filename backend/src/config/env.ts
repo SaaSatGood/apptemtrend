@@ -31,11 +31,19 @@ const envSchema = z.object({
   ABACATEPAY_API_KEY: z.string().min(1).optional(),
   ABACATEPAY_API_URL: z.string().url().default('https://api.abacatepay.com/v2'),
   ABACATEPAY_WEBHOOK_SECRET: z.string().min(8).optional(),
-  // IDs dos produtos criados na loja (item 11 do relatório); sobreponíveis por env.
-  ABACATEPAY_PRODUCT_ESSENCIAL_MENSAL: z.string().min(1).optional(),
-  ABACATEPAY_PRODUCT_ESSENCIAL_ANUAL: z.string().min(1).optional(),
+  // IDs dos produtos criados na loja; sobreponíveis por env.
+  // Pro: assinatura recorrente (cartão). Pro PIX: cobrança avulsa por período.
   ABACATEPAY_PRODUCT_PRO_MENSAL: z.string().min(1).optional(),
   ABACATEPAY_PRODUCT_PRO_ANUAL: z.string().min(1).optional(),
+  ABACATEPAY_PRODUCT_PRO_MENSAL_PIX: z.string().min(1).optional(),
+  ABACATEPAY_PRODUCT_PRO_ANUAL_PIX: z.string().min(1).optional(),
+  ABACATEPAY_PRODUCT_LAUNCH_MENSAL: z.string().min(1).optional(),
+  ABACATEPAY_PRODUCT_LAUNCH_ANUAL: z.string().min(1).optional(),
+  ABACATEPAY_PRODUCT_LAUNCH_MENSAL_PIX: z.string().min(1).optional(),
+  ABACATEPAY_PRODUCT_LAUNCH_ANUAL_PIX: z.string().min(1).optional(),
+  // Legado: necessários apenas para reconhecer assinaturas antigas.
+  ABACATEPAY_PRODUCT_ESSENCIAL_MENSAL: z.string().min(1).optional(),
+  ABACATEPAY_PRODUCT_ESSENCIAL_ANUAL: z.string().min(1).optional(),
   ABACATEPAY_PRODUCT_SCALE_MENSAL: z.string().min(1).optional(),
   ABACATEPAY_PRODUCT_SCALE_ANUAL: z.string().min(1).optional(),
 });

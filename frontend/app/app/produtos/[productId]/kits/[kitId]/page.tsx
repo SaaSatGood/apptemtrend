@@ -1,27 +1,16 @@
 "use client";
 
-import RequireAuth from "@/components/platform/RequireAuth";
-import Topbar from "@/components/platform/Topbar";
-import KitDetail from "@/components/platform/KitDetail";
 import { useParams } from "next/navigation";
+import KitDetail from "@/components/platform/KitDetail";
 
-function Content() {
+export default function KitPage() {
   const params = useParams<{ productId: string; kitId: string }>();
 
   return (
-    <main id="app-view">
-      <Topbar />
-      <section id="page-content" className="page-wrap">
-        <KitDetail key={params.kitId} productId={params.productId} kitId={params.kitId} />
-      </section>
-    </main>
-  );
-}
-
-export default function KitPage() {
-  return (
-    <RequireAuth>
-      <Content />
-    </RequireAuth>
+    <KitDetail
+      key={params.kitId}
+      productId={params.productId}
+      kitId={params.kitId}
+    />
   );
 }
