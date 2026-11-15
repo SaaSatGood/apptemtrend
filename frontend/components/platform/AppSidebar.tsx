@@ -25,7 +25,6 @@ type RailItem = {
 const RAIL_ITEMS: RailItem[] = [
   { href: "/produtos", label: "Produtos", icon: "box" },
   { href: "/conteudos", label: "Meus conteúdos", icon: "video" },
-  { href: "/producao", label: "Produção", icon: "layers" },
   { href: "/calendario", label: "Calendário", icon: "calendar" },
   { href: "/resultados", label: "Resultados", icon: "pie-chart" },
   { href: "/conta/planos", label: "Planos", icon: "plan" },
