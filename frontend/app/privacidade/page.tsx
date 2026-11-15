@@ -1,36 +1,38 @@
-import type { Metadata } from "next";
 import Link from "next/link";
 import LegalPageFrame from "@/components/legal/LegalPageFrame";
+import { pageMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = {
-  title: "Política de Privacidade | TemTrend",
+export const metadata = pageMetadata({
+  title: "Política de Privacidade",
   description:
     "Como a TemTrend trata dados pessoais conforme a LGPD: dados coletados, finalidades, bases legais, compartilhamento, retenção e seus direitos como titular.",
-};
+  path: "/privacidade",
+});
 
 export default function PrivacidadePage() {
   return (
     <LegalPageFrame
       eyebrow="Seus dados"
       title="Política de Privacidade"
-      updated="18 de outubro de 2026"
+      updated="13 de novembro de 2026"
       intro="Como a TemTrend trata dados pessoais, com base na Lei Geral de Proteção de Dados: o que coletamos, por quê, com quem compartilhamos, por quanto tempo guardamos e como você exerce seus direitos."
     >
       <section aria-labelledby="privacidade-controlador">
         <h2 id="privacidade-controlador">Quem trata seus dados</h2>
-        <p>A <strong>TemTrend</strong> (“TemTrend”, “nós”) é a <strong>controladora</strong> dos dados pessoais tratados na plataforma disponível em <strong>temtrend.online</strong> (“Plataforma”). Esta política vale para quem visita o site, cria conta, usa o plano Grátis ou contrata um plano pago.</p>
-        <p>Nosso canal para assuntos de privacidade e para o exercício de direitos, incluindo a atuação do encarregado (DPO), é o <strong>Suporte dentro da Plataforma</strong>: abra uma conversa com o assunto “Privacidade”. Para pedidos de titulares, respondemos em até 15 dias, na forma do art. 19 da LGPD.</p>
+        <p>A <strong>TemTrend</strong> (“TemTrend”, “nós”) é a <strong>controladora</strong> dos dados pessoais tratados na plataforma disponível em <strong>www.temtrend.com</strong> (“Plataforma”). Esta política vale para quem visita o site, cria conta, usa o plano Grátis ou contrata um plano pago.</p>
+        <p>Nosso canal para assuntos de privacidade e para o exercício de direitos, incluindo a atuação do encarregado (DPO), é o <strong>Suporte dentro da Plataforma</strong>: abra uma conversa com o assunto &ldquo;Privacidade&rdquo;. Para pedidos de titulares, respondemos em até 15 dias, na forma do art. 19 da LGPD.</p>
       </section>
 
       <section aria-labelledby="privacidade-dados">
         <h2 id="privacidade-dados">Dados que tratamos</h2>
         <p>Coletamos o mínimo necessário para operar o serviço, em cinco grupos:</p>
         <ul>
-          <li><strong>Cadastro e identificação:</strong> nome, email, provedor de login (email/senha ou contas como Google, Apple e Facebook, conforme sua escolha) e credenciais de acesso, armazenadas de forma protegida pelo provedor de autenticação.</li>
+          <li><strong>Cadastro e identificação:</strong> nome, email, provedor de login (email/senha ou conta Google, conforme sua escolha) e credenciais de acesso, armazenadas de forma protegida pelo provedor de autenticação.</li>
           <li><strong>Perfil e preferências:</strong> temas de interesse, plataformas em que você publica, se possui conta de afiliado, preferências de conteúdo e o campo opcional “Sua voz” (um trecho de exemplo de como você fala, com até 500 caracteres).</li>
-          <li><strong>Uso da Plataforma:</strong> buscas realizadas, produtos vistos e salvos, Content Kits gerados e suas versões, itens da área Produção e links de publicação que você registra.</li>
+          <li><strong>Uso da Plataforma:</strong> buscas realizadas, produtos vistos e salvos, roteiros gerados e suas versões, itens da área Produção e links de publicação que você registra.</li>
           <li><strong>Plano e cobrança:</strong> plano contratado, período, status de pagamento e identificadores de cobrança recebidos do processador de pagamentos. <strong>Não temos acesso ao número completo do seu cartão nem ao código de segurança</strong> — esses dados ficam com o processador especializado.</li>
           <li><strong>Suporte e técnicos:</strong> conversas de suporte e mensagens; logs de acesso (endereço IP, data e hora, navegador) usados para segurança e prevenção a abuso; e eventos de uso da interface (página, ação e identificador da conta quando você está logado) usados em métricas internas.</li>
+          <li><strong>Contato comercial (marcas e lojistas):</strong> quando você envia o formulário &ldquo;Para marcas&rdquo; na landing, tratamos nome, email, telefone e a mensagem informada para responder ao contato e avaliar o cadastro do catálogo. Esse formulário é independente de criar conta na Plataforma.</li>
         </ul>
         <p><strong>O que não tratamos:</strong> não armazenamos vídeos — a gravação acontece fora da TemTrend. Também não temos finalidade para dados pessoais sensíveis (art. 5º, II, da LGPD). Evite inseri-los em qualquer campo da Plataforma, inclusive no exemplo de voz.</p>
       </section>
@@ -43,6 +45,7 @@ export default function PrivacidadePage() {
           <li><strong>Cumprir obrigações legais (inciso II):</strong> registros fiscais, contábeis e respostas a autoridades competentes.</li>
           <li><strong>Legítimo interesse (inciso IX):</strong> segurança da Plataforma, prevenção a fraude e uso abusivo, aplicação de limites de uso e melhoria do produto com métricas agregadas ou pseudonimizadas.</li>
           <li><strong>Consentimento (inciso I):</strong> comunicações de conteúdo, novidades e relacionamento, que você pode recusar ou interromper a qualquer momento.</li>
+          <li><strong>Legítimo interesse e procedimentos preliminares (incisos IX e V):</strong> responder ao contato de marcas e lojistas e avaliar o cadastro de produtos no catálogo, quando você envia esse formulário.</li>
           <li><strong>Exercício regular de direitos (inciso VI):</strong> defesa em processos administrativos ou judiciais.</li>
         </ul>
       </section>
@@ -63,7 +66,7 @@ export default function PrivacidadePage() {
         <ul>
           <li>Os provedores processam os dados conforme seus próprios termos e políticas de privacidade, e buscamos parceiros com compromissos de segurança e, quando aplicável, cláusulas contratuais de proteção.</li>
           <li><strong>Não usamos seus roteiros nem seus dados para treinar modelos próprios</strong>, e não autorizamos esse uso por parte dos provedores.</li>
-          <li>Você pode editar ou remover o campo “Sua voz” na sua conta a qualquer momento.</li>
+          <li>Você pode editar ou remover o campo &ldquo;Sua voz&rdquo; em <strong>Preferências</strong> a qualquer momento.</li>
           <li>Recomendação: não insira dados sensíveis nem dados de terceiros nesses campos.</li>
         </ul>
       </section>
@@ -73,7 +76,8 @@ export default function PrivacidadePage() {
         <p><strong>Não vendemos seus dados</strong> e não os compartilhamos para publicidade. O compartilhamento acontece apenas com operadores que nos ajudam a operar o serviço, sempre com acesso limitado ao necessário:</p>
         <ul>
           <li><strong>Supabase</strong> — autenticação, banco de dados e armazenamento;</li>
-          <li><strong>AbacatePay</strong> — processamento de pagamentos e assinaturas;</li>
+          <li><strong>AbacatePay</strong> — processamento de pagamentos por PIX e assinaturas;</li>
+          <li><strong>Asaas</strong> — processamento de pagamentos recorrentes no cartão de crédito;</li>
           <li><strong>Provedores de inteligência artificial</strong> (Google e, quando configurado, OpenRouter) — interpretação de buscas e geração de roteiros;</li>
           <li><strong>Resend</strong> — envio de emails transacionais e de relacionamento;</li>
           <li><strong>Render e Vercel</strong> — hospedagem do backend e do site, com registros técnicos de operação.</li>
@@ -92,6 +96,7 @@ export default function PrivacidadePage() {
           <li>Dados da conta são mantidos enquanto ela existir e você usar a Plataforma.</li>
           <li>Você pode excluir a conta a qualquer momento em <strong>Conta → Excluir conta</strong>. A exclusão é imediata e irreversível: remove perfil e conteúdos salvos.</li>
           <li>Após a exclusão, podemos manter apenas o mínimo necessário para cumprir obrigações legais e fiscais, prevenir fraude e exercer direitos, pelos prazos aplicáveis (em regra, até 5 anos). Registros de acesso podem ser guardados por pelo menos 6 meses, quando aplicável o art. 15 do Marco Civil da Internet.</li>
+          <li>Dados enviados no formulário &ldquo;Para marcas&rdquo; são mantidos enquanto durar a conversa comercial e, depois, pelo prazo necessário ao relacionamento e ao cumprimento de obrigações legais.</li>
           <li>Cópias de backup são rotacionadas e eliminadas em prazo curto; dados anonimizados podem ser mantidos para estatística.</li>
         </ul>
       </section>
@@ -114,7 +119,7 @@ export default function PrivacidadePage() {
           <li>saber com quem compartilhamos seus dados;</li>
           <li>revogar o consentimento e se opor a tratamentos realizados sem o amparo legal devido.</li>
         </ul>
-        <p>Muitos direitos podem ser exercidos direto na conta (editar perfil, preferências, voz, excluir a conta). Para os demais, abra uma conversa no <strong>Suporte</strong> com o assunto “Privacidade”. Podemos pedir informações para confirmar sua identidade antes de atender, como medida de segurança. Respondemos em até 15 dias.</p>
+        <p>Muitos direitos podem ser exercidos direto na plataforma (editar perfil na conta, ajustar preferências da IA em <strong>Preferências</strong>, excluir a conta). Para os demais, abra uma conversa no <strong>Suporte</strong> com o assunto &ldquo;Privacidade&rdquo;. Podemos pedir informações para confirmar sua identidade antes de atender, como medida de segurança. Respondemos em até 15 dias.</p>
         <p>Se entender que seus direitos não foram atendidos, você pode peticionar à <strong>Autoridade Nacional de Proteção de Dados (ANPD)</strong>, em gov.br/anpd.</p>
       </section>
 

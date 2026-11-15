@@ -1,58 +1,83 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const quota = vi.hoisted(() => ({ previousSearches: 0, previousKits: 0, todaySearches: 0, todayKits: 0 }));
+const quota = vi.hoisted(() => ({ weekSearches: 0, weekKits: 0 }));
 
 vi.mock('../src/lib/supabase.js', () => ({
   supabaseAdmin: {
-    from: vi.fn((table: string) => {
-      const query: Record<string, unknown> = {};
-      query.select = () => query;
-      query.eq = () => query;
-      query.gt = () => query;
-      query.limit = () => query;
-      query.lt = () => query;
-      query.then = (resolve: (value: unknown) => void) => resolve(table === 'ai_usage_daily'
-        ? { data: [{ assistant_calls: quota.previousSearches }], error: null }
-        : { count: quota.previousKits, error: null });
-      return query;
-    }),
-    rpc: vi.fn(async (name: string, args: { p_kind: string; p_daily_limit: number }) => {
-      if (name === 'release_ai_quota') {
-        if (args.p_kind === 'assistant') quota.todaySearches--;
-        else quota.todayKits--;
+    rpc: vi.fn(async (name: string, args: {
+      p_kind?: string;
+      p_limit?: number;
+    }) => {
+      if (name === 'release_ai_quota_on') {
+        if (args.p_kind === 'assistant') quota.weekSearches = Math.max(0, quota.weekSearches - 1);
+        else quota.weekKits = Math.max(0, quota.weekKits - 1);
         return { error: null };
       }
-      const key = args.p_kind === 'assistant' ? 'todaySearches' : 'todayKits';
-      const allowed = quota[key] < args.p_daily_limit;
-      if (allowed) quota[key]++;
-      return { data: allowed, error: null };
+      if (name === 'reserve_free_quota_week') {
+        const key = args.p_kind === 'assistant' ? 'weekSearches' : 'weekKits';
+        const allowed = quota[key] < (args.p_limit ?? 0);
+        if (allowed) quota[key] += 1;
+        return { data: allowed, error: null };
+      }
+      return { data: null, error: null };
     }),
   },
 }));
 
-import { reserveFreeAssistantQuota, reserveFreeKitQuota, releaseFreeQuota } from '../src/lib/ai-metrics.js';
+import {
+  quotaDayKey,
+  quotaResetIso,
+  quotaWeekStartKey,
+  releaseFreeQuota,
+  reserveFreeAssistantQuota,
+  reserveFreeKitQuota,
+} from '../src/lib/ai-metrics.js';
 
 beforeEach(() => {
-  quota.previousSearches = 0;
-  quota.previousKits = 0;
-  quota.todaySearches = 0;
-  quota.todayKits = 0;
+  quota.weekSearches = 0;
+  quota.weekKits = 0;
 });
 
-describe('lifetime free quota', () => {
-  it('blocks the fourth product search across days', async () => {
-    quota.previousSearches = 1;
+describe('cotas semanais do plano Grátis', () => {
+  it('limita as buscas na semana e libera na semana seguinte', async () => {
+    expect(await reserveFreeAssistantQuota('user-1', 3)).toBe(true);
     expect(await reserveFreeAssistantQuota('user-1', 3)).toBe(true);
     expect(await reserveFreeAssistantQuota('user-1', 3)).toBe(true);
     expect(await reserveFreeAssistantQuota('user-1', 3)).toBe(false);
+
+    // Nova semana (janela zerada) volta a permitir.
+    quota.weekSearches = 0;
+    expect(await reserveFreeAssistantQuota('user-1', 3)).toBe(true);
   });
 
-  it('blocks the fourth script and releases failed generation reservations', async () => {
-    quota.previousKits = 1;
+  it('limita os roteiros na semana e libera na semana seguinte', async () => {
+    expect(await reserveFreeKitQuota('user-1', 'creator-1', 3)).toBe(true);
     expect(await reserveFreeKitQuota('user-1', 'creator-1', 3)).toBe(true);
     expect(await reserveFreeKitQuota('user-1', 'creator-1', 3)).toBe(true);
     expect(await reserveFreeKitQuota('user-1', 'creator-1', 3)).toBe(false);
+
     await releaseFreeQuota('user-1', 'kit');
     expect(await reserveFreeKitQuota('user-1', 'creator-1', 3)).toBe(true);
+
+    // Nova semana (janela zerada) volta a permitir.
+    quota.weekKits = 0;
+    expect(await reserveFreeKitQuota('user-1', 'creator-1', 3)).toBe(true);
+  });
+});
+
+describe('janelas de renovação (America/Sao_Paulo)', () => {
+  it('identifica o dia local para gravar o uso', () => {
+    expect(quotaDayKey(new Date('2026-01-05T02:59:59.000Z'))).toBe('2026-01-04');
+    expect(quotaDayKey(new Date('2026-01-05T03:00:00.000Z'))).toBe('2026-01-05');
+  });
+
+  it('a semana começa na segunda-feira local', () => {
+    // 08/01/2026 é quinta; a segunda da mesma semana é 05/01.
+    expect(quotaWeekStartKey(new Date('2026-01-08T12:00:00.000Z'))).toBe('2026-01-05');
+  });
+
+  it('calcula o próximo reset semanal', () => {
+    const date = new Date('2026-01-05T12:00:00.000Z');
+    expect(quotaResetIso('week', date)).toBe('2026-01-12T03:00:00.000Z');
   });
 });

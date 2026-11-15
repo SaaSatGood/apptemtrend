@@ -1,5 +1,6 @@
 import { buildApp } from './app.js';
 import { env } from './config/env.js';
+import { aiStatus } from './modules/assistant/ai.service.js';
 
 const app = buildApp();
 const server = await app.listen({ port: env.PORT, host: '0.0.0.0' }).catch((error) => {
@@ -7,10 +8,14 @@ const server = await app.listen({ port: env.PORT, host: '0.0.0.0' }).catch((erro
   process.exit(1);
 });
 
-if (!env.GEMINI_API_KEY) {
-  app.log.warn('GEMINI_API_KEY ausente: busca assistida usa fallback local e geração de Content Kit retorna 503 AI_UNAVAILABLE');
+const ai = aiStatus();
+if (!ai.configured) {
+  app.log.warn(
+    { provider: ai.provider },
+    'Nenhum provedor de IA configurado: busca assistida usa fallback local e geração de Content Kit retorna 503 AI_UNAVAILABLE',
+  );
 } else {
-  app.log.info({ model: env.GEMINI_MODEL }, 'Gemini AI configurada');
+  app.log.info({ provider: ai.provider, model: ai.model }, 'IA configurada');
 }
 
 // Graceful shutdown: fecha HTTP antes de matar conexões ativas.

@@ -1,0 +1,148 @@
+﻿/* Hero da landing: degradÃª da marca (lilÃ¡s no topo, violeta na base). */
+
+.tt-home .tt-hr-hero {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: min(1320px, calc(100% - 24px));
+  min-height: calc(100vh - 16px);
+  min-height: calc(100svh - 16px);
+  margin: 8px auto 0;
+  padding: clamp(84px, 9.4vh, 108px) clamp(20px, 4vw, 56px) 0;
+  overflow: hidden;
+  border-radius: 40px;
+  background: var(--tt-hero-grad, linear-gradient(180deg, #f6f4ff 0%, #ddd2fb 58%, #c9b8f8 100%));
+  color: #14101f;
+  text-align: center;
+  /* A manchete usa a display geomÃ©trica da referÃªncia; o token Ã© escopado
+     aqui para nÃ£o alterar os tÃ­tulos do restante do site. */
+  --tt-font-editorial: var(--font-bricolage), var(--font-bricolage), sans-serif;
+}
+
+.tt-home .tt-hr-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 30px;
+  padding: 0 12px;
+  border: 1px solid rgba(20, 16, 31, .12);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, .72);
+  color: #14101f;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.tt-home .tt-hr-eyebrow i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #6d28d9;
+}
+
+.tt-home .tt-hr-hero h1 {
+  margin: 8px auto 0;
+  max-width: 900px;
+  color: #14101f;
+  font-family: var(--font-bricolage), var(--font-bricolage), sans-serif;
+  font-size: clamp(38px, 6.2vw, 56px);
+  font-weight: 800;
+  letter-spacing: -.04em;
+  line-height: 1.04;
+  text-wrap: balance;
+}
+
+/* O realce de palavra Ã© padronizado em design-system.css (.tt-hl / .tt-hr-highlight);
+   na hero roxa ele fica branco, como na referÃªncia. */
+.tt-home .tt-hr-hero .tt-hr-highlight {
+  color: #fff;
+}
+
+.tt-home .tt-hr-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.tt-home .tt-hr-proof {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px 12px;
+  margin: 16px auto 0;
+  color: #4a3f66;
+  font-size: 12px;
+}
+
+.tt-home .tt-hr-avatars {
+  display: flex;
+  align-items: center;
+}
+
+.tt-home .tt-hr-avatars img,
+.tt-home .tt-hr-avatars > span {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  object-fit: cover;
+}
+
+.tt-home .tt-hr-avatars img + img,
+.tt-home .tt-hr-avatars > span {
+  margin-left: -9px;
+}
+
+.tt-home .tt-hr-avatars > span {
+  display: grid;
+  place-items: center;
+  background: #14101f;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.tt-home .tt-hr-proof p {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 4px 10px;
+  margin: 0;
+}
+
+.tt-home .tt-hr-proof-rating {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: #14101f;
+  font-weight: 700;
+}
+
+.tt-home .tt-hr-proof-rating .tt-icon {
+  color: #e2a400;
+}
+
+@media (max-width: 900px) {
+  .tt-home .tt-hr-hero {
+    width: calc(100% - 16px);
+    padding: 96px 18px 0;
+    border-radius: 30px;
+  }
+}
+
+@media (max-width: 640px) {
+  .tt-home .tt-hr-hero {
+    padding: 90px 14px 0;
+    border-radius: 24px;
+  }
+
+  .tt-home .tt-hr-hero h1 {
+    font-size: clamp(36px, 11vw, 48px);
+  }
+}

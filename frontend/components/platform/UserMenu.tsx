@@ -52,10 +52,10 @@ export default function UserMenu({ variant = "topbar" }: { variant?: "topbar" | 
           <strong>{display}</strong>
           <small>{email}</small>
         </div>
-        <Link href="/app/conta" onClick={() => ref.current?.removeAttribute("open")}>Minha conta</Link>
-        {!admin && <Link href="/planos" onClick={() => ref.current?.removeAttribute("open")}>Planos e assinatura</Link>}
-        {!admin && <Link href="/app/conta?preferencias=1" onClick={() => ref.current?.removeAttribute("open")}>Preferências</Link>}
-        {!admin && <Link href="/app/suporte" onClick={() => ref.current?.removeAttribute("open")}>Suporte</Link>}
+        <Link href="/conta" onClick={() => ref.current?.removeAttribute("open")}>Minha conta</Link>
+        {!admin && <Link href="/conta/planos" onClick={() => ref.current?.removeAttribute("open")}>Planos e assinatura</Link>}
+        {!admin && <Link href="/preferencias" onClick={() => ref.current?.removeAttribute("open")}>Preferências</Link>}
+        {!admin && <Link href="/suporte" onClick={() => ref.current?.removeAttribute("open")}>Suporte</Link>}
         <button type="button" onClick={() => void signOut()}>
           Sair
         </button>

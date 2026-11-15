@@ -1,12 +1,13 @@
-import type { Metadata } from "next";
 import Link from "next/link";
 import LegalPageFrame from "@/components/legal/LegalPageFrame";
+import { pageMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = {
-  title: "Política de Reembolso | TemTrend",
+export const metadata = pageMetadata({
+  title: "Política de Reembolso",
   description:
     "Direito de arrependimento de 7 dias (art. 49 do CDC), cancelamento a qualquer momento e devolução de valores em assinaturas mensais e anuais da TemTrend.",
-};
+  path: "/reembolso",
+});
 
 export default function ReembolsoPage() {
   return (
@@ -43,7 +44,7 @@ export default function ReembolsoPage() {
         <p>Na <strong>primeira contratação</strong> de qualquer plano — mensal ou anual — você tem <strong>7 dias corridos</strong> para desistir, contados da confirmação do pagamento, quando o contrato é celebrado e o acesso é liberado. Esse marco é o mais favorável a você e é o que adotamos.</p>
         <ul>
           <li>Não é necessário justificar o motivo.</li>
-          <li>O direito é integral <strong>mesmo que você já tenha usado o serviço</strong> dentro dos 7 dias — buscas, kits gerados e roteiros salvos não reduzem o valor devolvido.</li>
+          <li>O direito é integral <strong>mesmo que você já tenha usado o serviço</strong> dentro dos 7 dias — buscas, roteiros gerados e conteúdos salvos não reduzem o valor devolvido.</li>
           <li>Vale igualmente para o <strong>plano anual</strong>: dentro dos 7 dias, a devolução é de 100% do valor pago.</li>
           <li>Renovações automáticas têm regra própria de boa-fé no item “Renovações”.</li>
         </ul>
@@ -104,7 +105,7 @@ export default function ReembolsoPage() {
       <section aria-labelledby="reembolso-renovacoes">
         <h2 id="reembolso-renovacoes">Renovações automáticas</h2>
         <p>Assinaturas são recorrentes: a data da próxima cobrança fica visível na sua conta (Conta → Plano). Para não renovar, basta cancelar antes dessa data.</p>
-        <p>Se a renovação acontecer e você não pretendia continuar, fale com o Suporte <strong>em até 7 dias da cobrança</strong>. Aplicamos, por boa-fé e alinhamento ao espírito do art. 49 do CDC, a devolução integral da renovação sempre que você <strong>não tiver usado o novo ciclo</strong> (sem novas buscas ou kits gerados no período). Se já houve uso, o acesso segue válido até o fim do novo ciclo e o cancelamento continua disponível a qualquer momento.</p>
+        <p>Se a renovação acontecer e você não pretendia continuar, fale com o Suporte <strong>em até 7 dias da cobrança</strong>. Aplicamos, por boa-fé e alinhamento ao espírito do art. 49 do CDC, a devolução integral da renovação sempre que você <strong>não tiver usado o novo ciclo</strong> (sem novas buscas ou roteiros gerados no período). Se já houve uso, o acesso segue válido até o fim do novo ciclo e o cancelamento continua disponível a qualquer momento.</p>
       </section>
 
       <section aria-labelledby="reembolso-falhas">
@@ -118,7 +119,7 @@ export default function ReembolsoPage() {
 
       <section aria-labelledby="reembolso-fiscal">
         <h2 id="reembolso-fiscal">Comprovantes e documentos fiscais</h2>
-        <p>Você recebe o comprovante da compra por email, e o Suporte fornece cópias quando precisar. Eventuais documentos fiscais são emitidos conforme a legislação aplicável e refletem os cancelamentos e devoluções realizados.</p>
+        <p>O comprovante da compra fica disponível no ambiente do processador de pagamento (AbacatePay ou Asaas, conforme o meio escolhido) e o Suporte fornece cópias quando precisar. Eventuais documentos fiscais são emitidos conforme a legislação aplicável e refletem os cancelamentos e devoluções realizados.</p>
       </section>
 
       <section aria-labelledby="reembolso-atendimento">

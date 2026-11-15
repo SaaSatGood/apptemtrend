@@ -17,7 +17,7 @@ export const faqs: Array<[string, string]> = [
   ['O que é a TemTrend?', 'Uma plataforma para encontrar produtos e receber planos práticos de conteúdo para TikTok Shop.'],
   ['Preciso ser influencer?', 'Não. A TemTrend foi pensada para pessoas comuns, iniciantes e creators experientes.'],
   ['Preciso ter muitos seguidores?', 'Não. O foco é ajudar você a criar conteúdo mais claro e executável, independentemente do tamanho da audiência.'],
-  ['O que é o plano de gravação?', 'É um guia para o vídeo, também chamado Content Kit: traz ideia, abertura, cenas, roteiro, legenda, chamada final, hashtags e duração sugerida.'],
+  ['O que é o plano de gravação?', 'É um guia para o vídeo, também chamado de roteiro completo: traz ideia, abertura, cenas, roteiro, legenda, chamada final, hashtags e duração sugerida.'],
   ['A TemTrend grava o vídeo para mim?', 'Não. Você grava e publica. A TemTrend mostra o que fazer para você não começar do zero.'],
   ['Como funciona a venda pelo TikTok Shop?', 'Você publica conteúdo associado a produtos dentro das regras e recursos disponíveis no TikTok Shop. Resultados não são garantidos.'],
   ['Posso adaptar o plano para outros tipos de conteúdo?', 'Sim. Você pode adaptar o roteiro, as cenas e a fala para o seu estilo e formato.'],

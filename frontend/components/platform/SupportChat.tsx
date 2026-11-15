@@ -8,10 +8,11 @@ import { resolveSession } from "@/lib/supabase";
 type ChatMessage = { role: "user" | "assistant"; content: string };
 
 const SUGGESTIONS = [
-  "Como salvo um produto na produção?",
+  "Como adiciono um produto aos selecionados?",
   "Como gero o roteiro do meu vídeo?",
   "Como publico um vídeo gravado?",
   "Quais são os limites do meu plano?",
+  "Como escolho um hook que prende?",
 ];
 
 /** Assistente de suporte com a mesma IA que responde a busca de produtos. */
@@ -60,7 +61,7 @@ export default function SupportChat({ onOpenTicket }: { onOpenTicket: () => void
         </span>
         <div className="support-chat-head-copy">
           <h2>Assistente de suporte</h2>
-          <p>Pergunte sobre a plataforma. É a mesma IA que prepara seus roteiros.</p>
+          <p>Pergunte sobre a plataforma. Fora da TemTrend eu não respondo — é a mesma IA que prepara seus roteiros.</p>
         </div>
         <button className="ghost" type="button" onClick={onOpenTicket}>Falar com o time</button>
       </header>
@@ -84,7 +85,7 @@ export default function SupportChat({ onOpenTicket }: { onOpenTicket: () => void
             </div>
           ))
         )}
-        {sending && <div className="support-chat-msg is-assistant is-typing">Consultando o assistente…</div>}
+        {sending && <div className="support-chat-msg is-assistant is-typing">Pensando aqui…</div>}
       </div>
 
       {error && <p className="form-message error" role="alert">{error}</p>}
@@ -97,11 +98,13 @@ export default function SupportChat({ onOpenTicket }: { onOpenTicket: () => void
         }}
       >
         <input
+          name="support-assistant-message"
           type="text"
+          autoComplete="off"
           value={text}
           maxLength={2000}
           onChange={(event) => setText(event.target.value)}
-          placeholder="Escreva sua dúvida sobre a plataforma"
+          placeholder="Escreva sua dúvida sobre a plataforma…"
           aria-label="Mensagem para o assistente de suporte"
         />
         <button className="primary" type="submit" disabled={sending || text.trim().length < 2}>

@@ -1,0 +1,493 @@
+/* ============================================================
+   TemTrend — sistema único de botões
+   Padrão da landing: primário violeta com texto branco,
+   secundário branco com borda violeta, fantasma discreto.
+   Este arquivo é carregado por último para neutralizar as
+   variações antigas de cor, gradiente e hover.
+   ============================================================ */
+
+:root {
+  --tt-btn-primary-bg: linear-gradient(135deg, #6d28d9 0%, #4a2bc0 100%);
+  --tt-btn-primary-bg-hover: linear-gradient(135deg, #7c3aed 0%, #5b21b6 100%);
+  --tt-btn-primary-ink: #ffffff;
+  --tt-btn-primary-line: #5b21b6;
+  --tt-btn-secondary-bg: rgba(255, 255, 255, .78);
+  --tt-btn-secondary-bg-hover: #ffffff;
+  --tt-btn-secondary-ink: #4a2bc0;
+  --tt-btn-secondary-line: rgba(74, 43, 192, .32);
+  --tt-btn-secondary-line-hover: #6d28d9;
+  --tt-btn-ghost-ink: #14101f;
+  --tt-btn-ghost-bg-hover: #f0e9fe;
+  --tt-btn-danger-bg: #ffffff;
+  --tt-btn-danger-ink: #b42342;
+  --tt-btn-danger-line: #e5b4c0;
+  --tt-btn-shadow: 0 16px 34px -20px rgba(74, 43, 192, .85);
+  --tt-btn-shadow-hover: 0 20px 40px -18px rgba(74, 43, 192, .9);
+  --tt-btn-focus: #4a2bc0;
+  --tt-btn-ease: cubic-bezier(.22, 1, .36, 1);
+}
+
+[data-theme="dark"] {
+  --tt-btn-secondary-bg: rgba(27, 21, 38, .82);
+  --tt-btn-secondary-bg-hover: #241c3a;
+  --tt-btn-secondary-ink: #d8ccfb;
+  --tt-btn-secondary-line: rgba(176, 140, 238, .38);
+  --tt-btn-secondary-line-hover: #b08cee;
+  --tt-btn-ghost-ink: #f3eefb;
+  --tt-btn-ghost-bg-hover: #2a1f4a;
+  --tt-btn-danger-bg: #1b1526;
+  --tt-btn-danger-ink: #ffb3c1;
+  --tt-btn-danger-line: #5a2a3a;
+  --tt-btn-focus: #c9bcfb;
+}
+
+/* ---------- Primário: ação principal ---------- */
+#app-view :is(
+  .primary,
+  a.primary,
+  button.primary,
+  .button,
+  .button-small,
+  .tt-btn-lime,
+  .tt-dash-heading-action,
+  .selected-products-discover,
+  .tt-empty-cta,
+  .tt-dash-empty-cta,
+  .acct-plan-cta,
+  .plans-cta:not(.is-secondary),
+  .rw-cta,
+  .ct-btn-record,
+  .assistant-send-button,
+  .continue-production,
+  .app-create-link,
+  .upgrade-plan-primary,
+  .tt-rail-plan-cta,
+  .onboarding-paywall-primary,
+  .tt-prefs-action-buttons .primary,
+  .production-action.is-primary,
+  .tt-btn-action.is-primary,
+  .tt-btn-action.is-accent,
+  .generate-script,
+  .support-new
+),
+.auth-view :is(.primary, .button, .auth-form .primary),
+.onboarding :is(.primary, .onboarding-paywall-primary),
+.tt-pricing :is(.tt-pricing-signup, .tt-price-cta:not(.is-ghost):not(.is-secondary), .tt-enterprise-cta),
+.tt-home :is(.tt-btn, .tt-btn-lime, .tt-lp-btn-lime, .tt-lp-btn-dark, .tt-hr-cta, .tt-hero-cta),
+.tt-lp :is(.tt-lp-btn-lime, .tt-lp-btn-dark),
+.publication-dialog :is(.primary, .tt-btn-lime),
+.content-kit-dialog :is(.primary),
+.upgrade-dialog :is(.upgrade-plan-primary),
+.tt-document-page :is(.tt-document-primary) {
+  border: 1px solid var(--tt-btn-primary-line) !important;
+  border-radius: 999px;
+  background: var(--tt-btn-primary-bg) !important;
+  color: var(--tt-btn-primary-ink) !important;
+  font-weight: 800;
+  box-shadow: var(--tt-btn-shadow);
+  text-decoration: none;
+  transition:
+    background-color .18s var(--tt-btn-ease),
+    background .18s var(--tt-btn-ease),
+    border-color .18s var(--tt-btn-ease),
+    color .18s var(--tt-btn-ease),
+    box-shadow .18s var(--tt-btn-ease),
+    transform .18s var(--tt-btn-ease),
+    opacity .18s var(--tt-btn-ease);
+}
+
+#app-view :is(
+  .primary,
+  a.primary,
+  button.primary,
+  .button,
+  .button-small,
+  .tt-btn-lime,
+  .tt-dash-heading-action,
+  .selected-products-discover,
+  .tt-empty-cta,
+  .tt-dash-empty-cta,
+  .acct-plan-cta,
+  .plans-cta:not(.is-secondary),
+  .rw-cta,
+  .ct-btn-record,
+  .assistant-send-button,
+  .continue-production,
+  .app-create-link,
+  .upgrade-plan-primary,
+  .tt-rail-plan-cta,
+  .onboarding-paywall-primary,
+  .tt-prefs-action-buttons .primary,
+  .production-action.is-primary,
+  .tt-btn-action.is-primary,
+  .tt-btn-action.is-accent,
+  .generate-script,
+  .support-new
+):hover:not(:disabled),
+.auth-view :is(.primary, .button, .auth-form .primary):hover:not(:disabled),
+.onboarding :is(.primary, .onboarding-paywall-primary):hover:not(:disabled),
+.tt-pricing :is(.tt-pricing-signup, .tt-price-cta:not(.is-ghost):not(.is-secondary), .tt-enterprise-cta):hover:not(:disabled),
+.tt-home :is(.tt-btn, .tt-btn-lime, .tt-lp-btn-lime, .tt-lp-btn-dark, .tt-hr-cta, .tt-hero-cta):hover,
+.tt-lp :is(.tt-lp-btn-lime, .tt-lp-btn-dark):hover,
+.publication-dialog :is(.primary, .tt-btn-lime):hover:not(:disabled),
+.content-kit-dialog :is(.primary):hover:not(:disabled),
+.upgrade-dialog :is(.upgrade-plan-primary):hover:not(:disabled),
+.tt-document-page :is(.tt-document-primary):hover {
+  border-color: var(--tt-btn-primary-line) !important;
+  background: var(--tt-btn-primary-bg-hover) !important;
+  color: var(--tt-btn-primary-ink) !important;
+  box-shadow: var(--tt-btn-shadow-hover);
+  transform: translateY(-1px);
+}
+
+#app-view :is(
+  .primary,
+  a.primary,
+  button.primary,
+  .button,
+  .button-small,
+  .tt-btn-lime,
+  .tt-dash-heading-action,
+  .selected-products-discover,
+  .tt-empty-cta,
+  .tt-dash-empty-cta,
+  .acct-plan-cta,
+  .plans-cta:not(.is-secondary),
+  .rw-cta,
+  .ct-btn-record,
+  .assistant-send-button,
+  .continue-production,
+  .app-create-link,
+  .upgrade-plan-primary,
+  .tt-rail-plan-cta,
+  .onboarding-paywall-primary,
+  .tt-prefs-action-buttons .primary,
+  .production-action.is-primary,
+  .tt-btn-action.is-primary,
+  .tt-btn-action.is-accent,
+  .generate-script,
+  .support-new
+):active:not(:disabled),
+.auth-view :is(.primary, .button, .auth-form .primary):active:not(:disabled),
+.onboarding :is(.primary, .onboarding-paywall-primary):active:not(:disabled),
+.tt-pricing :is(.tt-pricing-signup, .tt-price-cta:not(.is-ghost):not(.is-secondary), .tt-enterprise-cta):active:not(:disabled),
+.tt-home :is(.tt-btn, .tt-btn-lime, .tt-lp-btn-lime, .tt-lp-btn-dark, .tt-hr-cta, .tt-hero-cta):active,
+.tt-lp :is(.tt-lp-btn-lime, .tt-lp-btn-dark):active,
+.publication-dialog :is(.primary, .tt-btn-lime):active:not(:disabled),
+.content-kit-dialog :is(.primary):active:not(:disabled),
+.upgrade-dialog :is(.upgrade-plan-primary):active:not(:disabled),
+.tt-document-page :is(.tt-document-primary):active {
+  box-shadow: var(--tt-btn-shadow);
+  transform: translateY(0);
+}
+
+/* ---------- Secundário: ação de apoio ---------- */
+.tt-public-cta,
+#app-view :is(
+  .ghost,
+  .button-light,
+  .tt-btn-outline,
+  .tt-btn-action:not(.is-primary):not(.is-accent),
+  .tt-btn-sm-outline,
+  .tt-btn-icon,
+  .ct-btn-ghost,
+  .production-action:not(.is-primary),
+  .tt-calendar-controls button,
+  .tt-month-nav button,
+  .assistant-attach-button,
+  .assistant-actions button:not(.primary),
+  .tt-prefs-action-buttons .ghost
+),
+.auth-view :is(.ghost, .provider-button, .google-button),
+.onboarding :is(.ghost, .back-button),
+.tt-pricing :is(.tt-pricing-login, .tt-pricing-manage, .tt-price-cta.is-secondary),
+.tt-home :is(.tt-public-cta, .tt-lp-btn-light, .tt-lp-btn-outline, .tt-lp-btn-ghost, .tt-hr-secondary),
+.tt-lp :is(.tt-lp-btn-light, .tt-lp-btn-outline, .tt-lp-btn-ghost),
+.publication-dialog :is(.ghost, .tt-btn-outline),
+.content-kit-dialog :is(.ghost),
+.upgrade-dialog :is(.ghost),
+.tt-document-page :is(.tt-document-secondary) {
+  border: 1px solid var(--tt-btn-secondary-line) !important;
+  border-radius: 999px;
+  background: var(--tt-btn-secondary-bg) !important;
+  color: var(--tt-btn-secondary-ink) !important;
+  font-weight: 800;
+  box-shadow: none;
+  text-decoration: none;
+  transition:
+    background-color .18s var(--tt-btn-ease),
+    background .18s var(--tt-btn-ease),
+    border-color .18s var(--tt-btn-ease),
+    color .18s var(--tt-btn-ease),
+    box-shadow .18s var(--tt-btn-ease),
+    transform .18s var(--tt-btn-ease),
+    opacity .18s var(--tt-btn-ease);
+}
+
+#app-view :is(
+  .ghost,
+  .button-light,
+  .tt-btn-outline,
+  .tt-btn-action:not(.is-primary):not(.is-accent),
+  .tt-btn-sm-outline,
+  .tt-btn-icon,
+  .ct-btn-ghost,
+  .production-action:not(.is-primary),
+  .tt-calendar-controls button,
+  .tt-month-nav button,
+  .assistant-attach-button,
+  .assistant-actions button:not(.primary),
+  .tt-prefs-action-buttons .ghost
+):hover:not(:disabled),
+.auth-view :is(.ghost, .provider-button, .google-button):hover:not(:disabled),
+.onboarding :is(.ghost, .back-button):hover:not(:disabled),
+.tt-pricing :is(.tt-pricing-login, .tt-pricing-manage, .tt-price-cta.is-secondary):hover:not(:disabled),
+.tt-home :is(.tt-public-cta, .tt-lp-btn-light, .tt-lp-btn-outline, .tt-lp-btn-ghost, .tt-hr-secondary):hover,
+.tt-public-cta:hover,
+.tt-lp :is(.tt-lp-btn-light, .tt-lp-btn-outline, .tt-lp-btn-ghost):hover,
+.publication-dialog :is(.ghost, .tt-btn-outline):hover:not(:disabled),
+.content-kit-dialog :is(.ghost):hover:not(:disabled),
+.upgrade-dialog :is(.ghost):hover:not(:disabled),
+.tt-document-page :is(.tt-document-secondary):hover {
+  border-color: var(--tt-btn-secondary-line-hover) !important;
+  background: var(--tt-btn-secondary-bg-hover) !important;
+  color: var(--tt-btn-secondary-ink) !important;
+  transform: translateY(-1px);
+}
+
+#app-view :is(
+  .ghost,
+  .button-light,
+  .tt-btn-outline,
+  .tt-btn-action:not(.is-primary):not(.is-accent),
+  .tt-btn-sm-outline,
+  .tt-btn-icon,
+  .ct-btn-ghost,
+  .production-action:not(.is-primary),
+  .tt-calendar-controls button,
+  .tt-month-nav button,
+  .assistant-attach-button,
+  .assistant-actions button:not(.primary),
+  .tt-prefs-action-buttons .ghost
+):active:not(:disabled),
+.auth-view :is(.ghost, .provider-button, .google-button):active:not(:disabled),
+.onboarding :is(.ghost, .back-button):active:not(:disabled),
+.tt-pricing :is(.tt-pricing-login, .tt-pricing-manage, .tt-price-cta.is-secondary):active:not(:disabled),
+.tt-home :is(.tt-public-cta, .tt-lp-btn-light, .tt-lp-btn-outline, .tt-lp-btn-ghost, .tt-hr-secondary):active,
+.tt-public-cta:active,
+.tt-lp :is(.tt-lp-btn-light, .tt-lp-btn-outline, .tt-lp-btn-ghost):active,
+.publication-dialog :is(.ghost, .tt-btn-outline):active:not(:disabled),
+.content-kit-dialog :is(.ghost):active:not(:disabled),
+.upgrade-dialog :is(.ghost):active:not(:disabled),
+.tt-document-page :is(.tt-document-secondary):active {
+  transform: translateY(0);
+}
+
+/* CTA fantasma dos planos: fundo branco, borda roxa e texto roxo em qualquer tema. */
+.tt-pricing .tt-price-cta.is-ghost {
+  border-color: #cfbbf1 !important;
+  background: #fff !important;
+  color: #4a2bc0 !important;
+  font-weight: 800;
+}
+
+.tt-pricing .tt-price-cta.is-ghost:hover:not(:disabled) {
+  border-color: #6d28d9 !important;
+  background: #f3eefb !important;
+  color: #4a2bc0 !important;
+}
+
+/* Ícones continuam quadrados e compactos. */
+#app-view .tt-btn-icon {
+  width: 40px;
+  min-width: 40px;
+  min-height: 40px;
+  padding: 0;
+  border-radius: 12px;
+}
+
+/* ---------- Perigo ---------- */
+.danger-button,
+.account-danger .danger-button,
+.publication-dialog .danger-button,
+#app-view .danger-button {
+  border: 1px solid var(--tt-btn-danger-line) !important;
+  border-radius: 999px;
+  background: var(--tt-btn-danger-bg) !important;
+  color: var(--tt-btn-danger-ink) !important;
+  font-weight: 800;
+  box-shadow: none;
+  transition:
+    background-color .18s var(--tt-btn-ease),
+    border-color .18s var(--tt-btn-ease),
+    color .18s var(--tt-btn-ease),
+    transform .18s var(--tt-btn-ease),
+    opacity .18s var(--tt-btn-ease);
+}
+
+.danger-button:hover:not(:disabled),
+.account-danger .danger-button:hover:not(:disabled),
+.publication-dialog .danger-button:hover:not(:disabled),
+#app-view .danger-button:hover:not(:disabled) {
+  border-color: var(--tt-btn-danger-ink) !important;
+  background: color-mix(in srgb, var(--tt-btn-danger-bg) 88%, var(--tt-btn-danger-ink)) !important;
+  color: var(--tt-btn-danger-ink) !important;
+  transform: translateY(-1px);
+}
+
+.danger-button:active:not(:disabled),
+.account-danger .danger-button:active:not(:disabled),
+.publication-dialog .danger-button:active:not(:disabled),
+#app-view .danger-button:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+/* ---------- Link/ação de texto ---------- */
+.text-link,
+.text-button,
+button.text-button,
+.back-button,
+button.back-button,
+.detail-back,
+a.detail-back,
+.back-home,
+.tt-link-btn {
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--tt-btn-ghost-ink);
+  font-weight: 700;
+  box-shadow: none;
+  transition: color .18s var(--tt-btn-ease), background .18s var(--tt-btn-ease), opacity .18s var(--tt-btn-ease);
+}
+
+.text-link:hover,
+.text-button:hover,
+button.text-button:hover,
+.back-button:hover,
+.detail-back:hover,
+.back-home:hover,
+.tt-link-btn:hover {
+  background: var(--tt-btn-ghost-bg-hover);
+  color: var(--tt-btn-secondary-ink);
+  opacity: 1;
+}
+
+/* ---------- Foco e estado desabilitado ---------- */
+#app-view :is(.primary, .button, .tt-btn-lime, .tt-btn-outline, .tt-btn-action, .tt-btn-sm-outline,
+  .tt-btn-icon, .ghost, .button-light, .ct-btn-record, .ct-btn-ghost, .rw-cta, .plans-cta,
+  .danger-button, .assistant-send-button, .assistant-attach-button, .support-new),
+.auth-view :is(.primary, .button, .ghost, .provider-button, .google-button, .auth-form .primary),
+.onboarding :is(.primary, .ghost, .onboarding-paywall-primary),
+.tt-pricing :is(.tt-price-cta, .tt-pricing-signup, .tt-pricing-login, .tt-pricing-manage, .tt-enterprise-cta),
+.tt-home :is(.tt-btn, .tt-btn-lime, .tt-lp-btn, .tt-hr-cta, .tt-hr-secondary, .tt-hero-cta),
+.publication-dialog :is(.primary, .ghost, .danger-button, .tt-btn-lime, .tt-btn-outline),
+.content-kit-dialog :is(.primary, .ghost),
+.upgrade-dialog :is(.upgrade-plan-primary, .ghost),
+.tt-document-page :is(.tt-document-primary, .tt-document-secondary) {
+  outline-offset: 3px;
+}
+
+#app-view :is(.primary, .button, .tt-btn-lime, .tt-btn-outline, .tt-btn-action, .tt-btn-sm-outline,
+  .tt-btn-icon, .ghost, .button-light, .ct-btn-record, .ct-btn-ghost, .rw-cta, .plans-cta,
+  .danger-button, .assistant-send-button, .assistant-attach-button, .support-new):focus-visible,
+.auth-view :is(.primary, .button, .ghost, .provider-button, .google-button, .auth-form .primary):focus-visible,
+.onboarding :is(.primary, .ghost, .onboarding-paywall-primary):focus-visible,
+.tt-pricing :is(.tt-price-cta, .tt-pricing-signup, .tt-pricing-login, .tt-pricing-manage, .tt-enterprise-cta):focus-visible,
+.tt-home :is(.tt-btn, .tt-btn-lime, .tt-lp-btn, .tt-hr-cta, .tt-hr-secondary, .tt-hero-cta):focus-visible,
+.publication-dialog :is(.primary, .ghost, .danger-button, .tt-btn-lime, .tt-btn-outline):focus-visible,
+.content-kit-dialog :is(.primary, .ghost):focus-visible,
+.upgrade-dialog :is(.upgrade-plan-primary, .ghost):focus-visible,
+.tt-document-page :is(.tt-document-primary, .tt-document-secondary):focus-visible {
+  outline: 3px solid var(--tt-btn-focus) !important;
+}
+
+#app-view :is(.primary, .button, .tt-btn-lime, .tt-btn-outline, .tt-btn-action, .tt-btn-sm-outline,
+  .tt-btn-icon, .ghost, .button-light, .ct-btn-record, .ct-btn-ghost, .rw-cta, .plans-cta,
+  .danger-button, .assistant-send-button, .assistant-attach-button, .support-new):disabled,
+.auth-view :is(.primary, .button, .ghost, .provider-button, .google-button, .auth-form .primary):disabled,
+.onboarding :is(.primary, .ghost, .onboarding-paywall-primary):disabled,
+.tt-pricing :is(.tt-price-cta, .tt-pricing-signup, .tt-pricing-login, .tt-pricing-manage, .tt-enterprise-cta):disabled,
+.publication-dialog :is(.primary, .ghost, .danger-button, .tt-btn-lime, .tt-btn-outline):disabled,
+.content-kit-dialog :is(.primary, .ghost):disabled,
+.upgrade-dialog :is(.upgrade-plan-primary, .ghost):disabled {
+  opacity: .5;
+  box-shadow: none !important;
+  transform: none !important;
+  cursor: not-allowed;
+}
+
+/* Preserva o estado "salvo" como confirmação verde, sem virar um novo estilo de CTA. */
+.ghost.is-saved:disabled,
+.quick-save-product.is-saved,
+.detail-save-product.is-saved:disabled {
+  border-color: #86efac !important;
+  background: #dcfce7 !important;
+  color: #14532d !important;
+  opacity: 1;
+}
+
+/* O botão de envio do Descobrir tinha uma variação escura própria.
+   Ele passa a usar exatamente o primário da landing em qualquer estado. */
+#app-view .tt-discovery .assistant-form .assistant-send-button,
+#app-view .tt-discovery .assistant-form.is-chat .assistant-send-button,
+#app-view .tt-discovery .assistant-form.is-chat .assistant-send-button:not(#tt-btn-guard) {
+  border: 1px solid var(--tt-btn-primary-line) !important;
+  border-radius: 999px !important;
+  background: var(--tt-btn-primary-bg) !important;
+  color: var(--tt-btn-primary-ink) !important;
+  box-shadow: var(--tt-btn-shadow);
+}
+
+#app-view .tt-discovery .assistant-form .assistant-send-button:hover:not(:disabled),
+#app-view .tt-discovery .assistant-form.is-chat .assistant-send-button:hover:not(:disabled),
+#app-view .tt-discovery .assistant-form.is-chat .assistant-send-button:not(#tt-btn-guard):hover:not(:disabled) {
+  background: var(--tt-btn-primary-bg-hover) !important;
+  border-color: var(--tt-btn-primary-line) !important;
+  color: var(--tt-btn-primary-ink) !important;
+  box-shadow: var(--tt-btn-shadow-hover);
+  transform: translateY(-1px);
+}
+
+#app-view .tt-discovery .assistant-form .assistant-send-button:disabled,
+#app-view .tt-discovery .assistant-form.is-chat .assistant-send-button:disabled,
+#app-view .tt-discovery .assistant-form.is-chat .assistant-send-button:not(#tt-btn-guard):disabled {
+  opacity: .55;
+  background: var(--tt-btn-primary-bg) !important;
+  border-color: var(--tt-btn-primary-line) !important;
+  color: var(--tt-btn-primary-ink) !important;
+  box-shadow: none;
+  transform: none;
+}
+
+/* Abas e filtros ativos seguem o mesmo violeta dos CTAs. */
+#app-view :is(
+  .ct-tabs button.is-active,
+  .production-filters button.active,
+  .assistant-tabs button[aria-selected="true"],
+  .tt-dash-filter.is-active,
+  .tt-dash-switch button.is-active,
+  .production-status-filters button.is-active,
+  .tt-filter-pill.is-active,
+  .recording-guide-steps button.active
+) {
+  border-color: var(--tt-btn-primary-line) !important;
+  background: var(--tt-btn-primary-bg) !important;
+  color: var(--tt-btn-primary-ink) !important;
+  box-shadow: var(--tt-btn-shadow);
+}
+
+#app-view :is(
+  .ct-tabs button.is-active,
+  .production-filters button.active,
+  .assistant-tabs button[aria-selected="true"],
+  .tt-dash-filter.is-active,
+  .tt-dash-switch button.is-active,
+  .production-status-filters button.is-active,
+  .tt-filter-pill.is-active,
+  .recording-guide-steps button.active
+):hover {
+  background: var(--tt-btn-primary-bg-hover) !important;
+  border-color: var(--tt-btn-primary-line) !important;
+  color: var(--tt-btn-primary-ink) !important;
+}

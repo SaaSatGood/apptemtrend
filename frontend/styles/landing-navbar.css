@@ -2,10 +2,10 @@
 .tt-home .tt-header {
   top: 18px;
   width: min(1500px, calc(100% - 48px));
-  border: 1px solid #e9eee3;
+  border: 1px solid #e7dff6;
   border-radius: 999px;
   background: #fffffff5;
-  box-shadow: 0 12px 38px #2c3d1714;
+  box-shadow: 0 12px 38px #2c1a4d14;
   backdrop-filter: blur(18px);
 }
 .tt-home .tt-nav { width: calc(100% - 44px); height: 82px; }
@@ -13,11 +13,11 @@
 .tt-home .tt-logo > span { width: 44px; height: 44px; font-size: 23px; }
 .tt-home .tt-nav-links { gap: clamp(19px, 2.5vw, 38px); font-size: 14px; }
 .tt-home .tt-nav-links > a:not(.tt-mobile-login) { padding-block: 10px; border-bottom: 2px solid transparent; transition: color .2s ease, border-color .2s ease; }
-.tt-home .tt-nav-links > a:not(.tt-mobile-login):hover { color: #537500; border-color: #91c408; opacity: 1; }
+.tt-home .tt-nav-links > a:not(.tt-mobile-login):hover { color: #2c1a4d; border-color: #5720b6; opacity: 1; }
 .tt-home .tt-nav-links a:focus-visible,
 .tt-home .tt-logo:focus-visible,
 .tt-home .tt-nav-actions a:focus-visible,
-.tt-home .tt-nav-actions button:focus-visible { outline: 3px solid #385400; outline-offset: 3px; }
+.tt-home .tt-nav-actions button:focus-visible { outline: 3px solid #3b2296; outline-offset: 3px; }
 .tt-home .tt-menu-kicker { display: none; }
 .tt-home .tt-login { min-width: 96px; min-height: 48px; font-size: 14px; }
 .tt-home .tt-nav-actions .tt-btn-small { min-height: 48px; padding-inline: 23px; font-size: 14px; }
@@ -42,13 +42,13 @@
     width: 44px;
     height: 44px;
     padding: 0;
-    border: 1px solid #e3eadb;
+    border: 1px solid #e7dff6;
     border-radius: 50%;
-    background: #f6f8f1;
+    background: #f3eefb;
     cursor: pointer;
   }
   .tt-home .tt-menu-icon { display: grid; gap: 6px; place-items: center; }
-  .tt-home .tt-menu-icon i { display: block; width: 18px; height: 2px; border-radius: 2px; background: #172113; transition: transform .2s ease; }
+  .tt-home .tt-menu-icon i { display: block; width: 18px; height: 2px; border-radius: 2px; background: #1b112c; transition: transform .2s ease; }
   .tt-home .menu-button[aria-expanded="true"] .tt-menu-icon i:first-child { transform: translateY(4px) rotate(45deg); }
   .tt-home .menu-button[aria-expanded="true"] .tt-menu-icon i:last-child { transform: translateY(-4px) rotate(-45deg); }
   .tt-home .tt-nav-links {
@@ -58,27 +58,27 @@
     width: 100%;
     gap: 0;
     padding: 17px 21px 21px;
-    border: 1px solid #e5ebdd;
+    border: 1px solid #e7dff6;
     border-radius: 24px;
     background: #fff;
-    box-shadow: 0 24px 55px #25351a26;
+    box-shadow: 0 24px 55px #1b112c26;
   }
-  .tt-home .tt-menu-kicker { display: block; padding: 5px 7px 13px; color: #5c7e18; font-size: 10px; font-weight: 850; letter-spacing: .1em; text-transform: uppercase; }
+  .tt-home .tt-menu-kicker { display: block; padding: 5px 7px 13px; color: #6d28d9; font-size: 10px; font-weight: 850; letter-spacing: .1em; text-transform: uppercase; }
   .tt-home .tt-nav-links.open > a:not(.tt-mobile-login) {
     display: flex;
     align-items: center;
     justify-content: space-between;
     min-height: 58px;
     padding: 0 7px;
-    border-top: 1px solid #e8ecdf;
+    border-top: 1px solid #e7dff6;
     border-bottom: 0;
     border-radius: 0;
-    color: #182015;
+    color: #1b112c;
     font-size: 17px;
     font-weight: 720;
     letter-spacing: -.035em;
   }
-  .tt-home .tt-nav-links.open > a:not(.tt-mobile-login):hover { color: #537500; background: #f7faef; }
+  .tt-home .tt-nav-links.open > a:not(.tt-mobile-login):hover { color: #2c1a4d; background: #f3eefb; }
   .tt-home .tt-nav-links.open .tt-mobile-login {
     display: flex;
     align-items: center;
@@ -87,8 +87,8 @@
     margin-top: 14px;
     padding: 0 14px;
     border-radius: 14px;
-    background: #f0f6df;
-    color: #182015;
+    background: #e7dff6;
+    color: #1b112c;
     font-size: 14px;
     font-weight: 750;
   }

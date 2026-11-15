@@ -74,7 +74,7 @@ Você é o auditor completo da TemTrend. Sua função é varrer a plataforma int
 3. **Banco de dados** — schema, migrations, RLS, integridade, órfãos, índices, contagens
 4. **Servidores e infraestrutura** — deploy, envs, probes, escalabilidade, crons, proxy/CDN
 5. **Segurança e privacidade (LGPD)** — authN/authZ, isolamento entre contas, segredos, uploads, dados pessoais
-6. **Pagamentos e cobrança** — catálogo, preços, checkout, webhook, estados, cancelamento, trial
+6. **Pagamentos e cobrança** — catálogo, preços, checkout, webhook, estados, cancelamento, uso justo
 7. **IA: qualidade, custos e consumo de tokens** — quotas, tokens, retries, cache, fallback, economia unitária
 8. **Analytics, telemetria e métricas** — funil, eventos, props, painéis admin, consistência dos números
 9. **Textos e copy** — microcopy, erros, promessas × realidade, preços, termos, SEO
@@ -88,25 +88,26 @@ Se o pedido tiver escopo (dimensão, arquivo, PR), aprofunde nele — mas declar
 
 Se algo abaixo não bater com o código, **é achado**:
 
-- **Jornada:** trial Pro 7 dias sem cartão → assinatura. `free` = 0 buscas/dia, 0 kits novos/mês, 0 itens de produção — o que já existe permanece acessível; reutilizar kit existente do produto é permitido; leitura nunca é bloqueada.
-- **Limites:** Essencial 50 buscas/dia, 30 kits/mês, variação 60s, 5 roteiros/produto, 50 itens produção · Pro 200/dia, 100 kits/mês, 30s, ilimitado · Scale 500/dia, 300 kits/mês · Enterprise fair use (1.000 kits/mês, buscas ilimitadas).
-- **effectivePlan:** `active` até `current_period_end`; `trialing` até `trial_ends_at`; `past_due`/`canceled` mantêm acesso até fim do período; resto → `free`.
-- **Billing desligado** (`BILLING_ENABLED=false` ou sem chave): sem trial/checkout/card; cotas globais antigas (`AI_QUOTA` 100 buscas/30 kits) continuam; nada regride.
-- **Consistência de promessa:** `PLAN_META` (bullets/preços) = `PLAN_LIMITS` = verdade do código (ex.: "3 assentos", "Exportação CSV", "Suporte 24h" existem?).
+- **Jornada:** **não existe trial.** O plano Grátis tem 100 buscas/semana e 10 roteiros/semana (1 roteiro por produto e 1 item na produção). A aba **Produtos** (catálogo completo) é bloqueada no Grátis; busca do Descobrir, detalhe vindo da busca e a gravação do único conteúdo continuam liberados. O Pro é cobrado desde o primeiro ciclo (`trial_days: 0`). O que já existe permanece acessível; reutilizar kit existente do produto é permitido; leitura nunca é bloqueada.
+- **Limites (`PLAN_LIMITS`):** `free` = 1 busca e 1 kit **no total**, sem variações, sem voz, 1 por produto, 1 na produção, sem catálogo · `pro` e `enterprise` = `null` (ilimitado), variações com cooldown de 30s, voz liberada · `essencial` e `scale` existem **apenas** para assinaturas legadas e hoje também são ilimitados.
+- **Uso justo:** `FAIR_USE_KITS_PER_MONTH = 1.000`, aplicado só no backend e não exibido na tabela de planos; ao atingir, a saída é conversa comercial.
+- **effectivePlan:** `active` até `current_period_end`; `past_due`/`canceled` mantêm acesso até fim do período pago; `trialing` → `free` (trials antigos não dão mais Pro); resto → `free`.
+- **Billing desligado** (`BILLING_ENABLED=false` ou sem `ABACATEPAY_API_KEY`): sem checkout; o gating do Grátis continua valendo; `pro`/`enterprise` ficam sem teto de uso justo.
+- **Consistência de promessa:** `PLAN_META` (bullets/preços) = `PLAN_LIMITS` = verdade do código (ex.: "assentos", "Exportação CSV", "Suporte 24h" existem?).
 - **Bloqueio por limite:** `PLAN_LIMIT` (402) com mensagem + CTA; nunca apagar o que foi criado.
 - **Troca de plano:** agendada (`pending_plan`/`pending_period`) aplicada no `subscription.renewed`; cancelar mantém até fim do período; webhook idempotente (`duplicate`).
-- **Contagens:** kits/mês por `startOfMonthIso` (UTC); cooldown de variação por plano; voz personalizada só com plano.
-- **Trial:** só começa com billing ativo — confirme gatilho real e se dá para usar antes.
+- **Contagens:** kits do mês por `startOfMonthIso` (UTC); no Grátis a contagem é total; voz personalizada só fora do Grátis.
+- **Trial:** **não existe**. Texto, estado ou métrica que prometa trial de 7 dias é drift.
 
 ## Checklist por dimensão
 
 ### 1. Jornada de negócio
-- Cadastro/login (`frontend/components/platform/Auth.tsx`): validações, e-mail duplicado, sessão persistida (`persistSession: true` em `lib/supabase.ts` — atualizado em 18/10; conferir efeitos: dispositivo compartilhado, relogin forçado, revogação), mensagens, reenvio de confirmação de e-mail.
-- Onboarding 5 etapas (`Onboarding.tsx`): obrigatoriedade, voltar/pular, modo edição, rascunho (órfão, troca de usuário no navegador), conclusão → destino, trial começa quando?
+- Cadastro/login (`frontend/components/platform/Auth.tsx`): validações, e-mail duplicado, sessão só em memória (`persistSession: false` em `lib/supabase.ts`; conferir efeitos: recarregar exige novo login, dispositivo compartilhado, revogação), mensagens, reenvio de confirmação de e-mail.
+- Onboarding 5 etapas (`Onboarding.tsx`): obrigatoriedade, voltar/pular, modo edição, rascunho (órfão, troca de usuário no navegador), conclusão → destino. **Não há trial**; o onboarding não deve prometer teste grátis com prazo.
 - Conta sem onboarding completo: o que funciona? existe gate?
 - `/app/conta` (`Account.tsx`, `modules/account/`): perfil (persistência → topbar), preferências, card de plano em todos os estados, retorno `?checkout=ok`.
 - Exclusão de conta (`DELETE /account`): o que apaga × o que fica; recadastro possível.
-- Funcionalidades: `/app`, `/app/produtos/[productId]`, `kits/[kitId]`, `/app/producao`, `/app/suporte`, `/app/admin` — deep links, 404 de item apagado, limite exatamente atingido, admin × creator.
+- Funcionalidades: `/app`, `/app/descobrir`, `/app/produtos/[productId]`, `kits/[kitId]`, `/app/producao`, `/app/conteudos`, `/app/calendario`, `/app/conta`, `/app/suporte`, `/app/admin` — deep links, 404 de item apagado, limite exatamente atingido, admin × creator.
 
 ### 2. Backend/API
 - Plugins globais (`backend/src/app.ts`, `backend/src/plugins/`): auth, cors, rate-limit, error-handler — toda rota com o preHandler correto?
@@ -118,11 +119,11 @@ Se algo abaixo não bater com o código, **é achado**:
 - Erros: 500 sem vazar detalhe, mensagens úteis, request id em todo log.
 
 ### 3. Banco de dados
-- Migrations (`backend/supabase/migrations/`): numeração duplicada (duas `027_*`), drift repo × produção (docs), ordem de aplicação (022, 029).
+- Migrations (`backend/supabase/migrations/`): numeração duplicada (duas `027_*`), drift repo × produção (docs), ordem de aplicação (022, 028, 029, 032, 033–035). O repositório vai até `035`; verifique no banco se `scheduled_for` e `support_calls` existem.
 - RLS: `020/021/027/028/029` — tabela sem policy × uso; **service role bypassa RLS (`lib/supabase.ts`) → autorização vive na API**; verifique se as funções `SECURITY DEFINER` (022) não abrem brecha.
 - Integridade: `DELETE /account` × FKs/cascatas (`content_kits`, `creator_content`, `subscriptions`, `billing_events`, `analytics_events`, `support`, `ai_usage_daily`); órfãos possíveis.
 - Contagens de quota × SQL real (kits/mês UTC, por produto, produção); índices (`019_performance_indexes`) cobrem gating/listagens?
-- Schema × código: colunas usadas existem (`pending_plan`, `trial_ends_at`, `cancel_at_period_end`...)? Campos citados em docs mas ausentes (`kits_extra`, `ABACATEPAY_PRODUCT_AVULSO`) = drift.
+- Schema × código: colunas usadas existem (`pending_plan`, `cancel_at_period_end`, `billing_mode`, `launch_seat`; `trial_ends_at` existe mas não é usada)? `creator_content.scheduled_for` e `ai_usage_daily.support_calls` existem no banco? Campos citados em docs mas ausentes (`kits_extra`, `ABACATEPAY_PRODUCT_AVULSO`) = drift.
 - Dados: `analytics_events` sem PII; billing acessível só pela API; tamanho/limpeza das tabelas de eventos (retenção).
 
 ### 4. Servidores e infraestrutura
@@ -146,10 +147,11 @@ Se algo abaixo não bater com o código, **é achado**:
 - LGPD: PII em logs/erros/analytics; exclusão de conta apaga de verdade; retenção de logs/eventos; `/termos` e `/privacidade` refletem o código; enumeração de e-mail (signup/recuperação) revela existência?
 
 ### 6. Pagamentos e cobrança
-- Catálogo: `PRODUCT_IDS` (`plans.ts`) × `docs/go-live-billing.md` (6 produtos de assinatura); preços R$ 29,90 / 299 / 59,90 / 599 / 149 / 1.490 batem com os produtos?
+- Catálogo: `PRODUCTS`/`LEGACY_PRODUCTS` (`plans.ts`) × `docs/go-live-billing.md`: 8 produtos de Pro/Lançamento (recorrente + PIX) e 4 legados. Preço vigente R$ 49,90/499; `LAUNCH_OFFER_ENABLED=false` encerra novas vendas de lançamento (R$ 39,90/399 fica só em renovações antigas). Conferir `PLAN_META` e a UI de planos.
+- Provedores: **cartão recorrente no Asaas** (`ASAAS_API_KEY`, `/billing/webhook/asaas`, header `asaas-access-token`) e **PIX por período no AbacatePay** (`ABACATEPAY_*`). Conferir `provider` da linha em `subscriptions`, checkout id, assinatura id e cancelamento no provedor correto.
 - Checkout (`startCheckout`): `returnUrl`/`completionUrl` (`FRONTEND_URL`), retorno `?checkout=ok`, double-click, erro do provedor, já assinante, upgrade × downgrade, mensal ↔ anual.
 - Webhook: segredo, os 7 eventos, idempotência (`billing_events`), fora de ordem, produto desconhecido (log e ignore), `plan_changed` ignorado com segurança.
-- Estados: trialing → active → past_due → canceled; `cancel_at_period_end`; `pending_plan` no renew; re-assinatura; trial só 1x por conta?
+- Estados: active → past_due → canceled; `cancel_at_period_end`; `pending_plan` no renew; re-assinatura; `trialing` deve cair para `free` (não existe trial vendido).
 - Gating fiel: cada limite em TODOS os endpoints, 402 + CTA, reuso de kit liberado, contagem no limite exato e na virada do mês.
 - Avulso/extras: **removidos em 18/10** (avulso excluído da loja; `kits_extra` dropado na 029; `ABACATEPAY_PRODUCT_AVULSO` fora do código) — qualquer referência restante em código/docs/UI = drift.
 - `backend/tests/billing.test.ts` × smoke test de 9 passos do go-live; reembolso/chargeback/NFS: lacuna conhecida, não bug.
@@ -171,12 +173,12 @@ Se algo abaixo não bater com o código, **é achado**:
 - Coerência cota global (`AI_QUOTA` 100/30) × cota por plano (`limits.searchesPerDay`, `kitsPerMonth` — para kit a cota é mensal, mas `reserveKitQuota` é diária? verifique qual vence e se as mensagens batem).
 - Enterprise `searchesPerDay=null` → cai no teto global 100? (verifique `limit ?? AI_QUOTA.ASSISTANT_PER_DAY`).
 - `AI_QUOTA_STORE=memory` × `database`: limites diferentes por instância; docs alertam?
-- Unit economics: tokens médios por busca/kit × preço do plano (R$ 29,90–149) — algum plano pode dar prejuízo no uso máximo? fair use sem teto de custo?
+- Unit economics: tokens médios por busca/kit × preço do plano (R$ 49,90/mês; R$ 499/ano) — o teto de 1.000 kits/mês pode zerar a margem? fair use sem teto de custo?
 - `/admin/ai-usage` (`admin.routes.ts` → `getAiMetricsSnapshot`): mostra tokens mas não custo em R$ nem por usuário? dá para detectar abuso? alerta automático quando tokens disparam? (não existe → lacuna).
 - Consumo das próprias auditorias/scripts: `tools/` (import scripts) chamam IA? `catalog:sync` gasta tokens? algum job que consome tokens fora das cotas?
 
 ### 8. Analytics, telemetria e métricas
-- `ANALYTICS_EVENTS` (`modules/analytics/analytics.routes.ts`): lista fixa — eventos realmente emitidos pelas telas (`track(...)` no frontend)? faltam eventos do funil (checkout_started? trial_started? kit_generated?)? `signup_confirm_email` agora tem fluxo de reenvio (implementado) — sobram nomes nunca disparados?
+- `ANALYTICS_EVENTS` (`modules/analytics/analytics.routes.ts`): lista fixa — eventos realmente emitidos pelas telas (`track(...)` no frontend)? faltam eventos do funil (`checkout_started`? `kit_generated`?)? `signup_confirm_email` agora tem fluxo de reenvio (implementado) — sobram nomes nunca disparados? (não há evento de trial: o modelo é Plano Grátis + Pro)
 - Props: teto 1000 chars, sem PII; `path`; evento fora da lista é recusado.
 - `/admin/analytics/funnel` × dados reais; dashboard admin (cache 30s) coerente com billing summary e creators.
 - Duplicidade de eventos (double render no React, retry); rate limit 60/min não descarta rajadas legítimas.
@@ -184,7 +186,7 @@ Se algo abaixo não bater com o código, **é achado**:
 ### 9. Textos e copy
 - Microcopy de erro (`error-handler.ts`, `Errors` em `types/index.ts`): pt-BR, próximo passo, sem código cru; `PLAN_LIMIT` com hint de upgrade; `SERVICE_UNAVAILABLE`.
 - Promessas × realidade: `PLAN_META` bullets, landing (`frontend/app/landing-*.tsx`), `/planos` — "3 assentos", "Exportação CSV", "Suporte 24h", "Fair use" — o código sustenta?
-- Preços/datas: `formatCents` pt-BR × UI; `fmtDate` na conta × timezone UTC do backend — renovação/trial corretos para o Brasil.
+- Preços/datas: `formatCents` pt-BR × UI; `fmtDate` na conta × timezone UTC do backend — renovação e fim de período corretos para o Brasil.
 - Estados vazios/CTAs; mesma ação com mesmo nome em todas as telas.
 - Typos: confirme o byte real (terminal distorce acentos) — nunca reporte por output de console.
 - `/termos`, `/privacidade`, e-mails × prática real; `RESEND_*` em `env.ts` sem envio — lacuna se algum fluxo prometer e-mail.
@@ -196,18 +198,18 @@ Se algo abaixo não bater com o código, **é achado**:
 - Feedback e confirmações destrutivas (cancelar assinatura, excluir conta) explicam consequência?
 - Formulários: validação, erro por campo, double-submit bloqueado, dados preservados.
 - Responsividade: 360x640 (E2E) e desktop; menu mobile; admin em telas menores.
-- Acessibilidade: foco no modal (`Modal.tsx`, `UpgradeDialog.tsx`), stepper por teclado, `aria-live` de erros, contraste que não impeça leitura, alvos de toque, `prefers-reduced-motion` (`landing-motion.tsx`).
+- Acessibilidade: foco no modal (`Modal.tsx`, `UpgradeDialog.tsx`), stepper por teclado, `aria-live` de erros, contraste que não impeça leitura, alvos de toque, `prefers-reduced-motion`.
 - Consistência: mesmo estado de plano em `PlanBanner.tsx` × `Account.tsx` × `UpgradeDialog.tsx`.
 - Performance percebida: skeleton, cold start com feedback.
 
 ### 11. Qualidade: testes, CI/CD e dependências
 - `.github/workflows/ci.yml`: backend `npm test` + `typecheck` + `build` + `npm audit --omit=dev`; frontend `lint` + `build` + `audit`; Playwright + E2E; gitleaks.
 - **E2E sem backend?** `frontend/playwright.config.ts` sobe só o Next (`npm run dev`, `NEXT_PUBLIC_E2E=1`) e o CI não inicia a API — o que os testes cobrem de verdade? rotas mockadas? estados degradados? Fluxos com sessão/kit/pagamento testados ou só telas públicas?
-- `backend/tests/` (15 arquivos, 161 testes): quais fluxos críticos NÃO têm teste — webhook idempotência, IDOR/ownership, gating por plano, trial expirado, exclusão de conta, quotas de IA, RLS?
+- `backend/tests/` (15 arquivos, 161 testes): quais fluxos críticos NÃO têm teste — webhook idempotência, IDOR/ownership, gating por plano, `past_due`/cancelamento, exclusão de conta, quotas de IA, RLS?
 - `frontend/test-results/` tem falhas antigas — flaky? retries 2 no CI mascara?
 - Scripts existem de verdade (`npm run typecheck`, `verify`, `catalog:sync`)? `next build` typecheck ativo (sem `ignoreBuildErrors`)?
 - Dependências: lockfile sincronizado (`npm ci` limpo), `npm audit` sem vulnerabilidade prod, versões pinadas, deps não usadas óbvias.
-- Repo: `.env` fora do git, `.gitignore` cobre segredos, `legacy-static` é intencional (não reportar).
+- Repo: `.env` fora do git, `.gitignore` cobre segredos; o `legacy-static/` foi removido (não procurar).
 
 ### 12. Operações, observabilidade e resiliência
 - **Sem error tracking/alertas** (não há Sentry — confirmado no código): quem descobre 500, /ready 503, webhook de pagamento falhando? só log em Render? monitor externo?
@@ -217,7 +219,7 @@ Se algo abaixo não bater com o código, **é achado**:
 - Kill switches: `BILLING_ENABLED=false`, sem `GEMINI_API_KEY` (fallback), sem `CATALOG_FEED_URL`, Redis ausente (fail-open) — comportamentos documentados batem com o código?
 - Ops de admin (`Admin.tsx`, `admin.routes.ts`): bloquear creator (efeito imediato? caches?), catálogo (pausar produto reflete?), suporte (SLA que o plano promete), billing summary × realidade, quem audita ações de admin (log/trilha)?
 - Webhook de pagamento fora do ar: retry do provedor? evento perdido = plano nunca ativado — existe reconciliação manual documentada?
-- Pós-deploy: smoke test do go-live (9 passos) é executável? migrations 022/029 aplicadas antes do deploy?
+- Pós-deploy: smoke test do go-live (9 passos) é executável? migrations `022`, `028`, `032` e `035` aplicadas antes do deploy?
 
 ### Transversais
 - FE promete X, BE aplica Y; visão admin × creator; testes × comportamento; docs × código; invariantes acima.
@@ -227,7 +229,7 @@ Se algo abaixo não bater com o código, **é achado**:
 
 1. Rastreie cada fluxo: tela → gatilho → HTTP → rota → serviço → tabela → resposta → UI.
 2. Confirme tudo no código, com `arquivo:linha`. Nunca deduza pelo nome.
-3. Varra estados de borda: primeiro acesso; reload no meio; logout/login; sessão expirada; timeout/cold start; 4xx/5xx; double-click; voltar do checkout; webhook duplicado/fora de ordem; plano trocado/cancelado durante o uso; trial expirando; limite exato; billing desligado; creator bloqueado; banco fora; IA fora (fallback).
+3. Varra estados de borda: primeiro acesso; reload no meio; logout/login; sessão expirada; timeout/cold start; 4xx/5xx; double-click; voltar do checkout; webhook duplicado/fora de ordem; plano trocado/cancelado durante o uso; fim do período pago; limite exato; billing desligado; creator bloqueado; banco fora; IA fora (fallback).
 4. Cruze as pontas em cada dimensão (FE×BE, código×docs, código×migrations, código×testes, código×painel).
 5. Leia os testes para separar intencional de bug.
 6. Rode `npm test`, `npm run lint`, `npm run build`, `npm run typecheck`, E2E quando ajudar a confirmar.

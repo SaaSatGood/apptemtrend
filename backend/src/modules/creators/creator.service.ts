@@ -49,6 +49,34 @@ export async function getMe(userId: string, email?: string | null) {
   return result;
 }
 
+const OBJECTIVE_LABELS: Record<string, string> = {
+  comecar_vender: 'começar a vender',
+  vender_mais: 'vender mais',
+  criar_videos: 'criar vídeos para produtos',
+  explorando: 'explorar a plataforma',
+};
+
+/**
+ * Contexto curto das preferências do onboarding para orientar a IA sem
+ * inventar dados do produto. Vai como briefing adicional do Content Kit;
+ * o briefing escrito pelo usuário continua tendo prioridade.
+ */
+export function creatorPreferencesBriefing(creator: Creator): string | undefined {
+  const parts: string[] = [];
+  const objective = creator.objetivo ? OBJECTIVE_LABELS[creator.objetivo] : null;
+  if (objective) parts.push(`objetivo: ${objective}`);
+  const temas = (creator.temas_interesse || [])
+    .map((value) => value.replace(/^Outros?:\s*/i, '').trim())
+    .filter(Boolean);
+  if (temas.length) parts.push(`temas: ${temas.join(', ')}`);
+  const estilos = (creator.estilos_conteudo || [])
+    .map((value) => value.replace(/^Outro?:\s*/i, '').trim())
+    .filter(Boolean);
+  if (estilos.length) parts.push(`formatos preferidos: ${estilos.join(', ')}`);
+  if (!parts.length) return undefined;
+  return `Preferências do onboarding (contexto de estilo e foco; não invente dados do produto): ${parts.join('; ')}.`;
+}
+
 export async function onboarding(userId: string, data: OnboardingInput, meta?: { email?: string | null }) {
   const voz = data.voz_exemplo?.trim() ? data.voz_exemplo.trim().slice(0, 500) : null;
   const preferences = {

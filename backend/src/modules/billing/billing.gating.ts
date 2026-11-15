@@ -1,9 +1,9 @@
 import { env } from '../../config/env.js';
 import { supabaseAdmin } from '../../lib/supabase.js';
 import { logger } from '../../lib/logger.js';
-import { AI_QUOTA } from '../../lib/ai-metrics.js';
+import { AI_QUOTA, getFreeUsage } from '../../lib/ai-metrics.js';
 import { createAppError, type AppError, type Creator } from '../../types/index.js';
-import { PLAN_LIMITS, FAIR_USE_KITS_PER_MONTH, FREE_KITS_TOTAL, planLabel, type PaidPlanId, type PlanId, type PlanLimits } from './plans.js';
+import { PLAN_LIMITS, FAIR_USE_KITS_PER_MONTH, FREE_KITS_PER_WEEK, planLabel, type PaidPlanId, type PlanId, type PlanLimits } from './plans.js';
 
 /**
  * Gating por plano. Tudo aqui é no-op quando o billing está desligado
@@ -14,7 +14,10 @@ import { PLAN_LIMITS, FAIR_USE_KITS_PER_MONTH, FREE_KITS_TOTAL, planLabel, type 
 export function billingActive(): boolean {
   // Nunca cria cobranças reais durante a suíte de testes, mesmo com .env local preenchido.
   if (env.NODE_ENV === 'test') return false;
-  return env.BILLING_ENABLED === true && Boolean(env.ABACATEPAY_API_KEY);
+  if (env.BILLING_ENABLED !== true) return false;
+  // Cartão usa Asaas; PIX usa AbacatePay. Basta um dos provedores estar ativo
+  // para o billing existir (o outro método falha de forma explícita).
+  return Boolean(env.ABACATEPAY_API_KEY || env.ASAAS_API_KEY);
 }
 
 type PlanStateFields = Pick<Creator, 'plan' | 'plan_status' | 'trial_ends_at' | 'current_period_end'>;
@@ -53,6 +56,15 @@ export function planLimitError(message: string): AppError {
   return createAppError('PLAN_LIMIT', message, 402);
 }
 
+/** Catálogo completo (aba Produtos) é exclusivo dos planos pagos. A busca do
+ *  Descobrir e o detalhe do produto continuam liberados para o Grátis. */
+export function assertCatalogAccess(creator: Creator): void {
+  if (effectivePlan(creator) !== 'free') return;
+  throw planLimitError(
+    `O catálogo completo de produtos é um recurso do Pro. No Grátis você usa o Descobrir para conhecer o fluxo da plataforma. Assine Pro para navegar por todos os produtos.`,
+  );
+}
+
 // Dica de upgrade por plano: hoje existe um único plano pago (Pro). Mantemos
 // os planos antigos apenas para assinaturas legadas.
 const NEXT_PLAN: Partial<Record<PlanId, PaidPlanId>> = {
@@ -64,14 +76,14 @@ export function kitUpgradeHint(plan: PlanId): string {
   const next = NEXT_PLAN[plan];
   if (!next) return '';
   const nextLimit = PLAN_LIMITS[next].kitsPerMonth;
-  return nextLimit ? ` No ${planLabel(next)} são ${nextLimit} roteiros por mês — e você mantém tudo o que já fez.` : ` Assine ${planLabel(next)} para continuar criando com uso justo.`;
+  return nextLimit ? ` No ${planLabel(next)} são ${nextLimit} roteiros por mês — e você mantém tudo o que já fez.` : ` Assine ${planLabel(next)} para continuar criando.`;
 }
 
 export function searchUpgradeHint(plan: PlanId): string {
   const next = NEXT_PLAN[plan];
   if (!next) return '';
   const nextLimit = PLAN_LIMITS[next].searchesPerDay;
-  return nextLimit ? ` No ${planLabel(next)} são ${nextLimit} buscas por dia.` : ` Assine ${planLabel(next)} para continuar buscando com uso justo.`;
+  return nextLimit ? ` No ${planLabel(next)} são ${nextLimit} buscas por dia.` : ` Assine ${planLabel(next)} para continuar buscando.`;
 }
 
 export function productionUpgradeHint(plan: PlanId): string {
@@ -126,7 +138,7 @@ export async function countProductionItems(creatorId: string): Promise<number> {
   return count ?? 0;
 }
 
-/** Kits: Grátis = 3 por conta; pagos = ilimitado com uso justo.
+/** Kits: Grátis = limite semanal; pagos = ilimitado com uso justo.
  *  O número do uso justo não é exposto na tabela de planos — quando o teto é
  *  atingido, o contato vira conversa comercial. Com `reusableProductId`,
  *  permite reutilizar um kit já existente do produto (navegar roteiros salvos
@@ -135,9 +147,10 @@ export async function assertKitQuota(creator: Creator, reusableProductId?: strin
   const { plan, limits } = planContextForCreator(creator);
   if (reusableProductId && (await countKitsForProduct(creator.id, reusableProductId)) > 0) return;
   if (plan === 'free') {
-    if (await countKits(creator.id) < FREE_KITS_TOTAL) return;
+    const usage = await getFreeUsage(creator.user_id, creator.id);
+    if (usage.kitsWeek < FREE_KITS_PER_WEEK) return;
     throw planLimitError(
-      `Você usou os ${FREE_KITS_TOTAL} roteiros do plano Grátis. Tudo o que criou continua salvo.${kitUpgradeHint('free')}`,
+      `Você atingiu o limite semanal de roteiros do plano Grátis. Tudo o que criou continua salvo.${kitUpgradeHint('free')}`,
     );
   }
   if (!billingActive()) return;

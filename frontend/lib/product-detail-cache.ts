@@ -83,6 +83,18 @@ export function upsertProductKit(productId: string, kit: ContentKit) {
   });
 }
 
+/** Roteiro excluído sai do cache para não reaparecer ao voltar para o produto. */
+export function removeProductKit(productId: string, kitId: string) {
+  const entry = entries.get(productId);
+  if (!entry) return;
+  bumpRevision(productId);
+  entries.set(productId, {
+    data: { ...entry.data, content_kits: entry.data.content_kits.filter((item) => item.id !== kitId) },
+    at: entry.at,
+    partial: entry.partial,
+  });
+}
+
 /**
  * Aproveita o produto/roteiro que já veio na lista de produção. A entrada é
  * marcada como parcial: a página abre preenchida e revalida em segundo plano.

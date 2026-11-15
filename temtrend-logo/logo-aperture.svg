@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" role="img" aria-labelledby="title desc">
+  <title id="title">Temtrend Aperture</title>
+  <desc id="desc">Forma geométrica aberta que sugere uma janela para o que vem a seguir.</desc>
+  <path fill="#172033" fill-rule="evenodd" d="M24 4a20 20 0 1 1-14.14 5.86A20 20 0 0 1 24 4Zm0 8a12 12 0 1 0 8.49 3.51A12 12 0 0 0 24 12Zm3.1 4.2 9.7 7.8-9.7 7.8v-4.6l4-3.2-4-3.2v-4.6Z"/>
+  <path d="M27.1 16.2 36.8 24l-9.7 7.8v-4.6l4-3.2-4-3.2v-4.6Z" fill="#4F8CFF"/>
+</svg>

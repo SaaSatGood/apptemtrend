@@ -1,0 +1,1418 @@
+/* Shared platform language: dashboard, selection, content library and calendar. */
+#app-view {
+  --tt-ui-bg: #f3eefb;
+  --tt-ui-surface: #ffffff;
+  --tt-ui-ink: #272131;
+  --tt-ui-muted: #66756e;
+  --tt-ui-line: #e7dff6;
+  --tt-ui-soft: #f3eefb;
+  --tt-ui-lime: var(--tt-lime, #6d28d9);
+  --tt-ui-radius: 16px;
+  --tt-ui-control: 10px;
+}
+
+[data-theme="dark"] #app-view {
+  --tt-ui-bg: #12121a;
+  --tt-ui-surface: #17171f;
+  --tt-ui-ink: #f3eefb;
+  --tt-ui-muted: #b08cee;
+  --tt-ui-line: #3a3a47;
+  --tt-ui-soft: #17171f;
+  --tt-ui-lime: var(--tt-lime, #6d28d9);
+}
+
+#app-view :is(.tt-dashboard, .tt-contents-page, .tt-calendar-page, .production-section, .detail-view) {
+  color: var(--tt-ui-ink);
+  font-family: var(--tt-font-ui);
+}
+
+#app-view :is(.tt-dashboard, .tt-contents-page, .tt-calendar-page, .production-section, .detail-view) h1,
+#app-view :is(.tt-dashboard, .tt-contents-page, .tt-calendar-page, .production-section, .detail-view) h2,
+#app-view :is(.tt-dashboard, .tt-contents-page, .tt-calendar-page, .production-section, .detail-view) h3 {
+  color: var(--tt-ui-ink);
+  font-family: var(--tt-font-editorial);
+  letter-spacing: -.04em;
+}
+
+#app-view :is(.tt-dash-heading-action, .tt-btn-lime, .tt-btn-outline, .tt-btn-action, .tt-btn-sm-outline,
+  .tt-btn-icon, .selected-products-discover, .production-action, .primary, .ghost, .tt-empty-cta,
+  .tt-calendar-controls button, .tt-month-nav button) {
+  min-height: 42px;
+  border-radius: 999px;
+  font-family: var(--tt-font-editorial);
+  font-weight: 600;
+  transition: background .22s ease, border-color .22s ease, color .22s ease, transform .22s ease, box-shadow .22s ease;
+}
+
+#app-view :is(.tt-dash-heading-action, .tt-btn-lime, .selected-products-discover) {
+  min-height: 48px;
+  padding-inline: 22px;
+  border: 1px solid var(--tt-lime, #8d55ec);
+  background: var(--tt-ui-lime) !important;
+  color: var(--tt-deep, #272131) !important;
+}
+
+#app-view :is(.primary, .tt-btn-action.is-primary, .tt-btn-action.is-accent, .generate-script) {
+  min-height: 48px;
+  border: 1px solid var(--tt-lime, #8d55ec) !important;
+  border-radius: 999px;
+  background: var(--tt-lime, #8d55ec) !important;
+  color: var(--tt-deep, #272131) !important;
+  font-family: var(--tt-font-editorial);
+  font-weight: 600;
+}
+
+#app-view :is(.primary, .tt-btn-action.is-primary, .tt-btn-action.is-accent, .generate-script):hover:not(:disabled) {
+  background: var(--tt-lime-hover, #b08cee) !important;
+  box-shadow: 0 10px 24px #5b21b626;
+  transform: translateY(-1px);
+}
+
+#app-view :is(.tt-dash-heading-action, .tt-btn-lime, .selected-products-discover):hover {
+  background: #b08cee !important;
+  transform: translateY(-1px);
+  box-shadow: 0 10px 24px #5b21b626;
+}
+
+#app-view :is(.tt-btn-outline, .tt-btn-action, .tt-btn-sm-outline, .tt-btn-icon, .production-action, .ghost,
+  .tt-calendar-controls button, .tt-month-nav button) {
+  border: 1px solid var(--tt-ui-line);
+  background: var(--tt-ui-surface);
+  color: var(--tt-ui-ink);
+}
+
+#app-view :is(.tt-btn-outline, .tt-btn-action, .tt-btn-sm-outline, .production-action, .ghost,
+  .tt-calendar-controls button, .tt-month-nav button):hover {
+  border-color: #b08cee;
+  background: var(--tt-ui-soft);
+  transform: translateY(-1px);
+}
+
+#app-view :is(.tt-dashboard, .tt-contents-page, .tt-calendar-page, .production-section, .detail-view) :is(input:not([type="checkbox"]):not([type="radio"]), select, textarea) {
+  min-height: 42px;
+  border: 1px solid var(--tt-ui-line);
+  border-radius: var(--tt-ui-control);
+  background: var(--tt-ui-surface);
+  color: var(--tt-ui-ink);
+  font-family: var(--tt-font-ui);
+}
+
+#app-view :is(.tt-dashboard, .tt-contents-page, .tt-calendar-page, .production-section, .detail-view) :is(input, select, textarea):focus {
+  border-color: #8d55ec;
+  outline: 3px solid #8d55ec38;
+}
+
+/* Dashboard */
+#app-view .tt-dashboard {
+  max-width: 1240px;
+  margin: 0 auto;
+  gap: 12px;
+}
+
+#app-view .tt-dash-heading {
+  align-items: end;
+  margin-bottom: 12px;
+}
+
+#app-view .tt-dash-heading h1 {
+  margin-bottom: 6px;
+  font-size: clamp(34px, 3.5vw, 46px);
+  line-height: 1;
+  letter-spacing: -.045em;
+}
+
+#app-view .tt-dash-heading p {
+  font-size: 14px;
+}
+
+#app-view .tt-dash-editorial,
+#app-view .tt-dash-card,
+#app-view .tt-dash-metric,
+#app-view .tt-dash-hero-block {
+  border: 1px solid var(--tt-ui-line);
+  border-radius: var(--tt-ui-radius);
+  background: var(--tt-ui-surface);
+  box-shadow: none;
+}
+
+[data-theme="dark"] #app-view :is(.tt-dash-editorial, .tt-dash-card, .tt-dash-metric, .tt-dash-hero-block,
+  .tt-contents-toolbar, .tt-content-card, .tt-metric-card, .tt-contents-empty, .production-toolbar,
+  .production-card, .detail-view, .tt-calendar-main, .tt-calendar-sidebar-panel) {
+  background: var(--tt-ui-surface);
+  border-color: var(--tt-ui-line);
+  color: var(--tt-ui-ink);
+}
+
+[data-theme="dark"] #app-view :is(.tt-dash-editorial, .tt-metric-card.is-highlight, .tt-calendar-goal-banner) {
+  background: var(--tt-ui-soft);
+}
+
+#app-view .tt-dash-editorial {
+  background: var(--tt-ui-soft);
+}
+
+#app-view .tt-dash-editorial {
+  overflow: hidden;
+  border-radius: 14px;
+}
+
+#app-view .tt-dash-editorial-main {
+  gap: 13px;
+  padding: 16px 18px;
+}
+
+#app-view .tt-dash-editorial-head h2 {
+  font-size: 22px;
+}
+
+#app-view .tt-dash-editorial-actions a {
+  min-height: 38px;
+  border-radius: 999px;
+}
+
+#app-view .tt-dash-week {
+  border-radius: 10px;
+}
+
+#app-view .tt-dash-week>a {
+  min-height: 56px;
+  padding-block: 7px;
+}
+
+#app-view .tt-dash-feature-metrics>a {
+  padding-top: 10px;
+}
+
+#app-view .tt-dash-feature-metrics strong {
+  font-size: 22px;
+}
+
+#app-view .tt-dash-editorial-rail {
+  padding: 16px;
+}
+
+#app-view .tt-dash-editorial-rail li {
+  min-height: 44px;
+}
+
+#app-view .tt-dash-filters {
+  gap: 6px;
+}
+
+#app-view .tt-dash-filter {
+  min-height: 36px;
+  padding-inline: 13px;
+  font: 700 11px var(--tt-font-ui);
+}
+
+#app-view .tt-dash-card {
+  padding: 16px;
+  border-radius: 14px;
+}
+
+#app-view .tt-dash-metric {
+  min-height: 78px;
+  padding: 13px 14px;
+}
+
+#app-view .tt-dash-hero {
+  border-radius: 14px;
+}
+
+#app-view .tt-dash-hero-block {
+  min-height: 100px;
+  padding: 16px 18px;
+}
+
+#app-view .tt-dash-hero-value {
+  font-size: 32px;
+}
+
+#app-view .tt-dash-metrics {
+  gap: 8px;
+}
+
+#app-view .tt-dash-charts,
+#app-view .tt-dash-bottom {
+  gap: 10px;
+}
+
+#app-view .tt-dash-card-head {
+  margin-bottom: 10px;
+}
+
+#app-view .tt-dash-card-head h2 {
+  font-size: 14px;
+}
+
+#app-view .tt-dash-metric-label,
+#app-view .tt-dash-hero-label {
+  color: var(--tt-ui-muted);
+  font-family: var(--tt-font-ui);
+}
+
+#app-view .tt-dash-metric-value,
+#app-view .tt-dash-hero-value {
+  color: var(--tt-ui-ink);
+  font-family: var(--tt-font-editorial);
+}
+
+/* Selected products */
+#app-view .production-section {
+  max-width: 1240px;
+  margin-inline: auto;
+}
+
+#app-view .production-heading {
+  margin-bottom: 22px;
+}
+
+#app-view .production-heading h1 {
+  font-size: clamp(30px, 4vw, 48px);
+}
+
+#app-view .production-toolbar {
+  border: 1px solid var(--tt-ui-line);
+  border-radius: var(--tt-ui-radius);
+  background: var(--tt-ui-surface);
+  box-shadow: none;
+}
+
+#app-view .production-card {
+  border-color: var(--tt-ui-line);
+  border-radius: var(--tt-ui-radius);
+  background: var(--tt-ui-surface);
+  box-shadow: none;
+}
+
+#app-view .production-heading {
+  align-items: end;
+  margin-bottom: 16px;
+}
+
+#app-view .production-heading h1 {
+  margin-bottom: 6px;
+  font-size: clamp(34px, 3.5vw, 46px);
+  line-height: 1;
+  letter-spacing: -.045em;
+}
+
+#app-view .production-heading>div>p:last-child {
+  font-size: 14px;
+}
+
+#app-view .production-guide-strip {
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--tt-ui-line);
+  border-radius: 14px;
+  background: var(--tt-ui-soft);
+}
+
+#app-view .production-guide-icon {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--tt-lime);
+  color: #fff;
+}
+
+#app-view .production-guide-strip p {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  color: var(--tt-ui-ink);
+  font-size: 13px;
+}
+
+#app-view .production-guide-strip p span {
+  color: var(--tt-ui-muted);
+  font-size: 11px;
+}
+
+#app-view .production-guide-strip>button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 0 14px;
+  border: 1px solid var(--tt-ui-line);
+  border-radius: 999px;
+  background: var(--tt-ui-surface);
+  color: var(--tt-ui-ink);
+  font: 700 12px var(--tt-font-ui);
+  cursor: pointer;
+}
+
+#app-view .production-guide-strip>button:hover {
+  border-color: var(--tt-lime);
+  transform: translateY(-1px);
+}
+
+#app-view .production-toolbar {
+  gap: 10px;
+  margin-bottom: 10px;
+  padding: 10px 12px;
+}
+
+#app-view .production-controls {
+  width: 100%;
+}
+
+#app-view .production-search {
+  max-width: none;
+}
+
+#app-view .production-search input,
+#app-view .production-sort select {
+  min-height: 42px;
+}
+
+#app-view .production-toolbar-foot {
+  display: flex;
+  grid-column: 1 / -1;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+}
+
+#app-view .production-status-filters {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+#app-view .production-status-filters button {
+  min-height: 30px;
+  padding: 0 11px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--tt-ui-muted);
+  font: 700 11px var(--tt-font-ui);
+  cursor: pointer;
+}
+
+#app-view .production-status-filters button:hover {
+  color: var(--tt-ui-ink);
+  background: var(--tt-ui-soft);
+}
+
+#app-view .production-status-filters button.is-active {
+  background: var(--tt-lime);
+  color: #fff;
+}
+
+#app-view .production-grid {
+  gap: 12px;
+}
+
+#app-view .production-card {
+  grid-template-columns: 118px minmax(0, 1fr);
+  gap: 14px;
+  min-height: 184px;
+  padding: 12px;
+  border-radius: 14px;
+}
+
+#app-view .production-card .production-image-wrap {
+  width: 118px;
+  height: 148px;
+  border-radius: 10px;
+}
+
+#app-view .production-info h3 {
+  margin: 6px 0 10px;
+  font-size: 15px;
+  line-height: 1.18;
+}
+
+#app-view .selected-product-metrics {
+  margin-bottom: 10px;
+}
+
+#app-view .selected-product-metrics>div {
+  padding-block: 8px;
+}
+
+#app-view .production-card-actions .continue-production {
+  min-height: 44px;
+}
+
+#app-view .production-card-actions .production-remove {
+  width: 44px;
+  min-height: 44px;
+  flex-basis: 44px;
+}
+
+@media (max-width: 720px) {
+  #app-view .production-guide-strip {
+    grid-template-columns: 36px minmax(0, 1fr);
+  }
+
+  #app-view .production-guide-strip>button {
+    grid-column: 1 / -1;
+    width: 100%;
+    justify-content: center;
+  }
+
+  #app-view .production-toolbar-foot {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  #app-view .production-status-filters {
+    width: 100%;
+    overflow-x: auto;
+  }
+
+  #app-view .production-card {
+    grid-template-columns: 88px minmax(0, 1fr);
+  }
+
+  #app-view .production-card .production-image-wrap {
+    width: 88px;
+    height: 108px;
+  }
+}
+
+/* Content library */
+#app-view .tt-contents-page {
+  max-width: 1240px;
+  margin: 0 auto;
+}
+
+#app-view .tt-contents-header {
+  margin-bottom: 14px;
+}
+
+#app-view .tt-contents-header h1 {
+  margin-bottom: 6px;
+  font-size: clamp(34px, 3.5vw, 46px);
+  line-height: 1;
+  letter-spacing: -.045em;
+}
+
+#app-view .tt-contents-header-copy p {
+  max-width: 680px;
+  font-size: 14px;
+}
+
+#app-view .tt-contents-guide-strip {
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--tt-ui-line);
+  border-radius: 14px;
+  background: var(--tt-ui-soft);
+}
+
+#app-view .tt-contents-guide-icon {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--tt-lime);
+  color: #fff;
+}
+
+#app-view .tt-contents-guide-strip p {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  color: var(--tt-ui-ink);
+  font-size: 13px;
+}
+
+#app-view .tt-contents-guide-strip p span {
+  color: var(--tt-ui-muted);
+  font-size: 11px;
+}
+
+#app-view .tt-contents-guide-strip>a {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 0 14px;
+  border: 1px solid var(--tt-ui-line);
+  border-radius: 999px;
+  background: var(--tt-ui-surface);
+  color: var(--tt-ui-ink);
+  font: 700 12px var(--tt-font-ui);
+  text-decoration: none;
+}
+
+#app-view .tt-contents-guide-strip>a:hover {
+  border-color: var(--tt-lime);
+  transform: translateY(-1px);
+}
+
+#app-view .tt-contents-metrics-grid {
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+#app-view :is(.tt-metric-card, .tt-content-card, .tt-contents-toolbar, .tt-contents-empty) {
+  border-color: var(--tt-ui-line);
+  border-radius: var(--tt-ui-radius);
+  background: var(--tt-ui-surface);
+  box-shadow: none;
+}
+
+#app-view .tt-metric-card {
+  min-height: 92px;
+  padding: 13px 15px;
+}
+
+#app-view .tt-metric-value {
+  font-size: 26px;
+}
+
+#app-view .tt-metric-card.is-highlight {
+  background: var(--tt-ui-soft);
+  border-color: #b08cee;
+}
+
+#app-view .tt-content-card {
+  padding: 13px;
+  border-radius: 14px;
+}
+
+#app-view .tt-content-card:hover {
+  border-color: #b08cee;
+  box-shadow: none;
+  transform: translateY(-2px);
+}
+
+#app-view .tt-content-title {
+  font-family: var(--tt-font-editorial);
+}
+
+#app-view .tt-content-thumb {
+  width: 60px;
+  height: 60px;
+  flex-basis: 60px;
+}
+
+#app-view .tt-content-thumb :is(img, .product-image-fallback) {
+  width: 60px;
+  height: 60px;
+}
+
+#app-view .tt-content-card-top {
+  gap: 10px;
+}
+
+#app-view .tt-content-title {
+  font-size: 14px;
+  line-height: 1.2;
+}
+
+#app-view .tt-content-hook-box {
+  margin-top: 10px;
+  padding: 10px;
+}
+
+#app-view .tt-content-hook-text {
+  font-size: 12px;
+}
+
+#app-view .tt-schedule-editor.is-compact {
+  margin-top: 8px;
+  padding: 8px;
+}
+
+/* The search field lives inside a pill; it must not inherit the global input chrome. */
+#app-view .tt-contents-toolbar {
+  display: grid;
+  grid-template-columns: minmax(260px, 420px) minmax(0, 1fr);
+  align-items: center;
+  gap: 16px;
+  background: transparent;
+}
+
+#app-view .tt-contents-search {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  max-width: none;
+  height: 42px;
+  background: var(--tt-ui-surface);
+  border-color: var(--tt-ui-line);
+}
+
+#app-view .tt-contents-search>input,
+#app-view .tt-contents-search>input:focus {
+  box-sizing: border-box;
+  flex: 1 1 auto;
+  width: 0;
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+  margin: 0 0 0 10px;
+  padding: 0;
+  border: 0 !important;
+  border-radius: 0;
+  outline: 0;
+  background: transparent !important;
+  box-shadow: none;
+  font: 400 13px var(--tt-font-ui);
+  color: var(--tt-ui-ink);
+}
+
+#app-view .tt-contents-search:focus-within {
+  border-color: var(--tt-lime, #6d28d9);
+  outline: 3px solid #6d28d938;
+  outline-offset: 0;
+}
+
+#app-view .tt-contents-filters {
+  justify-content: flex-end;
+  gap: 5px;
+  flex-wrap: nowrap;
+}
+
+#app-view .tt-filter-pill {
+  box-sizing: border-box;
+  min-height: 36px;
+  height: 36px;
+  padding: 0 10px;
+  border-color: var(--tt-ui-line);
+  background: var(--tt-ui-surface);
+  color: var(--tt-ui-ink);
+  font: 700 11px var(--tt-font-ui);
+  white-space: nowrap;
+  transition: background .22s ease, border-color .22s ease, color .22s ease, transform .22s ease, box-shadow .22s ease;
+}
+
+#app-view .tt-filter-pill:hover {
+  border-color: var(--tt-lime, #6d28d9);
+  transform: translateY(-1px);
+}
+
+#app-view .tt-filter-pill.is-active {
+  background: var(--tt-lime, #6d28d9);
+  border-color: var(--tt-lime, #6d28d9);
+  color: var(--tt-deep, #272131);
+}
+
+#app-view .tt-filter-pill.is-active:hover {
+  background: var(--tt-lime-hover, #b08cee);
+  box-shadow: 0 10px 24px #5b21b626;
+}
+
+#app-view .tt-filter-pill.is-active small {
+  color: var(--tt-deep, #272131);
+  background: #27213120;
+}
+
+#app-view .tt-filter-pill small {
+  min-width: 16px;
+  height: 16px;
+  padding-inline: 4px;
+  font-size: 9px;
+}
+
+#app-view .tt-contents-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+/* Content card actions share one landing-page control size. */
+#app-view .tt-content-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+#app-view .tt-content-actions .tt-btn-action {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  min-height: 48px;
+  height: 48px;
+  padding: 0 14px;
+  border-radius: 999px;
+  font: 600 13px var(--tt-font-editorial);
+  white-space: nowrap;
+  transition: background .22s ease, border-color .22s ease, color .22s ease, transform .22s ease, box-shadow .22s ease;
+}
+
+#app-view .tt-content-actions .tt-btn-action:hover {
+  transform: translateY(-1px);
+}
+
+#app-view .tt-content-actions .tt-btn-action.is-primary,
+#app-view .tt-content-actions .tt-btn-action.is-accent {
+  background: var(--tt-lime, #6d28d9);
+  border-color: var(--tt-lime, #6d28d9);
+  color: var(--tt-deep, #272131);
+}
+
+#app-view .tt-content-actions .tt-btn-action.is-primary:hover,
+#app-view .tt-content-actions .tt-btn-action.is-accent:hover {
+  background: var(--tt-lime-hover, #b08cee);
+  box-shadow: 0 10px 24px #5b21b626;
+}
+
+/* Hero CTA contract: every positive platform action uses the exact same lime,
+   type and lift animation. Neutral, destructive and disabled actions remain
+   intentionally outside this group. */
+#app-view :is(.primary,
+  .app-create-link,
+  .continue-production,
+  .generate-script,
+  .selected-products-discover,
+  .tt-dash-heading-action,
+  .tt-btn-lime,
+  .tt-btn-action.is-primary,
+  .tt-btn-action.is-accent,
+  .production-action.continue-production) {
+  min-height: 48px;
+  border-radius: var(--tt-radius-pill, 999px);
+  background: var(--tt-lime, #6d28d9) !important;
+  border-color: var(--tt-lime, #6d28d9) !important;
+  color: var(--tt-ink, #14101f) !important;
+  font-family: var(--tt-font-ui) !important;
+  font-weight: 700;
+  transition: transform var(--tt-motion-fast, 180ms ease), background var(--tt-motion-fast, 180ms ease),
+    border-color var(--tt-motion-fast, 180ms ease), box-shadow var(--tt-motion-fast, 180ms ease);
+}
+
+#app-view :is(.primary, .ghost, .button-light, .app-create-link, .continue-production,
+  .generate-script, .selected-products-discover, .production-action,
+  .tt-dash-heading-action, .tt-btn-lime, .tt-btn-outline, .tt-btn-action,
+  .tt-btn-sm-outline, .tt-btn-icon, .tt-empty-cta, .tt-calendar-controls button,
+  .tt-month-nav button) {
+  font-family: var(--tt-font-ui) !important;
+}
+
+#app-view :is(.primary,
+  .app-create-link,
+  .continue-production,
+  .generate-script,
+  .selected-products-discover,
+  .tt-dash-heading-action,
+  .tt-btn-lime,
+  .tt-btn-action.is-primary,
+  .tt-btn-action.is-accent,
+  .production-action.continue-production):hover:not(:disabled) {
+  background: var(--tt-lime-hover, #8b6cf5) !important;
+  border-color: var(--tt-lime-hover, #8b6cf5) !important;
+  box-shadow: 0 10px 24px #5b21b626;
+  transform: translateY(-1px);
+}
+
+/* Result cards: three actions use an equal grid so labels do not change the
+   rhythm from card to card. */
+#app-view .tt-discovery .opportunity-card .product-actions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+#app-view .tt-discovery .opportunity-card .product-actions>button {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  min-height: 48px;
+  height: 48px;
+  padding: 0 12px;
+  border-radius: var(--tt-radius-pill, 999px);
+  font: 700 13px var(--tt-font-ui) !important;
+  white-space: nowrap;
+  transition: transform var(--tt-motion-fast, 180ms ease), background var(--tt-motion-fast, 180ms ease),
+    border-color var(--tt-motion-fast, 180ms ease), box-shadow var(--tt-motion-fast, 180ms ease);
+}
+
+#app-view .tt-discovery .opportunity-card .product-actions>button:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+#app-view .tt-discovery .opportunity-card .product-actions .generate-script {
+  background: var(--tt-lime, #6d28d9) !important;
+  border: 1px solid var(--tt-lime, #6d28d9) !important;
+  color: var(--tt-ink, #14101f) !important;
+}
+
+#app-view .tt-discovery .opportunity-card .product-actions .generate-script:hover:not(:disabled) {
+  background: var(--tt-lime-hover, #8b6cf5) !important;
+  border-color: var(--tt-lime-hover, #8b6cf5) !important;
+  box-shadow: 0 10px 24px #5b21b626;
+}
+
+#app-view .tt-discovery .opportunity-card .product-actions :is(.opportunity-save, .open-product) {
+  background: var(--tt-ui-surface) !important;
+  border: 1px solid var(--tt-ui-line) !important;
+  color: var(--tt-ui-ink) !important;
+}
+
+#app-view .tt-discovery .opportunity-card .product-actions :is(.opportunity-save, .open-product):hover:not(:disabled) {
+  background: var(--tt-ui-soft) !important;
+  border-color: var(--tt-lime) !important;
+}
+
+@media (max-width: 1100px) {
+  #app-view .tt-contents-toolbar {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  #app-view .tt-contents-filters {
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 1000px) {
+  #app-view .tt-contents-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  #app-view .tt-contents-filters {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding: 2px 0 6px;
+  }
+
+  #app-view .tt-filter-pill {
+    flex: 0 0 auto;
+  }
+
+  #app-view .tt-contents-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Calendar */
+#app-view .tt-calendar-page {
+  max-width: 1240px;
+  margin: 0 auto;
+}
+
+#app-view .tt-calendar-header h1 {
+  font-size: clamp(30px, 4vw, 48px);
+}
+
+#app-view :is(.tt-calendar-goal-banner, .tt-calendar-main, .tt-calendar-sidebar-panel) {
+  border: 1px solid var(--tt-ui-line);
+  border-radius: var(--tt-ui-radius);
+  background: var(--tt-ui-surface);
+  box-shadow: none;
+}
+
+#app-view .tt-calendar-goal-banner {
+  background: var(--tt-ui-soft);
+}
+
+#app-view .tt-calendar-weekday {
+  color: var(--tt-ui-muted);
+  font-family: var(--tt-font-ui);
+}
+
+#app-view .tt-calendar-cell {
+  border-color: var(--tt-ui-line);
+  background: var(--tt-ui-surface);
+}
+
+#app-view .tt-calendar-cell.is-today {
+  background: #f3eefb;
+  box-shadow: inset 0 0 0 2px #8d55ec;
+}
+
+[data-theme="dark"] #app-view .tt-calendar-cell.is-today {
+  background: var(--tt-ui-soft);
+  color: var(--tt-ui-ink);
+  box-shadow: inset 0 0 0 2px var(--tt-lime);
+}
+
+#app-view .tt-day-card {
+  border-color: var(--tt-ui-line);
+  border-radius: 12px;
+  background: var(--tt-ui-soft);
+}
+
+/* Recording mode — compact working layout based on the approved Figma. */
+#app-view .kit-focus-view {
+  max-width: 1240px;
+  margin-inline: auto;
+}
+
+#app-view .kit-focus-view .detail-breadcrumb {
+  margin: 0 0 12px;
+  font-size: 12px;
+}
+
+#app-view .kit-focus-view .content-kit-header {
+  grid-template-columns: minmax(0, 1fr) 250px;
+  align-items: stretch;
+  gap: 24px;
+  margin-bottom: 12px;
+  padding: 24px;
+  border-radius: 20px;
+  box-shadow: none;
+}
+
+#app-view .kit-focus-view .content-kit-header h1 {
+  max-width: 23ch;
+  margin-bottom: 8px;
+  font-size: clamp(30px, 3vw, 42px);
+  line-height: .98;
+  letter-spacing: -.045em;
+}
+
+#app-view .kit-focus-view .content-kit-header .eyebrow {
+  margin-bottom: 8px;
+}
+
+#app-view .kit-focus-view .kit-summary {
+  margin: 0 0 12px;
+  font-size: 13px;
+}
+
+#app-view .kit-focus-view .kit-context {
+  max-width: 520px;
+}
+
+#app-view .kit-focus-view .kit-context p {
+  min-height: 48px;
+  padding: 9px 12px;
+}
+
+#app-view .kit-focus-view .kit-meta {
+  margin-top: 10px;
+}
+
+#app-view .kit-focus-view .content-kit-product {
+  align-self: stretch;
+  padding: 8px;
+  border-radius: 16px;
+  box-shadow: none;
+}
+
+#app-view .kit-focus-view .content-kit-product> :is(img, .product-image-fallback) {
+  height: 132px;
+  border-radius: 10px;
+}
+
+#app-view .kit-focus-view .content-kit-product>div {
+  padding: 9px 8px 6px;
+}
+
+#app-view .kit-focus-view .journey-steps {
+  gap: 7px;
+  margin-bottom: 12px;
+}
+
+#app-view .kit-focus-view .journey-steps li {
+  min-height: 48px;
+  padding: 7px 10px;
+  border-radius: 11px;
+}
+
+#app-view .kit-focus-view .journey-steps li>span {
+  width: 24px;
+  height: 24px;
+}
+
+#app-view .kit-focus-view .recording-guide {
+  padding: 10px;
+  border-radius: 20px;
+  box-shadow: none;
+}
+
+#app-view .kit-focus-view .recording-guide-heading {
+  margin-bottom: 8px;
+  padding: 18px 20px;
+  border-radius: 14px;
+}
+
+#app-view .kit-focus-view .recording-guide-heading h2 {
+  font-size: clamp(25px, 2.4vw, 32px);
+  letter-spacing: -.035em;
+}
+
+#app-view .kit-focus-view .recording-guide-count {
+  padding: 7px 11px;
+}
+
+#app-view .kit-focus-view .recording-guide-grid {
+  grid-template-columns: minmax(0, 1.55fr) minmax(260px, .8fr);
+  align-items: start;
+  gap: 10px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+#app-view .kit-focus-view .recording-guide-stage {
+  min-height: 0;
+  padding: 22px;
+  border-radius: 14px;
+}
+
+#app-view .kit-focus-view .recording-guide-instruction h3 {
+  max-width: 22ch;
+  margin-bottom: 6px;
+  font-size: clamp(26px, 2.5vw, 34px);
+  letter-spacing: -.04em;
+}
+
+#app-view .kit-focus-view .recording-guide-steps {
+  padding: 10px;
+  border-radius: 14px;
+  box-shadow: none;
+}
+
+#app-view .kit-focus-view .recording-guide-plan-heading {
+  min-height: 38px;
+  padding: 4px 7px 8px;
+}
+
+#app-view .kit-focus-view .recording-guide-steps button {
+  min-height: 44px;
+  margin-bottom: 3px;
+  border-radius: 9px;
+}
+
+#app-view .kit-focus-view .recording-guide-prep {
+  gap: 6px;
+}
+
+#app-view .kit-focus-view .recording-guide-prep button {
+  min-height: 40px;
+}
+
+#app-view .kit-focus-view .recording-guide-actions .primary {
+  width: 100%;
+}
+
+#app-view .kit-focus-view .recording-guide-bottom {
+  margin-top: 8px;
+}
+
+#app-view .kit-focus-view .recording-guide-support {
+  padding: 10px 0;
+}
+
+@media (max-width: 900px) {
+  #app-view .kit-focus-view .content-kit-header {
+    grid-template-columns: minmax(0, 1fr) 190px;
+  }
+
+  #app-view .kit-focus-view .recording-guide-grid {
+    grid-template-columns: 1fr;
+  }
+
+  #app-view .kit-focus-view .recording-guide-stage {
+    min-height: 0;
+  }
+}
+
+@media (max-width: 700px) {
+  #app-view .kit-focus-view .content-kit-header {
+    grid-template-columns: 1fr;
+    padding: 18px;
+  }
+
+  #app-view .kit-focus-view .content-kit-header h1 {
+    max-width: none;
+    font-size: clamp(28px, 9vw, 38px);
+  }
+
+  #app-view .kit-focus-view .content-kit-product {
+    grid-template-columns: 88px minmax(0, 1fr);
+  }
+
+  #app-view .kit-focus-view .content-kit-product> :is(img, .product-image-fallback) {
+    width: 88px;
+    height: 78px;
+  }
+
+  #app-view .kit-focus-view .recording-guide-heading {
+    align-items: flex-start;
+    padding: 16px;
+  }
+
+  #app-view .kit-focus-view .recording-guide-heading h2 {
+    font-size: 25px;
+  }
+
+  #app-view .kit-focus-view .recording-guide-stage {
+    padding: 18px 16px;
+  }
+}
+
+@media (max-width: 760px) {
+  #app-view :is(.tt-dashboard, .tt-contents-page, .tt-calendar-page, .production-section, .detail-view) {
+    width: min(100%, calc(100% - 32px));
+  }
+
+  #app-view .tt-dash-heading,
+  #app-view .tt-contents-header,
+  #app-view .tt-calendar-header,
+  #app-view .production-heading {
+    align-items: stretch;
+    gap: 16px;
+  }
+
+  #app-view .tt-contents-guide-strip {
+    grid-template-columns: 36px minmax(0, 1fr);
+  }
+
+  #app-view .tt-contents-guide-strip>a {
+    grid-column: 1 / -1;
+    justify-content: center;
+    width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+  #app-view :is(.tt-dash-heading-action, .tt-btn-lime, .tt-btn-outline, .tt-btn-action, .selected-products-discover,
+    .production-action, .ghost, .tt-content-card) {
+    transition: none;
+  }
+}
+
+/* Official green contract: positive and selected controls use the exact
+   #6d28d9 swatch. Hover feedback comes from motion and shadow, not a second
+   shade of green. */
+#app-view {
+  --tt-on-accent: #ffffff;
+  --tt-accent-ui: #6d28d9;
+  --tt-accent-ui-hover: #5b21b6;
+  --tt-lime: #6d28d9;
+  --tt-lime-hover: #5b21b6;
+  --tt-app-lime: #6d28d9;
+  --tt-app-lime-hover: #5b21b6;
+  --tt-app-lime-strong: #6d28d9;
+  --tt-app-green: #6d28d9;
+  --tt-app-bright: #6d28d9;
+  --app-lime: #6d28d9;
+  --app-lime-hover: #5b21b6;
+  --tt-ui-lime: #6d28d9;
+  --tt-app-lime-soft: #ede7fe;
+  --tt-app-lime-line: #d8ccfb;
+  --tt-lime-soft: #ede7fe;
+}
+
+/* Destaque no escuro: violeta claro com tinta por cima. */
+[data-theme="dark"] #app-view {
+  --tt-on-accent: #14101f;
+  --tt-accent-ui: #a894f9;
+  --tt-accent-ui-hover: #baa9fb;
+  --tt-lime: #a894f9;
+  --tt-lime-hover: #baa9fb;
+  --tt-app-lime: #a894f9;
+  --tt-app-lime-hover: #baa9fb;
+  --tt-app-lime-strong: #a894f9;
+  --tt-app-green: #a894f9;
+  --tt-app-bright: #a894f9;
+  --app-lime: #a894f9;
+  --app-lime-hover: #baa9fb;
+  --tt-ui-lime: #a894f9;
+  --tt-app-lime-soft: rgb(168 148 249 / 16%);
+  --tt-app-lime-line: rgb(168 148 249 / 46%);
+  --tt-lime-soft: rgb(168 148 249 / 16%);
+}
+
+#app-view :is(.primary,
+  .app-create-link,
+  .continue-production,
+  .generate-script,
+  .selected-products-discover,
+  .tt-dash-heading-action,
+  .tt-btn-lime,
+  .tt-btn-action.is-primary,
+  .tt-btn-action.is-accent,
+  .assistant-send-button,
+  .upgrade-plan-primary,
+  .assistant-tabs button[aria-selected="true"],
+  .tt-dash-filter.is-active,
+  .tt-dash-switch button.is-active,
+  .production-status-filters button.is-active,
+  .tt-filter-pill.is-active,
+  .recording-guide-steps button.active) {
+  background: var(--tt-accent-ui) !important;
+  border-color: var(--tt-accent-ui) !important;
+  color: var(--tt-on-accent) !important;
+}
+
+#app-view :is(.primary,
+  .app-create-link,
+  .continue-production,
+  .generate-script,
+  .selected-products-discover,
+  .tt-dash-heading-action,
+  .tt-btn-lime,
+  .tt-btn-action.is-primary,
+  .tt-btn-action.is-accent,
+  .assistant-send-button,
+  .upgrade-plan-primary):hover:not(:disabled) {
+  background: var(--tt-accent-ui-hover) !important;
+  border-color: var(--tt-accent-ui-hover) !important;
+}
+
+/* Non-button accents share the same solid accent instead of legacy shades. */
+#app-view :is(.production-progress-compact span.done,
+  .recording-guide-progress span,
+  .onboarding-progress > div,
+  .tt-dash-progress-fill,
+  .tt-status-progress > span) {
+  background: var(--tt-accent-ui) !important;
+}
+
+#app-view :is(.recording-guide-steps button.active,
+  .kit-focus-view .journey-steps li.is-current,
+  .tt-calendar-cell.is-today) {
+  border-color: var(--tt-accent-ui) !important;
+}
+/* Chat: só o produto em destaque recebe a CTA cheia; os demais ficam secundários. */
+#app-view .tt-discovery .assistant-response .product-grid .opportunity-card .product-actions .generate-script {
+  background: transparent !important;
+  border-color: var(--tt-app-line-strong) !important;
+  color: var(--tt-app-ink) !important;
+  box-shadow: none !important;
+}
+#app-view .tt-discovery .assistant-response .product-grid .opportunity-card .product-actions .generate-script:hover:not(:disabled) {
+  border-color: var(--tt-app-ink) !important;
+  background: var(--tt-app-soft) !important;
+}
+#app-view .tt-discovery .assistant-response .product-grid .opportunity-card.is-featured .product-actions .generate-script {
+  border-color: var(--tt-accent-ui) !important;
+  background: var(--tt-accent-ui) !important;
+  color: var(--tt-on-accent) !important;
+}
+#app-view .tt-discovery .assistant-response .product-grid .opportunity-card.is-featured .product-actions .generate-script:hover:not(:disabled) {
+  border-color: var(--tt-accent-ui-hover) !important;
+  background: var(--tt-accent-ui-hover) !important;
+}
+
+/* ---------- Modo noturno: contraste no Discover e afins ---------- */
+
+/* Eyebrows/kickers legados usam --ink fixo (verde escuro) e sumiam no escuro. */
+[data-theme="dark"] #app-view :is(.eyebrow, .kicker) {
+  color: var(--tt-app-muted);
+}
+
+[data-theme="dark"] #admin-view :is(.eyebrow, .kicker) {
+  color: var(--tt-app-muted);
+}
+
+/* Conversa: o chat foi desenhado para fundo claro e fixava tinta escura. */
+[data-theme="dark"] #app-view .tt-discovery .discovery-chat .chat-message,
+[data-theme="dark"] #app-view .tt-discovery .discovery-chat .product-grid > .opportunity-card .metric-price dd {
+  color: var(--tt-app-ink);
+}
+
+[data-theme="dark"] #app-view .tt-discovery .discovery-chat .product-grid > .opportunity-card .metric-sales dd {
+  background: rgb(168 148 249 / 14%);
+  color: var(--tt-app-ink);
+}
+
+[data-theme="dark"] #app-view .tt-discovery .discovery-chat .product-grid > .opportunity-card .metric-commission dd {
+  border: 1px solid var(--tt-app-line);
+  background: var(--tt-app-soft);
+  color: var(--tt-app-ink);
+}
+
+[data-theme="dark"] #app-view .tt-discovery .discovery-chat .product-grid > .opportunity-card .opportunity-motivo {
+  color: var(--tt-app-muted);
+}
+
+[data-theme="dark"] #app-view .tt-discovery .discovery-chat .product-grid > .opportunity-card .product-actions .opportunity-compare-toggle {
+  border-color: var(--tt-app-line-strong);
+  background: var(--tt-app-surface);
+  color: var(--tt-app-ink);
+}
+
+[data-theme="dark"] #app-view .tt-discovery .opportunity-compare-toggle .compare-label {
+  color: var(--tt-app-muted);
+}
+
+[data-theme="dark"] #app-view .tt-discovery .opportunity-compare-toggle[aria-pressed="true"] .compare-label {
+  color: var(--tt-app-ink);
+}
+
+[data-theme="dark"] #app-view .tt-discovery .discovery-chat .product-grid > .opportunity-card .opportunity-save {
+  color: var(--tt-app-muted);
+}
+
+[data-theme="dark"] #app-view .tt-discovery .chat-quick-actions button {
+  border-color: var(--tt-app-line-strong);
+  background: var(--tt-app-surface);
+  color: var(--tt-app-ink);
+}
+
+[data-theme="dark"] #app-view .tt-discovery .chat-quick-actions button:hover {
+  border-color: var(--tt-app-lime);
+  background: var(--tt-app-soft);
+}
+
+/* Ações de notificação: a regra genérica de texto sobre lima vencia a dedicada. */
+[data-theme="dark"] #app-view .tt-notifications .tt-notification:not(.is-read) .tt-notification-action {
+  color: var(--tt-app-lime);
+}
+
+/* Produção: miniaturas e selo do guia eram superfícies claras fixas. */
+[data-theme="dark"] #app-view .production-card .production-image-wrap {
+  border: 1px solid var(--tt-app-line);
+  background: var(--tt-app-soft);
+}
+
+[data-theme="dark"] #app-view .production-guide-strip .production-guide-icon {
+  background: var(--tt-app-lime);
+  color: var(--tt-on-lime, #fff);
+}
+
+[data-theme="dark"] #app-view .selected-product-metrics dd small {
+  color: var(--tt-app-muted);
+}
+
+[data-theme="dark"] #app-view .selected-product-commission dd {
+  color: var(--tt-app-lime);
+}
+
+/* Estados vazios: o parágrafo herdava um cinza escuro fixo. */
+[data-theme="dark"] #app-view .empty-state p,
+[data-theme="dark"] #app-view .empty-state .muted {
+  color: var(--tt-app-muted);
+}
+
+/* Formulários e links da conta: labels herdavam #202020 e links o azul padrão. */
+[data-theme="dark"] #app-view label {
+  color: var(--tt-app-muted);
+}
+
+#app-view .acct-card a {
+  color: var(--tt-app-deep);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+[data-theme="dark"] #app-view .acct-card a {
+  color: var(--tt-app-lime);
+}
+
+/* Resumo de creators/assinaturas: só o último bloco é lima; os demais são cartões. */
+[data-theme="dark"] #admin-view [class*="creatorSummary"]>div:not(:last-child)>span {
+  color: var(--tt-app-muted);
+}
+
+[data-theme="dark"] #admin-view [class*="creatorSummary"]>div:not(:last-child)>strong {
+  color: var(--tt-app-ink);
+}

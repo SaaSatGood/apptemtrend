@@ -38,6 +38,57 @@ const INTENT_TERMS: Record<string, string[]> = {
   moda: ['moda', 'roupa', 'acessorio', 'look'],
 };
 
+/**
+ * Temas do onboarding -> termos reais do catálogo. Usado só quando a busca é
+ * genérica: preferências orientam a descoberta, mas nunca atropelam um pedido
+ * explícito do creator.
+ */
+const THEME_TERMS: Record<string, string[]> = {
+  beleza: ['beleza', 'maquiagem', 'cabelo', 'pele', 'batom'],
+  casa: ['casa', 'domestico', 'cozinha', 'movel', 'textil', 'decoracao', 'organizacao', 'limpeza'],
+  tecnologia: ['tecnologia', 'eletronico', 'celular', 'fone', 'computador', 'bateria'],
+  fitness: ['fitness', 'esporte', 'treino', 'suplemento', 'academia'],
+  moda: ['moda', 'roupa', 'camiseta', 'blusa', 'short', 'sapato', 'bolsa', 'joia'],
+  lifestyle: ['lifestyle', 'casa', 'moda', 'beleza'],
+  gastronomia: ['cozinha', 'alimento', 'bebida', 'utensilio', 'receita'],
+  pets: ['pet', 'animal', 'cachorro', 'gato'],
+  maternidade: ['maternidade', 'bebe', 'infantil'],
+  games: ['game', 'brinquedo', 'passatempo', 'computador'],
+  educacao: ['livro', 'educacao', 'papelaria', 'audio'],
+  decoracao: ['decoracao', 'movel', 'textil', 'iluminacao', 'tapete'],
+  acessorios: ['acessorio', 'joia', 'bolsa', 'mala'],
+  organizacao: ['organizacao', 'domestico', 'tupperware', 'armazenamento'],
+  automotivo: ['automotivo', 'moto', 'carro', 'ferramenta'],
+  infantil: ['infantil', 'crianca', 'brinquedo', 'bebe'],
+  esportes: ['esporte', 'fitness', 'treino', 'calcado'],
+};
+
+const OUTRO_PREFIX = /^outros?:\s*/i;
+const OBJECTIVE_LABELS: Record<string, string> = {
+  comecar_vender: 'começar a vender',
+  vender_mais: 'vender mais',
+  criar_videos: 'criar vídeos para produtos',
+  explorando: 'explorar a plataforma',
+};
+
+/** "Outros: festas infantis" vira "festas infantis" para casar com o catálogo. */
+function themeValue(value: string): string {
+  return value.trim().replace(OUTRO_PREFIX, '').trim();
+}
+
+function preferenceTerms(prefs?: CreatorPrefs | null): string[] {
+  const terms = new Set<string>();
+  for (const raw of prefs?.temas_interesse ?? []) {
+    const theme = themeValue(raw);
+    if (!theme) continue;
+    const mapped = THEME_TERMS[normalize(theme)];
+    if (mapped) mapped.forEach((term) => terms.add(term));
+    // Nicho personalizado ("Outros") também vira termo de busca.
+    if (!mapped || /\s/.test(theme)) tokens(theme).forEach((term) => terms.add(term));
+  }
+  return [...terms];
+}
+
 const MAX_RESULTS = 5;
 
 export interface CreatorPrefs {
@@ -72,12 +123,12 @@ function intrinsicMotivo(product: Product, aiMotivo?: string | null): string | n
 function prefsClause(product: Product, prefs?: CreatorPrefs | null): string | null {
   const categoria = normalize(product.categoria || '');
   if (!categoria) return null;
-  const temas = (prefs?.temas_interesse || []).filter((t) => t && t.trim());
+  const temas = (prefs?.temas_interesse || []).map(themeValue).filter(Boolean);
   const hit = temas.find((tema) => {
     const t = normalize(tema);
     return t.length >= 3 && (categoria.includes(t) || t.includes(categoria));
   });
-  return hit ? `Combina com seu tema ${hit.trim()}` : null;
+  return hit ? `Combina com seu tema ${hit}` : null;
 }
 
 function finalMotivo(product: Product, aiMotivo: string | null | undefined, prefs?: CreatorPrefs | null): string | null {
@@ -87,14 +138,14 @@ function finalMotivo(product: Product, aiMotivo: string | null | undefined, pref
 }
 
 const MESSAGES = {
-  clarify: 'O que você quer vender? Posso sugerir por preço, nicho ou facilidade de gravar.',
+  clarify: 'O que você quer vender? Pode ser um nicho, uma faixa de preço ou só "não sei o que vender" — eu trago opções.',
   demonstrationClarify: 'Para sugerir algo fácil de gravar, diga um nicho ou produto. O catálogo não informa a facilidade de demonstração.',
-  outOfScope: 'Posso te ajudar a encontrar produtos e a preparar seu conteúdo. Conte o que você quer vender.',
-  empty: 'Não encontrei um produto para essa busca. Experimente descrever de outra forma.',
-  discovery: 'Separei algumas opções para você começar.',
+  outOfScope: 'Por aqui eu só consigo ajudar com a TemTrend: escolher produto, montar roteiro e publicar seu vídeo. Me conta o que você quer vender que eu sigo com você.',
+  empty: 'Não achei nada com esse filtro. Tenta descrever de outro jeito ou me diz outra faixa de preço.',
+  discovery: 'Separei algumas opções para você começar. Abre uma e a gente monta o roteiro.',
   refined: 'Refinei as opções com o que você pediu.',
   keptPrevious: 'Não achei um produto novo com esse filtro. Mantive as opções anteriores.',
-  selected: 'Boa escolha. Esse é o produto certo para começar.',
+  selected: 'Boa escolha! Esse é o produto certo para começar.',
   chooseOne: 'Boa escolha. Toque em Ver produto para continuar.',
 } as const;
 
@@ -113,6 +164,22 @@ function maximumPriceFrom(message: string): number | null {
   if (!match) return null;
   const value = Number(match[1].replace(',', '.'));
   return Number.isFinite(value) && value > 0 ? value : null;
+}
+
+function requestedCountFrom(message: string): number | null {
+  const normalized = normalize(message);
+  const patterns = [
+    /(?:quero|me (?:de|da|de)|mostre|liste|preciso de|busque)\s+(\d{1,2})\s*(?:produto|produtos|opcao|opcoes|resultado|resultados|item|itens)?/,
+    /(\d{1,2})\s*(?:produto|produtos|opcao|opcoes|resultado|resultados|item|itens)\b/,
+  ];
+  for (const pattern of patterns) {
+    const match = normalized.match(pattern);
+    if (match) {
+      const value = Number(match[1]);
+      if (Number.isFinite(value) && value >= 1 && value <= 5) return value;
+    }
+  }
+  return null;
 }
 
 function isDemonstrationRequest(message: string) {
@@ -170,6 +237,13 @@ export function isSelectionRequest(message: string) {
   return SELECTION_REQUESTS.some((pattern) => pattern.test(normalized));
 }
 
+export function isWeeklyPlanRequest(message: string) {
+  const normalized = normalize(message.trim());
+  const period = /\b(?:semana|semanal|7 dias|sete dias|7 videos|sete videos|7 posts|sete posts)\b/.test(normalized);
+  const planning = /\b(?:planej|prepar|cri|mont|ger|quero|preciso|roteir|conteud|post|video|produto|calendario|cronograma|minha semana)\w*/.test(normalized);
+  return period && planning;
+}
+
 function scoreProduct(product: Product, terms: string[]) {
   const name = normalize(product.nome);
   const category = normalize(product.categoria || '');
@@ -202,10 +276,11 @@ function publicProduct(product: Product) {
   };
 }
 
-function countMessage(count: number) {
+function countMessage(count: number, maximumPrice: number | null = null) {
+  const pricePart = maximumPrice != null ? ` até R$ ${maximumPrice.toLocaleString('pt-BR')}` : '';
   return count === 1
-    ? 'Encontrei 1 produto para você.'
-    : `Encontrei ${count} produtos para você.`;
+    ? `Achei 1 produto para você${pricePart}.`
+    : `Achei ${count} produtos para você${pricePart}.`;
 }
 
 type Decision = Awaited<ReturnType<typeof AIService.interpretIntent>>;
@@ -256,11 +331,30 @@ export function isSearchableCatalogProduct(product: Product) {
   return Boolean(product.imagem_url?.trim());
 }
 
-export async function findProductsForMessage(input: AssistantProductSearchInput, prefs?: CreatorPrefs | null) {
+export async function findProductsForMessage(
+  input: AssistantProductSearchInput,
+  prefs?: CreatorPrefs | null,
+  userId?: string,
+) {
   if (isGreetingOnly(input.message)) {
     return buildResponse(MESSAGES.clarify, [], [], null, prefs, true);
   }
   const catalog = (await listSearchableCatalog()).filter(isSearchableCatalogProduct);
+  if (isWeeklyPlanRequest(input.message)) {
+    const planningWords = new Set(['semana', 'semanal', 'dias', 'sete', 'posts', 'post', 'conteudo', 'conteudos', 'roteiro', 'roteiros', 'planejar', 'planeje', 'planejamento', 'criar', 'crie', 'prepare', 'preparar', 'calendario', 'cronograma', 'minha', 'toda', 'todos', 'dia', 'cada']);
+    const explicitTerms = expandedTerms(input.message).filter((term) => !planningWords.has(term) && !/^\d+$/.test(term));
+    const terms = explicitTerms.length ? explicitTerms : preferenceTerms(prefs);
+    const maximumPrice = maximumPriceFrom(input.message);
+    const eligible = maximumPrice == null ? catalog : catalog.filter((product) => product.preco_min_brl != null && product.preco_min_brl <= maximumPrice);
+    const ranked = rankProducts(eligible, terms);
+    const matching = terms.length ? ranked.filter((item) => item.score > 0) : ranked;
+    const ordered = [...matching, ...ranked.filter((item) => !matching.some((match) => match.product.id === item.product.id))];
+    const chosen = ordered.slice(0, 7).map((item) => item.product);
+    return {
+      ...buildResponse(chosen.length ? `Separei ${chosen.length} ${chosen.length === 1 ? 'produto' : 'produtos'} para a sua semana. Já estou escrevendo os roteiros, as legendas e as hashtags.` : MESSAGES.empty, chosen, terms, null, prefs),
+      weekly_plan_requested: true,
+    };
+  }
   // Cache isolado por mensagem + snapshot do catálogo + preferências:
   // nunca serve produtos nem motivos de outro contexto.
   const useResponseCache = env.NODE_ENV !== 'test' && !input.product_ids?.length;
@@ -272,7 +366,11 @@ export async function findProductsForMessage(input: AssistantProductSearchInput,
     if (cached) return cached as ReturnType<typeof buildResponse>;
   }
   const localTerms = expandedTerms(input.message);
+  // Preferências entram só na busca genérica: um pedido explícito manda mais.
+  const prefTerms = localTerms.length === 0 ? preferenceTerms(prefs) : [];
+  const rankingTerms = [...new Set([...localTerms, ...prefTerms])];
   const maximumPrice = maximumPriceFrom(input.message);
+  const requestedCount = requestedCountFrom(input.message);
   const requestedIds = input.product_ids?.length ? new Set(input.product_ids) : null;
   const discovery = isDiscoveryRequest(input.message);
 
@@ -280,6 +378,7 @@ export async function findProductsForMessage(input: AssistantProductSearchInput,
   const outsideContext = Boolean(requestedIds)
     && rankProducts(catalog, localTerms).some((item) => item.score >= 5 && !requestedIds!.has(item.product.id));
   const isRefinement = Boolean(requestedIds) && !discovery && !outsideContext;
+  const maxResults = isRefinement ? 5 : Math.min(Math.max(requestedCount ?? 1, 1), 5);
   const candidates = isRefinement
     ? catalog.filter((product) => requestedIds!.has(product.id))
     : catalog;
@@ -294,7 +393,7 @@ export async function findProductsForMessage(input: AssistantProductSearchInput,
   // "Esse aqui" fecha a escolha sem gastar uma chamada de IA.
   if (isRefinement && isSelectionRequest(input.message)) {
     const chosen = rankProducts(eligibleCandidates, localTerms)
-      .slice(0, MAX_RESULTS)
+      .slice(0, maxResults)
       .map((item) => item.product);
     return buildResponse(
       eligibleCandidates.length === 1 ? MESSAGES.selected : MESSAGES.chooseOne,
@@ -309,18 +408,18 @@ export async function findProductsForMessage(input: AssistantProductSearchInput,
   // Refinos já são pequenos; discovery usa topo por destaque+score.
   const aiCandidates = isRefinement
     ? eligibleCandidates.slice(0, AI_LIMITS.MAX_CATALOG_ITEMS)
-    : rankProducts(eligibleCandidates, localTerms).slice(0, AI_LIMITS.MAX_CATALOG_ITEMS).map((item) => item.product);
+    : rankProducts(eligibleCandidates, rankingTerms).slice(0, AI_LIMITS.MAX_CATALOG_ITEMS).map((item) => item.product);
 
   const decision = isRefinement
-    ? await AIService.refineProductSearch(input.message, aiCandidates)
-    : await AIService.interpretIntent(input.message, aiCandidates);
+    ? await AIService.refineProductSearch(input.message, aiCandidates, userId)
+    : await AIService.interpretIntent(input.message, aiCandidates, userId);
 
   if (decision && !decision.in_scope) {
     return buildResponse(MESSAGES.outOfScope, [], [], decision, prefs);
   }
 
   const terms = [...new Set([
-    ...localTerms,
+    ...rankingTerms,
     ...(decision?.search_terms ?? []).map((term) => normalize(term)),
   ])];
 
@@ -336,16 +435,16 @@ export async function findProductsForMessage(input: AssistantProductSearchInput,
   let message: string;
 
   if (selectedByModel.length) {
-    chosen = selectedByModel.slice(0, MAX_RESULTS);
-    message = isRefinement ? MESSAGES.refined : countMessage(chosen.length);
+    chosen = selectedByModel.slice(0, maxResults);
+    message = isRefinement ? MESSAGES.refined : countMessage(chosen.length, maximumPrice);
   } else if (matched.length) {
-    chosen = matched.slice(0, MAX_RESULTS).map((item) => item.product);
-    message = isRefinement ? MESSAGES.refined : countMessage(chosen.length);
+    chosen = matched.slice(0, maxResults).map((item) => item.product);
+    message = isRefinement ? MESSAGES.refined : countMessage(chosen.length, maximumPrice);
   } else if (isRefinement) {
-    chosen = ranked.slice(0, MAX_RESULTS).map((item) => item.product);
+    chosen = ranked.slice(0, maxResults).map((item) => item.product);
     message = MESSAGES.keptPrevious;
   } else if (discovery || (!localTerms.length && isProductCatalogRequest(input.message))) {
-    chosen = ranked.slice(0, MAX_RESULTS).map((item) => item.product);
+    chosen = ranked.slice(0, maxResults).map((item) => item.product);
     message = chosen.length ? MESSAGES.discovery : MESSAGES.empty;
   } else if (isDemonstrationRequest(input.message)) {
     return buildResponse(MESSAGES.demonstrationClarify, [], terms, decision, prefs, true);

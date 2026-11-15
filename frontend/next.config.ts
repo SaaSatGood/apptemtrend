@@ -31,6 +31,14 @@ const nextConfig: NextConfig = {
   devIndicators: false,
   // O Playwright acessa 127.0.0.1 enquanto o dev server pode ouvir em localhost.
   allowedDevOrigins: ["127.0.0.1", "localhost"],
+  // Rotas antigas (/app/...) continuam válidas para links salvos, e-mails e
+  // campanhas: redireciona em definitivo para a estrutura atual.
+  async redirects() {
+    return [
+      { source: "/app", destination: "/descobrir", permanent: true },
+      { source: "/app/:path*", destination: "/:path*", permanent: true },
+    ];
+  },
   images: {
     formats: ["image/avif", "image/webp"],
     remotePatterns: [

@@ -9,6 +9,8 @@ Estas composições foram geradas com a ferramenta integrada de imagem do Codex 
 
 O arquivo [`../DESIGN.md`](../DESIGN.md) traduz as referências em regras para as telas reais. Fotos e números das imagens geradas não devem ser tratados como conteúdo de produção.
 
+> **Nota (13/11/2026):** a tipografia citada nos prompts (Manrope + serifada itálica) é histórica. A implementação atual usa **Onest** para leitura/interface, **Bricolage Grotesque** para títulos e **JetBrains Mono** para dados técnicos, conforme `DESIGN.md` e `frontend/styles/canonical.css`.
+
 ## Capturas da implementação
 
 - `landing-final-desktop.png`: primeira dobra da landing em produção local, viewport de 1280 × 800.

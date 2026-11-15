@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" role="img" aria-labelledby="title desc">
+  <title id="title">Temtrend Loop</title>
+  <desc id="desc">Símbolo abstrato de duas fitas que se cruzam e formam um ciclo de movimento.</desc>
+  <rect x="2" y="2" width="44" height="44" rx="14" fill="#c8ff2e"/>
+  <path d="M11 17 17.3 10.7a5 5 0 0 1 7.1 0L37 23.3a5 5 0 0 1 0 7.1L30.7 36.7" fill="none" stroke="#385400" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M37 17 30.7 10.7a5 5 0 0 0-7.1 0L11 23.3a5 5 0 0 0 0 7.1l6.3 6.3" fill="none" stroke="#5d8c13" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

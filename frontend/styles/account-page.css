@@ -1,0 +1,414 @@
+/* ---------- Conta: layout em blocos ----------
+   Cabeçalho com abas, cartão de identidade, plano em destaque,
+   perfil + segurança em duas colunas e barra fixa de salvar. */
+
+#app-view .acct {
+  display: grid;
+  gap: 16px;
+  align-content: start;
+  width: 100%;
+  /* Espaço para a barra fixa não cobrir o último cartão ao fim da página. */
+  padding-bottom: 36px;
+}
+
+/* Cabeçalho (reaproveita a tipografia de .account-heading) */
+#app-view .acct-head {
+  display: block;
+  margin-bottom: 18px;
+}
+
+#app-view .acct-head h1 {
+  margin-bottom: 6px;
+}
+
+#app-view .acct-head > p:last-of-type {
+  max-width: 46ch;
+}
+
+/* Identidade */
+#app-view .acct-identity {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 18px;
+  border: 1px solid var(--tt-app-line);
+  border-radius: 18px;
+  background: var(--tt-app-surface);
+}
+
+#app-view .acct-avatar {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--tt-app-soft);
+  color: var(--tt-app-deep);
+  /* Círculo verde em volta, sem preencher o avatar de verde. */
+  box-shadow: 0 0 0 2px var(--tt-app-lime);
+  font-family: var(--tt-font-editorial);
+  font-size: 19px;
+  font-weight: 800;
+}
+
+[data-theme="dark"] #app-view .acct-avatar {
+  background: #191921;
+  color: var(--tt-app-ink);
+  box-shadow: 0 0 0 2px var(--tt-app-lime);
+}
+
+#app-view .acct-identity-copy {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+#app-view .acct-identity-name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+#app-view .acct-identity-name strong {
+  overflow: hidden;
+  color: var(--tt-app-ink);
+  font-size: 16px;
+  letter-spacing: -.01em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#app-view .acct-identity-copy small {
+  overflow: hidden;
+  color: var(--tt-app-muted);
+  font-size: 13.5px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#app-view .acct-plan-badge {
+  flex: none;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: var(--tt-app-lime-soft);
+  color: var(--tt-app-green);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .07em;
+  text-transform: uppercase;
+}
+
+[data-theme="dark"] #app-view .acct-plan-badge {
+  background: #3a3a47;
+  color: var(--tt-app-lime);
+}
+
+#app-view .acct-identity-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-left: auto;
+}
+
+/* Plano em destaque */
+#app-view .acct-plan {
+  display: grid;
+  grid-template-columns: minmax(0, .95fr) minmax(0, 1.05fr);
+  gap: 20px;
+  padding: 22px;
+  border: 1px solid #2f283c;
+  border-radius: 20px;
+  background: #1f1a28;
+  color: #f3eefb;
+}
+
+[data-theme="dark"] #app-view .acct-plan {
+  border-color: #352d44;
+  background: #17171f;
+}
+
+#app-view .acct-plan-name {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--tt-font-editorial);
+  font-size: 16.5px;
+  font-weight: 600;
+}
+
+#app-view .acct-plan-status {
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: #6d28d9;
+  color: var(--tt-on-lime, #fff);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .07em;
+  text-transform: uppercase;
+}
+
+#app-view .acct-plan-date {
+  margin: 10px 0 2px;
+  color: #fff;
+  font-family: var(--tt-font-editorial);
+  font-size: clamp(22px, 2.4vw, 28px);
+  font-weight: 800;
+  letter-spacing: -.02em;
+  line-height: 1.05;
+}
+
+#app-view .acct-plan-note {
+  margin: 0;
+  color: #cfbbf1;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+#app-view .acct-plan-note.is-accent {
+  margin-top: 6px;
+  color: #cfbbf1;
+}
+
+#app-view .acct-plan-actions {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 14px;
+  margin-top: 16px;
+}
+
+#app-view .acct-plan-cta {
+  display: inline-flex;
+  align-items: center;
+  min-height: 42px;
+  padding: 0 20px;
+  border-radius: 999px;
+  background: #fff;
+  color: #1f1a28;
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+#app-view .acct-plan-cta:hover {
+  background: #f3eefb;
+}
+
+#app-view .acct-plan-cancel {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: #cfbbf1;
+  font-size: 13px;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+#app-view .acct-plan-cancel:hover {
+  color: #fff;
+}
+
+#app-view .acct-plan-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  align-content: center;
+}
+
+#app-view .acct-metric {
+  display: grid;
+  gap: 5px;
+  padding: 12px 10px;
+  border: 1px solid #ffffff1f;
+  border-radius: 14px;
+  background: #ffffff10;
+  text-align: center;
+}
+
+#app-view .acct-metric strong {
+  color: #fff;
+  font-family: var(--tt-font-editorial);
+  font-size: 21px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+#app-view .acct-metric span {
+  color: #cfbbf1;
+  font-size: 12px;
+  line-height: 1.25;
+}
+
+/* Perfil + segurança */
+#app-view .acct-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  align-items: start;
+}
+
+#app-view .acct-card {
+  padding: 20px;
+  border: 1px solid var(--tt-app-line);
+  border-radius: 18px;
+  background: var(--tt-app-surface);
+}
+
+#app-view .acct-card .account-card-heading {
+  margin-bottom: 14px;
+}
+
+#app-view .acct-card label {
+  color: var(--tt-app-muted);
+  font-family: var(--tt-font-editorial);
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+#app-view .acct-card small {
+  color: var(--tt-app-muted-soft);
+}
+
+#app-view .acct-card .account-card-heading h2 {
+  font-size: 17px;
+}
+
+#app-view .acct-card .account-card-heading p {
+  font-size: 13px;
+}
+
+/* Abas são âncoras: evita que o topo da seção fique sob o cabeçalho. */
+#app-view .acct :is(#perfil, #plano, #seguranca) {
+  scroll-margin-top: 96px;
+}
+
+/* Excluir conta */
+#app-view .acct-danger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px 20px;
+  border: 1px solid #ffd9d2;
+  border-radius: 18px;
+  background: #fff4f2;
+}
+
+[data-theme="dark"] #app-view .acct-danger {
+  border-color: #4a2a22;
+  background: #2a1915;
+}
+
+#app-view .acct-danger h2 {
+  margin: 0 0 4px;
+  font-size: 14px;
+}
+
+#app-view .acct-danger p {
+  margin: 0;
+  font-size: 13.5px;
+}
+
+/* Barra fixa de ações */
+#app-view .acct-savebar {
+  position: sticky;
+  bottom: 16px;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 10px 12px 10px 18px;
+  border-radius: 16px;
+  background: #1f1a28;
+  color: #f3eefb;
+  box-shadow: 0 16px 40px #14111940;
+}
+
+#app-view .acct-savebar > span {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+#app-view .acct-savebar-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+#app-view .acct-savebar-discard {
+  padding: 0 12px;
+  border: 0;
+  background: transparent;
+  color: #cfbbf1;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+#app-view .acct-savebar-discard:hover {
+  color: #fff;
+}
+
+#app-view .acct-savebar-save {
+  min-height: 40px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 999px;
+  background: #6d28d9;
+  color: var(--tt-on-lime, #fff);
+  font-family: var(--tt-font-ui);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+#app-view .acct-savebar-save:disabled {
+  opacity: .65;
+  cursor: progress;
+}
+
+@media (max-width: 980px) {
+  #app-view .acct-plan {
+    grid-template-columns: 1fr;
+  }
+
+  #app-view .acct-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 620px) {
+  #app-view .acct-plan-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  #app-view .acct-plan-actions {
+    flex-wrap: wrap;
+  }
+
+  #app-view .acct-identity {
+    flex-wrap: wrap;
+  }
+
+  #app-view .acct-identity-actions {
+    width: 100%;
+    margin-left: 0;
+  }
+
+  #app-view .acct-danger {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  #app-view .acct-savebar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  #app-view .acct-savebar-actions {
+    justify-content: flex-end;
+  }
+}

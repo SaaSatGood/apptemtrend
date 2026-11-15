@@ -82,5 +82,16 @@ export const productQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(50).default(20),
 });
 
+// Vitrine da tela Produtos: busca textual, filtros de faixa e ordenação.
+export const catalogQuerySchema = z.object({
+  q: z.string().trim().max(120).optional(),
+  categoria: z.string().trim().max(200).optional(),
+  sort: z.enum(['relevancia', 'vendas', 'comissao', 'preco', 'recentes']).default('relevancia'),
+  preco_max: z.coerce.number().finite().min(0).optional(),
+  comissao_min: z.coerce.number().finite().min(0).max(100).optional(),
+  page: z.coerce.number().int().min(1).default(1),
+  limit: z.coerce.number().int().min(1).max(48).default(24),
+});
+
 export type CreateProductInput = z.infer<typeof createProductSchema>;
 export type UpdateProductInput = z.infer<typeof updateProductSchema>;

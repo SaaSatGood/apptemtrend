@@ -43,8 +43,8 @@ function relativeTime(iso?: string | null): string {
 
 function productionHref(item: CreatorContent): string {
   return item.content_kit_id
-    ? `/app/produtos/${item.product_id}/kits/${item.content_kit_id}`
-    : `/app/produtos/${item.product_id}`;
+    ? `/produtos/${item.product_id}/kits/${item.content_kit_id}`
+    : `/produtos/${item.product_id}`;
 }
 
 function buildNotifications(
@@ -61,7 +61,7 @@ function buildNotifications(
       tone: "warning",
       title: "Pagamento pendente",
       body: "Atualize seu pagamento para manter o acesso e continuar criando.",
-      href: "/app/conta",
+      href: "/conta",
       action: "Ver na conta",
       meta: "Requer atenção",
     });
@@ -71,7 +71,7 @@ function buildNotifications(
       tone: "warning",
       title: "Assinatura cancelada",
       body: "Seu acesso segue liberado até o fim do período atual.",
-      href: "/planos",
+      href: "/conta/planos",
       action: "Reativar",
       meta: "Seu plano",
     });
@@ -131,7 +131,7 @@ function buildNotifications(
       tone: "action",
       title: "Seu primeiro conteúdo começa aqui",
       body: "Encontre um produto no catálogo e gere seu primeiro roteiro com a TemTrend.",
-      href: "/app/descobrir#assistant-section",
+      href: "/descobrir#assistant-section",
       action: "Explorar catálogo",
       meta: "Comece por aqui",
     });
@@ -148,11 +148,11 @@ const TONE_ICON: Record<NotificationTone, IconName> = {
 };
 
 function NotificationGlyph({ tone }: { tone: NotificationTone }) {
-  return <Icon name={TONE_ICON[tone]} size={16} />;
+  return <Icon name={TONE_ICON[tone]} size={19} />;
 }
 
 function BellIcon() {
-  return <Icon name="bell" size={17} />;
+  return <Icon name="bell" size={21} />;
 }
 
 export default function NotificationCenter() {
@@ -292,13 +292,13 @@ export default function NotificationCenter() {
               <span><Icon name="check" size={18} /></span>
               <strong>Nada pendente por aqui.</strong>
               <p>Quando houver uma próxima ação no seu conteúdo, ela aparece neste espaço.</p>
-              <Link href="/app/descobrir#assistant-section" onClick={() => setOpen(false)}>Encontrar um produto <Icon name="arrow-up-right" size={13} /></Link>
+              <Link href="/descobrir#assistant-section" onClick={() => setOpen(false)}>Encontrar um produto <Icon name="arrow-up-right" size={13} /></Link>
             </div>
           )}
 
           <footer className="tt-notifications-foot">
-            <span>{notifications.length > 0 ? "Ações rápidas do seu fluxo" : "Sua produção está em dia"}</span>
-            <Link href="/app/producao" onClick={() => setOpen(false)}>Abrir produção <Icon name="arrow-up-right" size={12} /></Link>
+            <span>{notifications.length > 0 ? "Ações rápidas do seu fluxo" : "Seus produtos estão em dia"}</span>
+            <Link href="/producao" onClick={() => setOpen(false)}>Ver produtos <Icon name="arrow-up-right" size={12} /></Link>
           </footer>
         </div>
       )}

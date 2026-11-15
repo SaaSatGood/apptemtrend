@@ -15,3 +15,10 @@ frontend/test-results/
 .tmp-shots/
 .taste-skill/
 __pycache__/
+# Material de vídeo/anúncios (Remotion local, não versionar)
+video/
+temtrend-ad-*.mp4
+e2e-output.txt
+frontend/grid-block.txt
+frontend/.tmp-*.mjs
+

@@ -15,7 +15,8 @@ import { FALLBACK_CATALOG, PLAN_OUTCOME, planBullets } from "@/lib/billing-catal
 
 type Period = "monthly" | "annual";
 type PaidPlan = "pro";
-type AuthState = "checking" | "guest" | "authenticated";
+type PaymentMethod = "card" | "pix";
+type AuthState = "checking" | "guest" | "incomplete" | "authenticated";
 type AccountPlan = { nome?: string; status?: string; trial_ends_at?: string | null; current_period_end?: string | null };
 
 const FAQS = [
@@ -28,8 +29,8 @@ const FAQS = [
     a: "PIX ou cartão, conforme a disponibilidade no checkout. No cartão, a renovação é automática; no PIX, o período é pré-pago e você renova pela sua conta. No plano anual, você paga 10 meses e leva 12.",
   },
   {
-    q: "Como funciona o preço de lançamento?",
-    a: "Os primeiros 100 clientes mantêm R$ 39,90/mês ou R$ 399/ano enquanto a assinatura estiver ativa. A condição é aplicada automaticamente no checkout, enquanto houver vaga. Se você cancelar, o acesso continua até o fim do período pago.",
+    q: "Quanto custa o Pro?",
+    a: "R$ 49,90/mês ou R$ 499/ano — no anual você paga 10 meses e usa 12. Quem assinou na condição de lançamento mantém o valor original enquanto a assinatura estiver ativa.",
   },
   {
     q: "Meus roteiros ficam salvos se eu cancelar?",
@@ -37,7 +38,7 @@ const FAQS = [
   },
   {
     q: "Como funciona o plano Grátis?",
-    a: "Cada conta pode fazer 3 pesquisas e criar 3 roteiros no total, sem prazo e sem cartão. Depois disso, seus conteúdos continuam salvos e você pode assinar o Pro se quiser continuar criando.",
+    a: "O plano Grátis permite experimentar a plataforma dentro dos limites definidos na sua conta. Seus conteúdos continuam salvos e você pode assinar o Pro quando quiser continuar criando.",
   },
   {
     q: "E se eu me arrepender depois de assinar?",
@@ -77,6 +78,7 @@ export default function PricingPage({ initialPeriod = "annual" }: { initialPerio
   const [authState, setAuthState] = useState<AuthState>("checking");
   const [period, setPeriod] = useState<Period>(initialPeriod);
   const [busy, setBusy] = useState<PaidPlan | null>(null);
+  const [payMethodBusy, setPayMethodBusy] = useState<PaymentMethod | null>(null);
   const [notice, setNotice] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
 
@@ -106,11 +108,28 @@ export default function PricingPage({ initialPeriod = "annual" }: { initialPerio
           if (active) setAuthState("guest");
           return;
         }
-        if (active) setAuthState("authenticated");
+        // Assinar exige conta criada de verdade: além da sessão, o creator
+        // precisa existir (onboarding). Sem isso o checkout responde 404.
+        let ready = true;
+        try {
+          const me = await api<{ creator: unknown | null; onboarding_completo?: boolean }>("/me", token);
+          ready = Boolean(me?.creator) && me?.onboarding_completo === true;
+        } catch (error) {
+          // Sessão inválida/expirada: tratar como visitante.
+          if ((error as { status?: number }).status === 401) {
+            if (active) setAuthState("guest");
+            return;
+          }
+          // Falha de rede no /me não deve bloquear quem já pode assinar;
+          // o próprio checkout valida a conta antes de cobrar.
+          ready = true;
+        }
+        if (active) setAuthState(ready ? "authenticated" : "incomplete");
         try {
           const account = await api<{ plan?: AccountPlan }>("/account", token);
           if (active) setAccountPlan(account.plan ?? null);
         } catch { /* o resumo de cobrança ainda pode carregar */ }
+        if (!ready) return;
         const summary = await api<BillingSubscriptionSummary>("/billing/subscription", token);
         if (active && summary?.enabled) {
           setSub(summary);
@@ -132,6 +151,7 @@ export default function PricingPage({ initialPeriod = "annual" }: { initialPerio
   const data = catalog ?? FALLBACK_CATALOG;
   const checkoutEnabled = catalog?.enabled === true;
   const loggedIn = authState === "authenticated";
+  const hasSession = loggedIn || authState === "incomplete";
   const pro = data.plans.find((p) => p.id === "pro");
   const enterprise = data.plans.find((p) => p.id === "enterprise");
   const launchActive = data.launch?.active === true && Boolean(pro);
@@ -155,29 +175,47 @@ export default function PricingPage({ initialPeriod = "annual" }: { initialPerio
     } catch {
       /* armazenamento opcional */
     }
-    const next = `/planos?plan=${plan}&period=${period}`;
-    router.push(`/app?mode=signup&next=${encodeURIComponent(next)}`);
+    const next = `/conta/planos?plan=${plan}&period=${period}`;
+    router.push(`/descobrir?mode=signup&next=${encodeURIComponent(next)}`);
   }
 
-  async function subscribe(plan: PaidPlan) {
+  function goCompleteSignup(plan: PaidPlan) {
+    track("upgrade_click", { plan, period, complete_signup: true });
+    try {
+      localStorage.setItem("temtrend_intended_plan", plan);
+    } catch {
+      /* armazenamento opcional */
+    }
+    const next = `/conta/planos?plan=${plan}&period=${period}`;
+    router.push(`/descobrir?next=${encodeURIComponent(next)}`);
+  }
+
+  async function subscribe(plan: PaidPlan, method: PaymentMethod = "pix") {
+    if (authState === "incomplete") {
+      goCompleteSignup(plan);
+      return;
+    }
     if (!loggedIn) {
       goToSignup(plan);
       return;
     }
-    track("upgrade_click", { plan, period });
+    track("upgrade_click", { plan, period, method });
+    track("checkout_started", { plan, period, method });
     setBusy(plan);
+    setPayMethodBusy(method);
     setErrorMsg("");
     setNotice("");
     try {
       const accessToken = await token();
-      const result = await api<{ url: string; mode?: string; launch?: boolean }>("/billing/checkout", accessToken, {
+      const result = await api<{ url: string; mode?: string; method?: string; launch?: boolean }>("/billing/checkout", accessToken, {
         method: "POST",
-        body: JSON.stringify({ plan, period }),
+        body: JSON.stringify({ plan, period, method }),
       });
       window.location.assign(result.url);
     } catch (err) {
       setErrorMsg(friendlyError(err, "Não conseguimos iniciar o pagamento agora. Tente novamente."));
       setBusy(null);
+      setPayMethodBusy(null);
     }
   }
 
@@ -215,9 +253,9 @@ export default function PricingPage({ initialPeriod = "annual" }: { initialPerio
     if (current) {
       if (sub?.renewal_due) {
         return {
-          label: busy === p.id ? "Abrindo pagamento…" : "Renovar acesso",
-          disabled: busy !== null,
-          onClick: () => void subscribe(p.id as PaidPlan),
+          label: payMethodBusy === "pix" ? "Abrindo PIX…" : "Renovar com PIX",
+          disabled: busy !== null || payMethodBusy !== null,
+          onClick: () => void subscribe(p.id as PaidPlan, "pix"),
         };
       }
       return { label: "Seu plano atual", disabled: true, onClick: undefined as (() => void) | undefined };
@@ -230,14 +268,30 @@ export default function PricingPage({ initialPeriod = "annual" }: { initialPerio
       };
     }
     if (!checkoutEnabled) {
-      return loggedIn
+      return hasSession
         ? { label: "Assinaturas em breve", disabled: true, onClick: undefined }
-        : { label: "Criar conta grátis", disabled: false, onClick: () => router.push("/app?mode=signup") };
+        : { label: "Criar conta grátis", disabled: false, onClick: () => router.push("/descobrir?mode=signup") };
+    }
+    // Sem conta não há assinatura: o checkout exige sessão. O cadastro guarda
+    // o plano/período em `next` e devolve a pessoa direto para cá.
+    if (authState === "incomplete") {
+      return {
+        label: "Complete seu cadastro para assinar",
+        disabled: false,
+        onClick: () => goCompleteSignup(p.id as PaidPlan),
+      };
+    }
+    if (!loggedIn) {
+      return {
+        label: "Criar conta para assinar",
+        disabled: false,
+        onClick: () => goToSignup(p.id as PaidPlan),
+      };
     }
     return {
-      label: busy === p.id ? "Abrindo pagamento…" : "Assinar Pro",
-      disabled: busy !== null,
-      onClick: () => void subscribe(p.id as PaidPlan),
+      label: payMethodBusy === "pix" ? "Abrindo PIX…" : "Assinar com PIX",
+      disabled: busy !== null || payMethodBusy !== null,
+      onClick: () => void subscribe(p.id as PaidPlan, "pix"),
     };
   }
 
@@ -253,8 +307,8 @@ export default function PricingPage({ initialPeriod = "annual" }: { initialPerio
       : launchActive ? pro.precoLancamentoMensalCents ?? null : pro.precoMensalCents
     : null;
   const equivalent = period === "annual" ? monthlyEquivalent(amountCents) : null;
-  const launchMonthly = pro?.precoLancamentoMensal ?? "R$ 39,90";
-  const launchAnnual = pro?.precoLancamentoAnual ?? "R$ 399,00";
+  const launchMonthly = pro?.precoLancamentoMensal ?? "R$ 49,90";
+  const launchAnnual = pro?.precoLancamentoAnual ?? "R$ 499,00";
   const standardMonthly = pro?.precoMensal ?? "R$ 49,90";
   const standardAnnual = pro?.precoAnual ?? "R$ 499,00";
   const compareMonthly = launchActive ? launchMonthly : standardMonthly;
@@ -267,11 +321,11 @@ export default function PricingPage({ initialPeriod = "annual" }: { initialPerio
       <main>
         <section className="tt-pricing-hero">
           <p className="tt-pricing-kicker"><span aria-hidden="true" /> Planos</p>
-          <h1>Comece grátis. Crie sem limites no Pro.</h1>
+          <h1>Comece grátis. Crie sem limites no <span className="tt-hl">Pro.</span></h1>
           <p className="tt-pricing-sub">
             Encontre o produto e receba um plano de gravação em 8 partes, do roteiro à publicação.
           </p>
-          <p className="tt-pricing-trial-chip">3 pesquisas e 3 roteiros grátis por conta · sem cartão</p>
+          <p className="tt-pricing-trial-chip">Comece grátis e conheça o fluxo completo.</p>
           {!checkoutEnabled && <p className="tt-pricing-availability">O Grátis já está disponível. As assinaturas Pro ainda não estão abertas.</p>}
         </section>
 
@@ -284,7 +338,7 @@ export default function PricingPage({ initialPeriod = "annual" }: { initialPerio
               <span>
                 {sub?.current_period_end && sub?.plan !== "free"
                     ? `${STATUS_LABEL[sub?.status ?? ""] || "Ativo"} · ${sub?.status === "canceled" ? "acesso até" : "renova em"} ${fmtDate(sub.current_period_end)}`
-                    : "3 pesquisas e 3 roteiros por conta, sem prazo"}
+                    : "Plano Grátis ativo"}
                 {sub?.launch_price ? " · preço de lançamento" : ""}
                 {sub?.payment_mode === "one_time" ? " · pagamento por período" : ""}
               </span>
@@ -299,7 +353,7 @@ export default function PricingPage({ initialPeriod = "annual" }: { initialPerio
                 </span>
               )}
             </div>
-            <Link className="tt-pricing-manage" href="/app/conta">Gerenciar na conta</Link>
+            <Link className="tt-pricing-manage" href="/conta">Gerenciar na conta</Link>
           </section>
         )}
 
@@ -350,16 +404,15 @@ export default function PricingPage({ initialPeriod = "annual" }: { initialPerio
           <article id="plan-free" className="tt-price-card">
             <span className="tt-price-seal">Para começar</span>
             <header><h2>Grátis</h2><p>Explore a plataforma no seu ritmo.</p></header>
-            <div className="tt-price-amount">R$ 0<small>/para sempre</small></div>
+            <div className="tt-price-amount">R$ 0<small>/para começar</small></div>
             <div className="tt-price-outcome"><span>Incluído por conta</span><p>Pesquise, escolha um produto e crie seus primeiros vídeos.</p></div>
             <ul className="tt-price-bullets">
-              <li><Icon name="check" size={14} /><span>3 pesquisas no total</span></li>
-              <li><Icon name="check" size={14} /><span>3 roteiros no total</span></li>
+              <li><Icon name="check" size={14} /><span>Acesso ao fluxo completo do Grátis</span></li>
               <li><Icon name="check" size={14} /><span>Conteúdo salvo na conta</span></li>
-              <li><Icon name="check" size={14} /><span>Sem cartão e sem prazo de teste</span></li>
+              <li><Icon name="check" size={14} /><span>Sem renovação automática</span></li>
             </ul>
-            <Link className="tt-price-cta is-ghost" href={loggedIn ? "/app" : "/app?mode=signup"}>{loggedIn ? "Ir para o app" : "Criar conta grátis"}</Link>
-            <p className="tt-price-fineprint">Os limites não se renovam a cada mês.</p>
+            <Link className="tt-price-cta is-ghost" href={hasSession ? "/descobrir" : "/descobrir?mode=signup"}>{hasSession ? "Ir para o app" : "Criar conta grátis"}</Link>
+            <p className="tt-price-fineprint">Os limites e recursos do Grátis podem ser ajustados.</p>
           </article>
           {pro && (() => {
             const cta = planCta(pro);
@@ -394,16 +447,32 @@ export default function PricingPage({ initialPeriod = "annual" }: { initialPerio
                     <li key={bullet}><Icon name="check" size={14} /><span>{bullet}</span></li>
                   ))}
                 </ul>
-                <button
-                  type="button"
-                  className="tt-price-cta"
-                  disabled={cta.disabled}
-                  onClick={cta.onClick}
-                >
-                  {cta.label}
-                </button>
+                <div className="tt-price-actions">
+                  <button
+                    type="button"
+                    className="tt-price-cta"
+                    disabled={cta.disabled}
+                    onClick={cta.onClick}
+                  >
+                    {cta.label}
+                  </button>
+                  {loggedIn && !cta.disabled && checkoutEnabled && (!hasActiveSub || sub?.renewal_due === true) && (
+                    <button
+                      type="button"
+                      className="tt-price-cta is-secondary"
+                      disabled={busy !== null || payMethodBusy !== null}
+                      onClick={() => void subscribe(pro.id as PaidPlan, "card")}
+                    >
+                      {payMethodBusy === "card"
+                        ? "Abrindo cartão…"
+                        : hasActiveSub ? "Renovar com cartão" : "Pagar com cartão"}
+                    </button>
+                  )}
+                </div>
                 <p className="tt-price-fineprint">
-                  Uso justo conforme os Termos. O preço de lançamento vale enquanto a assinatura estiver ativa.
+                  {authState === "guest" && <>Crie sua conta antes do pagamento. Você volta direto para o checkout. </>}
+                  {authState === "incomplete" && <>Complete seu cadastro para liberar a assinatura. </>}
+                  Uso justo conforme os Termos. O valor cobrado é o exibido no checkout.
                 </p>
               </article>
             );
@@ -411,7 +480,7 @@ export default function PricingPage({ initialPeriod = "annual" }: { initialPerio
 
         </section>
 
-        {enterprise && <p className="tt-pricing-enterprise-note">Precisa de uma operação sob medida? <Link href="/app/suporte">Converse com o suporte interno</Link>.</p>}
+        {enterprise && <p className="tt-pricing-enterprise-note">Precisa de uma operação sob medida? <Link href="/suporte">Converse com o suporte interno</Link>.</p>}
 
         <section className="tt-compare">
           <details open>
@@ -427,11 +496,12 @@ export default function PricingPage({ initialPeriod = "annual" }: { initialPerio
                   </tr>
                 </thead>
                 <tbody>
-                  <tr><th scope="row">Roteiros</th><td>3 no total</td><td>Ilimitados (uso justo)</td></tr>
-                  <tr><th scope="row">Pesquisas</th><td>3 no total</td><td>Ilimitadas (uso justo)</td></tr>
+                  <tr><th scope="row">Roteiros</th><td>Incluído</td><td>Ilimitados</td></tr>
+                  <tr><th scope="row">Pesquisas</th><td>Incluído</td><td>Ilimitadas</td></tr>
+                  <tr><th scope="row">Catálogo completo</th><td>Não incluído</td><td>Incluído</td></tr>
                   <tr><th scope="row">Gerar outra versão</th><td>Não incluído</td><td>A cada 30s</td></tr>
                   <tr><th scope="row">Voz personalizada</th><td>Não incluído</td><td>Incluído</td></tr>
-                  <tr><th scope="row">Itens na produção</th><td>3</td><td>Ilimitados</td></tr>
+                  <tr><th scope="row">Itens na produção</th><td>1</td><td>Ilimitados</td></tr>
                   <tr><th scope="row">Suporte</th><td>Interno</td><td>Interno</td></tr>
                   <tr><th scope="row">Preço</th><td>R$ 0</td><td>{compareMonthly}/mês ou {compareAnnual}/ano</td></tr>
                 </tbody>
@@ -453,10 +523,10 @@ export default function PricingPage({ initialPeriod = "annual" }: { initialPerio
         </section>
 
         <section className="tt-pricing-trust" aria-label="Garantias">
-          <span><Icon name="check" size={14} />Grátis sem cartão</span>
+          <span><Icon name="check" size={14} />Grátis disponível</span>
           <span><Icon name="check" size={14} />Cancele quando quiser</span>
           <span><Icon name="check" size={14} />7 dias de arrependimento (CDC)</span>
-          <span><Icon name="check" size={14} />Seus kits continuam seus</span>
+          <span><Icon name="check" size={14} />Seus roteiros continuam seus</span>
         </section>
       </main>
 

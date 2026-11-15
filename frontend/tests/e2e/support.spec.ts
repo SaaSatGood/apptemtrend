@@ -122,14 +122,14 @@ test("suporte: assistente responde com a IA da plataforma", async ({ page }) => 
   await withSession(page);
   const tracker = await setupApi(page, { tickets: [], messages: {} });
 
-  await page.goto("/app/suporte");
+  await page.goto("/suporte");
   const chat = page.locator(".support-chat");
   await expect(chat.getByRole("heading", { name: "Assistente de suporte" })).toBeVisible();
 
-  await chat.getByRole("button", { name: "Como salvo um produto na produção?" }).click();
-  await expect(chat.getByText("Como salvo um produto na produção?")).toBeVisible();
+  await chat.getByRole("button", { name: "Como adiciono um produto aos selecionados?" }).click();
+  await expect(chat.getByText("Como adiciono um produto aos selecionados?")).toBeVisible();
   await expect(chat.getByText(/Salve o produto em Descobrir/)).toBeVisible();
-  expect(tracker.chatBody).toMatchObject({ message: "Como salvo um produto na produção?" });
+  expect(tracker.chatBody).toMatchObject({ message: "Como adiciono um produto aos selecionados?" });
 
   await chat.getByLabel("Mensagem para o assistente de suporte").fill("E como publico o vídeo?");
   await chat.getByRole("button", { name: "Perguntar" }).click();
@@ -141,7 +141,7 @@ test("suporte: creator abre conversa, responde e encerra", async ({ page }) => {
   await withSession(page);
   const tracker = await setupApi(page, { tickets: [], messages: {} });
 
-  await page.goto("/app/suporte");
+  await page.goto("/suporte");
   await expect(page.getByRole("heading", { level: 1 })).toContainText("Conte com a gente");
   await expect(page.getByText("Nenhuma conversa ainda. Quando precisar, clique em “Nova conversa”.")).toBeVisible();
 
@@ -191,7 +191,7 @@ test("suporte: conversa respondida mostra o histórico e volta para a fila", asy
     },
   });
 
-  await page.goto("/app/suporte");
+  await page.goto("/suporte");
   await page.getByRole("button", { name: /Dúvida sobre roteiro/ }).click();
   await expect(page.getByText("Olá! Já verificamos e o roteiro saiu — confere pra mim?")).toBeVisible();
   await expect(page.getByText("Respondido").first()).toBeVisible();

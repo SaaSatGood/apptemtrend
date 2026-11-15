@@ -1,60 +1,45 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import Icon from "@/components/ui/Icon";
+import HighlightedTitle from "./HighlightedTitle";
+import TemtrendArt from "./TemtrendArt";
 import { supabase } from "@/lib/supabase";
-import { humanAuthError } from "@/lib/api";
+import { api, friendlyError, humanAuthError } from "@/lib/api";
 import { track } from "@/lib/track";
 
-type Panel = "login" | "signup" | "recovery" | "reset";
-type OAuthProvider = "google" | "facebook" | "apple";
+type Panel = "login" | "signup" | "verify" | "recovery" | "reset";
+type OAuthProvider = "google";
 
 const PROVIDERS: Array<{ id: OAuthProvider; label: string }> = [
   { id: "google", label: "Continuar com Google" },
-  { id: "facebook", label: "Continuar com Facebook" },
-  { id: "apple", label: "Continuar com Apple" },
 ];
 
 const COPY: Record<Panel, [string, string, string]> = {
   login: ["Boas-vindas à TemTrend", "Comece a vender.", "Entre para continuar de onde parou."],
   signup: ["Sua conta grátis", "Comece a vender.", "Crie sua conta e monte seu primeiro plano."],
+  verify: [
+    "Confirme seu e-mail",
+    "Digite o código.",
+    "Enviamos um código de 6 dígitos. Ele expira em 10 minutos.",
+  ],
   recovery: [
     "Recuperar acesso",
     "Esqueceu sua senha?",
-    "Digite seu email e enviaremos um link para criar uma nova senha.",
+    "Digite seu e-mail e enviamos um código de 6 dígitos para criar uma nova senha.",
   ],
-  reset: ["Nova senha", "Crie uma nova senha.", "Escolha uma senha segura para continuar."],
+  reset: ["Nova senha", "Crie uma nova senha.", "Digite o código que chegou no seu e-mail e escolha a nova senha."],
 };
 
-function ProviderIcon({ id }: { id: OAuthProvider }) {
-  if (id === "google") {
-    return (
-      <span className="tt-provider-icon tt-provider-icon-google" aria-hidden="true">
-        <svg viewBox="0 0 24 24" focusable="false">
-          <path fill="#4285F4" d="M21.6 12.23c0-.71-.06-1.39-.18-2.05H12v3.88h5.38a4.6 4.6 0 0 1-2 3.02v2.5h3.24c1.9-1.75 2.98-4.33 2.98-7.35Z" />
-          <path fill="#34A853" d="M12 22c2.7 0 4.96-.9 6.62-2.42l-3.24-2.5c-.9.6-2.05.96-3.38.96-2.6 0-4.8-1.76-5.59-4.12H3.06v2.58A10 10 0 0 0 12 22Z" />
-          <path fill="#FBBC05" d="M6.41 13.92A6.02 6.02 0 0 1 6.1 12c0-.67.11-1.32.31-1.92V7.5H3.06A10 10 0 0 0 2 12c0 1.61.39 3.14 1.06 4.5l3.35-2.58Z" />
-          <path fill="#EA4335" d="M12 5.96c1.47 0 2.79.5 3.83 1.5l2.87-2.87A9.64 9.64 0 0 0 12 2a10 10 0 0 0-8.94 5.5l3.35 2.58C7.2 7.72 9.4 5.96 12 5.96Z" />
-        </svg>
-      </span>
-    );
-  }
-  if (id === "facebook") {
-    return (
-      <span className="tt-provider-icon tt-provider-icon-facebook" aria-hidden="true">
-        <svg viewBox="0 0 24 24" focusable="false">
-          <path fill="#1877F2" d="M24 12a12 12 0 1 0-13.88 11.85v-8.38H7.08V12h3.04V9.36c0-3 1.79-4.67 4.53-4.67 1.31 0 2.69.24 2.69.24v2.95h-1.52c-1.49 0-1.96.93-1.96 1.88V12h3.33l-.53 3.47h-2.8v8.38A12 12 0 0 0 24 12Z" />
-          <path fill="#fff" d="M16.67 15.47 17.2 12h-3.33V9.76c0-.95.47-1.88 1.96-1.88h1.52V4.93s-1.38-.24-2.69-.24c-2.74 0-4.53 1.67-4.53 4.67V12H7.08v3.47h3.04v8.38a12.1 12.1 0 0 0 3.75 0v-8.38h2.8Z" />
-        </svg>
-      </span>
-    );
-  }
+function ProviderIcon() {
   return (
-    <span className="tt-provider-icon tt-provider-icon-apple" aria-hidden="true">
-      <svg viewBox="0 0 24 24" fill="currentColor" focusable="false">
-        <path d="M16.7 12.9c0-2.5 2-3.7 2.1-3.8-1.2-1.7-3-1.9-3.6-2-1.5-.2-3 .9-3.8.9-.8 0-2-.9-3.3-.9-1.7 0-3.3 1-4.2 2.6-1.8 3.1-.5 7.7 1.3 10.2.9 1.3 1.9 2.7 3.3 2.6 1.3-.1 1.8-.9 3.4-.9s2.1.9 3.5.9c1.4 0 2.4-1.3 3.3-2.6 1-1.5 1.4-3 1.4-3.1-.1 0-3.4-1.3-3.4-4.1Z" />
-        <path d="M14.3 5.6c.7-.9 1.2-2.1 1.1-3.3-1.1 0-2.4.7-3.1 1.6-.7.8-1.3 2-1.1 3.2 1.2.1 2.4-.6 3.1-1.5Z" />
+    <span className="tt-provider-icon tt-provider-icon-google" aria-hidden="true">
+      <svg viewBox="0 0 24 24" focusable="false">
+        <path fill="#4285F4" d="M21.6 12.23c0-.71-.06-1.39-.18-2.05H12v3.88h5.38a4.6 4.6 0 0 1-2 3.02v2.5h3.24c1.9-1.75 2.98-4.33 2.98-7.35Z" />
+        <path fill="#34A853" d="M12 22c2.7 0 4.96-.9 6.62-2.42l-3.24-2.5c-.9.6-2.05.96-3.38.96-2.6 0-4.8-1.76-5.59-4.12H3.06v2.58A10 10 0 0 0 12 22Z" />
+        <path fill="#FBBC05" d="M6.41 13.92A6.02 6.02 0 0 1 6.1 12c0-.67.11-1.32.31-1.92V7.5H3.06A10 10 0 0 0 2 12c0 1.61.39 3.14 1.06 4.5l3.35-2.58Z" />
+        <path fill="#EA4335" d="M12 5.96c1.47 0 2.79.5 3.83 1.5l2.87-2.87A9.64 9.64 0 0 0 12 2a10 10 0 0 0-8.94 5.5l3.35 2.58C7.2 7.72 9.4 5.96 12 5.96Z" />
       </svg>
     </span>
   );
@@ -118,9 +103,8 @@ function ProviderButtons({
             onClick={() => onSelect(id)}
             disabled={busyProvider !== null || busy}
           >
-            <ProviderIcon id={id} />
+            <ProviderIcon />
             <span className="provider-label">{busyProvider === id ? "Conectando..." : label}</span>
-            <span className="provider-label-short" aria-hidden="true">{id === "google" ? "Google" : id === "facebook" ? "Facebook" : "Apple"}</span>
           </button>
         ))}
       </div>
@@ -129,134 +113,67 @@ function ProviderButtons({
   );
 }
 
+const AUTH_SLIDES: Array<{ kicker: string; title: string; emphasis: string; text: string }> = [
+  {
+    kicker: "Do produto ao vídeo",
+    title: "Descubra, planeje",
+    emphasis: "e grave sem travar.",
+    text: "Escolha o produto, receba o plano em 8 partes e acompanhe a gravação até a publicação.",
+  },
+  {
+    kicker: "Escolha com dados",
+    title: "Um produto certo",
+    emphasis: "muda o seu mês.",
+    text: "Comissão, concorrência e potencial de venda na mesma tela para decidir sem achismo.",
+  },
+  {
+    kicker: "Roteiro pronto",
+    title: "Grave cena a cena,",
+    emphasis: "sem improvisar.",
+    text: "Receba o plano completo e siga do primeiro take ao CTA para o TikTok Shop.",
+  },
+  {
+    kicker: "Sua produção",
+    title: "Do salvo ao publicado,",
+    emphasis: "no mesmo lugar.",
+    text: "Acompanhe cada vídeo e veja o que já está gravado, pronto ou no ar.",
+  },
+];
+
 function AuthPreview() {
+  const [slide, setSlide] = useState(0);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return;
+    const id = window.setInterval(() => {
+      if (document.visibilityState === "hidden") return;
+      setSlide((current) => (current + 1) % AUTH_SLIDES.length);
+    }, 5600);
+    return () => window.clearInterval(id);
+  }, []);
+
+  const active = AUTH_SLIDES[slide];
+
   return (
     <aside className="auth-value tt-auth-preview" aria-hidden="true">
-      <div className="tt-auth-window">
-        <div className="tt-auth-rail">
-          <span className="tt-auth-rail-mark">T</span>
-          <span className="tt-auth-rail-icon is-active">
-            <Icon name="grid" size={15} />
-          </span>
-          <span className="tt-auth-rail-icon">
-            <Icon name="search" size={15} />
-          </span>
-          <span className="tt-auth-rail-icon">
-            <Icon name="file-text" size={15} />
-          </span>
-          <span className="tt-auth-rail-icon">
-            <Icon name="dashboard" size={15} />
-          </span>
-          <span className="tt-auth-rail-icon">
-            <Icon name="settings" size={15} />
-          </span>
-          <span className="tt-auth-rail-avatar">R</span>
-        </div>
-
-        <div className="tt-auth-screen">
-          <div className="tt-auth-screen-top">
-            <div className="tt-auth-screen-title">
-              <span>Painel de criação</span>
-              <strong>Visão geral</strong>
-            </div>
-            <div className="tt-auth-periods">
-              <span>Hoje</span>
-              <span className="is-active">Este mês</span>
-            </div>
-          </div>
-
-          <div className="tt-auth-metrics">
-            <div className="tt-auth-metric">
-              <span>Produtos salvos</span>
-              <strong>128</strong>
-              <small>+12%</small>
-            </div>
-            <div className="tt-auth-metric">
-              <span>Planos prontos</span>
-              <strong>36</strong>
-              <small>+8%</small>
-            </div>
-            <div className="tt-auth-metric is-highlight">
-              <span>Vídeos publicados</span>
-              <strong>24</strong>
-              <small>+6%</small>
-            </div>
-          </div>
-
-          <div className="tt-auth-chart">
-            <div className="tt-auth-chart-head">
-              <span>Desempenho da produção</span>
-              <b>Últimos 30 dias</b>
-            </div>
-            <svg className="tt-auth-chart-svg" viewBox="0 0 720 190" preserveAspectRatio="none" focusable="false">
-              <defs>
-                <linearGradient id="tt-auth-chart-fill" x1="0" x2="0" y1="0" y2="1">
-                  <stop offset="0%" stopColor="#9eea6c" stopOpacity=".46" />
-                  <stop offset="100%" stopColor="#9eea6c" stopOpacity="0" />
-                </linearGradient>
-              </defs>
-              <g className="tt-auth-chart-grid">
-                <line x1="0" y1="45" x2="720" y2="45" />
-                <line x1="0" y1="95" x2="720" y2="95" />
-                <line x1="0" y1="145" x2="720" y2="145" />
-              </g>
-              <path
-                className="tt-auth-chart-area"
-                d="M0 146 C48 142 72 128 108 132 C144 136 166 108 208 112 C250 116 274 86 314 92 C354 98 386 70 430 78 C474 86 500 48 548 56 C596 64 630 30 720 34 L720 190 L0 190 Z"
-                fill="url(#tt-auth-chart-fill)"
-              />
-              <path
-                className="tt-auth-chart-line"
-                d="M0 146 C48 142 72 128 108 132 C144 136 166 108 208 112 C250 116 274 86 314 92 C354 98 386 70 430 78 C474 86 500 48 548 56 C596 64 630 30 720 34"
-                pathLength={1}
-                fill="none"
-                stroke="#58c411"
-                strokeWidth="3"
-                strokeLinecap="round"
-              />
-              <circle className="tt-auth-chart-dot" cx="548" cy="56" r="6" fill="#fff" stroke="#58c411" strokeWidth="3" />
-            </svg>
-            <div className="tt-auth-chart-days">
-              <span>01 jun</span>
-              <span>08 jun</span>
-              <span>15 jun</span>
-              <span>22 jun</span>
-              <span>30 jun</span>
-            </div>
-          </div>
-
-          <div className="tt-auth-bottom">
-            <div className="tt-auth-plan-card">
-              <div className="tt-auth-plan-head">
-                <span>Plano de gravação</span>
-                <b>8 partes</b>
-              </div>
-              <strong>Garrafa térmica no dia a dia</strong>
-              <ul>
-                <li><i>01</i><span>Abertura com o produto em uso</span></li>
-                <li><i>02</i><span>Prova real: gelo por 12 horas</span></li>
-                <li><i>03</i><span>CTA para o link do TikTok Shop</span></li>
-              </ul>
-            </div>
-            <div className="tt-auth-evolution-card">
-              <div>
-                <span>Evolução</span>
-                <strong>+18%</strong>
-              </div>
-              <div className="tt-auth-bars" aria-hidden="true">
-                <i /><i /><i /><i /><i /><i /><i /><i />
-              </div>
-              <small>vs. mês anterior</small>
-            </div>
-          </div>
-        </div>
+      <div className="tt-auth-art">
+        <TemtrendArt idPrefix="tt-auth" />
       </div>
 
       <div className="tt-auth-caption">
-        <span className="tt-auth-caption-kicker">Tudo em um só lugar</span>
-        <h2>Do produto ao vídeo, <em>sem começar do zero.</em></h2>
-        <p>Encontre oportunidades, receba o plano de gravação e acompanhe sua produção.</p>
-        <div className="tt-auth-dots"><i className="is-active" /><i /><i /></div>
+        <div className="tt-auth-slides" key={slide}>
+          <span className="tt-auth-caption-kicker">{active.kicker}</span>
+          <h2>
+            {active.title} <em>{active.emphasis}</em>
+          </h2>
+          <p>{active.text}</p>
+        </div>
+        <div className="tt-auth-dots">
+          {AUTH_SLIDES.map((item, index) => (
+            <i key={item.kicker} className={index === slide ? "is-active" : undefined} />
+          ))}
+        </div>
       </div>
     </aside>
   );
@@ -266,10 +183,14 @@ export default function AuthPanel({
   initialPanel,
   recoveryHint,
   onAuthenticated,
+  onRecoveryDone,
+  onExitRecovery,
 }: {
   initialPanel: Panel;
   recoveryHint: string | null;
   onAuthenticated: () => void;
+  onRecoveryDone?: () => void;
+  onExitRecovery?: () => void;
 }) {
   const [panel, setPanel] = useState<Panel>(initialPanel);
   const [busy, setBusy] = useState(false);
@@ -279,14 +200,47 @@ export default function AuthPanel({
   const [busyProvider, setBusyProvider] = useState<OAuthProvider | null>(null);
   const [signupPassword, setSignupPassword] = useState("");
   const [pendingEmail, setPendingEmail] = useState("");
+  const [code, setCode] = useState("");
+  const [codeBusy, setCodeBusy] = useState(false);
+  const [resetPasswordValue, setResetPasswordValue] = useState("");
+  const [resendIn, setResendIn] = useState(0);
   const [resendState, setResendState] = useState<"idle" | "sending" | "sent" | "error">("idle");
+  // Senha fica em memória só o suficiente para entrar logo após confirmar o
+  // código. Nunca vai para storage; some ao trocar de tela.
+  const passwordRef = useRef("");
+  const codeInputRef = useRef<HTMLInputElement | null>(null);
 
   const [eyebrow, title, sub] = COPY[panel];
+
+  useEffect(() => {
+    if (resendIn <= 0) return;
+    const id = window.setTimeout(() => setResendIn((value) => Math.max(0, value - 1)), 1000);
+    return () => window.clearTimeout(id);
+  }, [resendIn]);
+
+  useEffect(() => {
+    if (panel === "verify" || (panel === "reset" && pendingEmail)) codeInputRef.current?.focus();
+  }, [panel, pendingEmail]);
 
   function switchPanel(next: Panel) {
     setError("");
     setNotice("");
     setPanel(next);
+    if (next !== "verify") {
+      setCode("");
+      setResendState("idle");
+    }
+    if (next !== "reset") setResetPasswordValue("");
+  }
+
+  function beginVerify(email: string, message = "") {
+    setPendingEmail(email);
+    setCode("");
+    setError("");
+    setNotice(message);
+    setResendState("idle");
+    setResendIn(60);
+    setPanel("verify");
   }
 
   async function continueWithProvider(provider: OAuthProvider) {
@@ -302,17 +256,40 @@ export default function AuthPanel({
     }
   }
 
-  async function resendConfirmation() {
-    if (!pendingEmail || resendState === "sending") return;
-    setResendState("sending");
-    const { error } = await supabase().auth.resend({ type: "signup", email: pendingEmail });
-    setResendState(error ? "error" : "sent");
+  async function sendCodeTo(email: string): Promise<boolean> {
+    if (!email) return false;
+    try {
+      await api("/auth/resend-code", undefined, {
+        method: "POST",
+        body: JSON.stringify({ email }),
+        timeoutMs: 20000,
+      });
+      setResendIn(60);
+      return true;
+    } catch (err) {
+      setError(friendlyError(err, "Não conseguimos reenviar o código agora. Tente novamente em instantes."));
+      return false;
+    }
   }
 
-  async function waitForPersistedSession(timeoutMs = 2500): Promise<boolean> {
-    // A sessão vive só em memória (persistSession: false): o signIn resolve
-    // antes do cliente interno disponibilizá-la em alguns navegadores.
-    // Aguarda até ela aparecer no getSession em vez de presumir login.
+  async function requestNewCode(): Promise<boolean> {
+    return sendCodeTo(pendingEmail);
+  }
+
+  async function handleResendCode() {
+    if (resendIn > 0 || resendState === "sending") return;
+    setError("");
+    setNotice("");
+    setResendState("sending");
+    const sent = await requestNewCode();
+    setResendState(sent ? "sent" : "error");
+    if (sent) setNotice(`Enviamos um novo código para ${pendingEmail}.`);
+  }
+
+  async function waitForSession(timeoutMs = 2500): Promise<boolean> {
+    // A sessão é persistida no navegador: o signIn resolve antes do cliente
+    // interno disponibilizá-la em alguns navegadores. Aguarda até ela
+    // aparecer no getSession em vez de presumir login.
     const started = Date.now();
     for (;;) {
       try {
@@ -329,15 +306,24 @@ export default function AuthPanel({
   async function handleLogin(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const form = new FormData(e.currentTarget);
+    const email = String(form.get("email")).trim().toLowerCase();
+    const password = String(form.get("password"));
     setError("");
     setNotice("");
     setBusy(true);
     setBusyLabel("Entrando...");
-    const { data, error } = await supabase().auth.signInWithPassword({
-      email: String(form.get("email")).trim().toLowerCase(),
-      password: String(form.get("password")),
-    });
+    const { data, error } = await supabase().auth.signInWithPassword({ email, password });
     if (error) {
+      // Conta criada mas ainda sem e-mail confirmado: leva direto para o
+      // código, reenviando um novo, em vez de deixar o usuário num beco.
+      if (String(error.message).toLowerCase().includes("email not confirmed")) {
+        passwordRef.current = password;
+        setBusy(false);
+        beginVerify(email);
+        const sent = await sendCodeTo(email);
+        if (sent) setNotice(`Enviamos um código de confirmação para ${email}.`);
+        return;
+      }
       setBusy(false);
       setError(humanAuthError(error));
       return;
@@ -347,7 +333,7 @@ export default function AuthPanel({
       setError("Confirme seu email antes de entrar.");
       return;
     }
-    const persisted = await waitForPersistedSession();
+    const persisted = await waitForSession();
     setBusy(false);
     if (!persisted) {
       setError("Entramos na sua conta, mas o navegador ainda não confirmou a sessão. Recarregue a página para continuar.");
@@ -362,77 +348,214 @@ export default function AuthPanel({
     e.preventDefault();
     const form = new FormData(e.currentTarget);
     const nome = String(form.get("signup-name")).trim();
+    const email = String(form.get("signup-email")).trim().toLowerCase();
+    const password = String(form.get("signup-password"));
     if (nome.length < 2) {
       setError("Informe seu nome com pelo menos 2 caracteres.");
+      return;
+    }
+    if (password.length < 6) {
+      setError("A senha precisa ter pelo menos 6 caracteres.");
       return;
     }
     setError("");
     setNotice("");
     setBusy(true);
     setBusyLabel("Criando sua conta...");
-    const { data, error } = await supabase().auth.signUp({
-      email: String(form.get("signup-email")).trim().toLowerCase(),
-      password: String(form.get("signup-password")),
-      options: {
-        data: { full_name: nome, name: nome },
-        emailRedirectTo: window.location.origin + window.location.pathname,
-      },
-    });
-    if (error) {
+    try {
+      // A conta nasce sem sessão: só entra depois de confirmar o código
+      // enviado por e-mail. Assim o onboarding nunca abre sem e-mail válido.
+      await api("/auth/signup", undefined, {
+        method: "POST",
+        body: JSON.stringify({ nome, email, password }),
+        timeoutMs: 25000,
+      });
+    } catch (err) {
       setBusy(false);
-      setError(humanAuthError(error));
-      return;
-    }
-    if (data.session) {
-      const persisted = await waitForPersistedSession();
-      setBusy(false);
-      if (!persisted) {
-        setError("Conta criada, mas o navegador ainda não confirmou a sessão. Recarregue a página para continuar.");
-        return;
-      }
-      track("signup_complete");
-      onAuthenticated();
+      setError(friendlyError(err, "Não conseguimos criar sua conta agora. Tente novamente em instantes."));
       return;
     }
     setBusy(false);
+    passwordRef.current = password;
+    setSignupPassword("");
     track("signup_confirm_email");
-    setPendingEmail(String(form.get("signup-email")).trim().toLowerCase());
+    beginVerify(email);
+  }
+
+  async function handleVerify(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const token = code.replace(/\D/g, "");
+    if (token.length !== 6) {
+      setError("Digite os 6 dígitos do código.");
+      return;
+    }
+    setError("");
+    setNotice("");
+    setCodeBusy(true);
+    try {
+      await api("/auth/verify-code", undefined, {
+        method: "POST",
+        body: JSON.stringify({ email: pendingEmail, code: token }),
+        timeoutMs: 20000,
+      });
+    } catch (err) {
+      setCodeBusy(false);
+      setError(friendlyError(err, "Não conseguimos confirmar o código. Tente novamente."));
+      return;
+    }
+
+    track("email_verified", { method: "code" });
+
+    // Confirmação ok: entra sozinho quando a senha do cadastro ainda está em
+    // memória. Se o usuário recarregou a página, volta ao login com aviso.
+    const password = passwordRef.current;
+    if (password) {
+      const { data, error } = await supabase().auth.signInWithPassword({
+        email: pendingEmail,
+        password,
+      });
+      if (!error && data.session && (await waitForSession())) {
+        passwordRef.current = "";
+        setCodeBusy(false);
+        setPendingEmail("");
+        track("signup_complete", { method: "code" });
+        onAuthenticated();
+        return;
+      }
+    }
+
+    passwordRef.current = "";
+    setCodeBusy(false);
+    setCode("");
+    setResendIn(0);
     switchPanel("login");
-    setNotice("Conta criada. Falta confirmar seu e-mail.");
+    setNotice("E-mail confirmado. Entre com sua senha para continuar.");
   }
 
   async function handleRecovery(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const form = new FormData(e.currentTarget);
+    const email = String(form.get("recovery-email")).trim().toLowerCase();
+    setError("");
     setNotice("");
     setBusy(true);
-    setBusyLabel("Enviando...");
-    const { error } = await supabase().auth.resetPasswordForEmail(
-      String(form.get("recovery-email")).trim().toLowerCase(),
-      { redirectTo: window.location.origin + window.location.pathname }
-    );
-    setBusy(false);
-    if (error) {
-      setError(humanAuthError(error));
+    setBusyLabel("Enviando código...");
+    try {
+      await api("/auth/password/request", undefined, {
+        method: "POST",
+        body: JSON.stringify({ email }),
+        timeoutMs: 20000,
+      });
+    } catch (err) {
+      setBusy(false);
+      setError(friendlyError(err, "Não conseguimos enviar o código agora. Tente novamente em instantes."));
       return;
     }
-    setNotice("Confira seu email. Enviamos um link para criar sua nova senha.");
+    setBusy(false);
+    setPendingEmail(email);
+    setCode("");
+    setResetPasswordValue("");
+    setResendState("idle");
+    setResendIn(60);
+    setPanel("reset");
+    setNotice(
+      "Se este e-mail tiver uma conta com senha, enviamos um código de 6 dígitos. Contas criadas com Google devem entrar com Google."
+    );
+  }
+
+  async function handleResendReset() {
+    if (!pendingEmail || resendIn > 0 || resendState === "sending") return;
+    setError("");
+    setNotice("");
+    setResendState("sending");
+    try {
+      await api("/auth/password/request", undefined, {
+        method: "POST",
+        body: JSON.stringify({ email: pendingEmail }),
+        timeoutMs: 20000,
+      });
+      setResendState("sent");
+      setResendIn(60);
+      setNotice("Se houver uma conta com senha para este e-mail, enviamos um novo código.");
+    } catch (err) {
+      setResendState("error");
+      setError(friendlyError(err, "Não conseguimos reenviar o código agora. Tente novamente em instantes."));
+    }
   }
 
   async function handleReset(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const form = new FormData(e.currentTarget);
     const password = String(form.get("new-password"));
-    if (password.length < 6) {
-      setError("A senha precisa ter pelo menos 6 caracteres.");
+    if (password.length < 8) {
+      setError("A nova senha precisa ter pelo menos 8 caracteres.");
       return;
     }
     if (password !== String(form.get("confirm-password"))) {
       setError("As senhas não conferem.");
       return;
     }
+
+    // Fluxo por código (recomendado). O modo legado por link só continua
+    // aceito para contas de e-mail/senha, nunca para contas Google.
+    if (pendingEmail) {
+      const token = code.replace(/\D/g, "");
+      if (token.length !== 6) {
+        setError("Digite os 6 dígitos do código.");
+        return;
+      }
+      setError("");
+      setNotice("");
+      setCodeBusy(true);
+      setBusyLabel("Salvando...");
+      try {
+        await api("/auth/password/reset", undefined, {
+          method: "POST",
+          body: JSON.stringify({ email: pendingEmail, code: token, password }),
+          timeoutMs: 20000,
+        });
+      } catch (err) {
+        setCodeBusy(false);
+        setError(friendlyError(err, "Não conseguimos salvar sua nova senha. Tente novamente."));
+        return;
+      }
+
+      // Entra direto com a senha nova; se não der, volta ao login.
+      const { data, error } = await supabase().auth.signInWithPassword({
+        email: pendingEmail,
+        password,
+      });
+      if (!error && data.session && (await waitForSession())) {
+        setCodeBusy(false);
+        setPendingEmail("");
+        setResetPasswordValue("");
+        track("password_reset_complete");
+        onRecoveryDone?.();
+        onAuthenticated();
+        return;
+      }
+
+      setCodeBusy(false);
+      setPendingEmail("");
+      setResetPasswordValue("");
+      switchPanel("login");
+      setNotice("Senha atualizada. Entre com sua nova senha.");
+      return;
+    }
+
+    // Link antigo de recuperação (ainda aceito para contas com senha).
+    setError("");
     setBusy(true);
     setBusyLabel("Salvando...");
+    const { data: sessionData } = await supabase().auth.getSession();
+    const provider = sessionData.session?.user.app_metadata?.provider;
+    const identities = sessionData.session?.user.identities ?? [];
+    const hasEmailIdentity = identities.some((identity) => identity.provider === "email");
+    if (provider && provider !== "email" && !hasEmailIdentity) {
+      setBusy(false);
+      setError("Esta conta usa login com Google. Entre com o Google para acessar sua conta.");
+      return;
+    }
     const { error } = await supabase().auth.updateUser({ password });
     if (error) {
       setError(humanAuthError(error));
@@ -447,17 +570,18 @@ export default function AuthPanel({
     }
     window.history.replaceState(null, "", window.location.pathname + window.location.search);
     setBusy(false);
+    onRecoveryDone?.();
     switchPanel("login");
     setNotice("Senha atualizada. Entre para continuar.");
   }
 
   return (
-    <main id="login-view" className={`auth-view tt-auth${panel === "signup" ? " auth-view--signup" : ""}`}>
-      <Link className="auth-logo" href="/" aria-label="Voltar para a página inicial">
-        <span aria-hidden="true" /><b>TemTrend</b>
-      </Link>
+    <main id="login-view" className={`auth-view tt-auth${panel === "signup" || panel === "verify" ? " auth-view--signup" : ""}`}>
       <div className="auth-layout">
         <section className="auth-shell" aria-live="polite">
+        <Link className="auth-logo" href="/" aria-label="Voltar para a página inicial">
+          <span aria-hidden="true" /><b>TemTrend</b>
+        </Link>
         <div className="auth-accent" aria-hidden="true"></div>
         {(panel === "login" || panel === "signup") && (
           <div className="auth-tabs" role="tablist" aria-label="Acesso à conta">
@@ -467,35 +591,16 @@ export default function AuthPanel({
         )}
         <div id="login-heading" className="auth-heading">
           <p className="eyebrow">{eyebrow}</p>
-          <h1>{title}</h1>
+          <h1><HighlightedTitle text={title} /></h1>
           <p>{sub}</p>
         </div>
 
-        {panel === "login" && pendingEmail && (
-          <div className="auth-confirm" role="status">
-            <p>
-              <strong>Falta confirmar seu e-mail.</strong> Enviamos o link para <b>{pendingEmail}</b>. Confira a caixa de entrada e o spam.
-            </p>
-            <button
-              className="ghost"
-              type="button"
-              onClick={() => void resendConfirmation()}
-              disabled={resendState === "sending"}
-            >
-              {resendState === "sending" ? "Reenviando..." : resendState === "sent" ? "E-mail reenviado ✓" : "Reenviar e-mail"}
-            </button>
-            {resendState === "error" && (
-              <p className="form-message error" role="alert">Não conseguimos reenviar agora. Tente de novo em alguns instantes.</p>
-            )}
-          </div>
-        )}
-
         {panel === "login" && (
           <form className="stack auth-form" onSubmit={handleLogin}>
-            <ProviderButtons dividerLabel="ou entre com email" busy={busy} busyProvider={busyProvider} onSelect={(id) => void continueWithProvider(id)} />
+            <ProviderButtons dividerLabel="Ou entre com e-mail" busy={busy} busyProvider={busyProvider} onSelect={(id) => void continueWithProvider(id)} />
             <label>
-              Email
-              <input id="email" name="email" type="email" required autoComplete="email" inputMode="email" spellCheck={false} placeholder="seu@email.com" />
+              E-mail de acesso
+              <input id="email" name="email" type="email" required autoComplete="email" inputMode="email" spellCheck={false} placeholder="seu@email.com" defaultValue={pendingEmail || undefined} />
             </label>
             <label>
               Senha
@@ -510,6 +615,10 @@ export default function AuthPanel({
             <button className="primary" type="submit" disabled={busy || busyProvider !== null}>
               {busy ? busyLabel : "Entrar"}
             </button>
+            <p className="legal-note">
+              Ao entrar, você concorda com nossos <Link href="/termos" target="_blank" rel="noopener">Termos</Link> e{" "}
+              <Link href="/privacidade" target="_blank" rel="noopener">Política de Privacidade</Link>.
+            </p>
             <p className="auth-switch">
               Ainda não tem uma conta?{" "}
               <button className="text-button" type="button" onClick={() => switchPanel("signup")}>
@@ -521,7 +630,7 @@ export default function AuthPanel({
 
         {panel === "signup" && (
           <form className="stack auth-form" onSubmit={handleSignup}>
-            <ProviderButtons dividerLabel="ou crie com email" busy={busy} busyProvider={busyProvider} onSelect={(id) => void continueWithProvider(id)} />
+            <ProviderButtons dividerLabel="Ou crie com e-mail" busy={busy} busyProvider={busyProvider} onSelect={(id) => void continueWithProvider(id)} />
             <label>
               Nome
               <input id="signup-name" name="signup-name" required minLength={2} maxLength={120} autoComplete="name" placeholder="Como podemos chamar você?" />
@@ -542,6 +651,10 @@ export default function AuthPanel({
             <button className="primary" type="submit" disabled={busy || busyProvider !== null}>
               {busy ? busyLabel : "Criar conta grátis"}
             </button>
+            <ul className="signup-assurances" aria-label="O que você recebe ao criar a conta">
+              <li><Icon name="check" size={12} strokeWidth={2.6} /> Comece grátis</li>
+              <li><Icon name="check" size={12} strokeWidth={2.6} /> Pronto em 1 minuto</li>
+            </ul>
             <p className="legal-note">
               Ao continuar, você concorda com nossos <Link href="/termos" target="_blank" rel="noopener">Termos</Link> e{" "}
               <Link href="/privacidade" target="_blank" rel="noopener">Política de Privacidade</Link>.
@@ -555,14 +668,68 @@ export default function AuthPanel({
           </form>
         )}
 
+        {panel === "verify" && (
+          <form className="stack auth-form auth-code-form" onSubmit={handleVerify}>
+            <div className="auth-code-target" role="status">
+              <span>Enviamos o código para</span>
+              <strong>{pendingEmail}</strong>
+            </div>
+            <label htmlFor="verify-code">
+              Código de confirmação
+              <input
+                ref={codeInputRef}
+                id="verify-code"
+                name="verify-code"
+                className="code-input"
+                type="text"
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                pattern="[0-9]{6}"
+                maxLength={6}
+                required
+                placeholder="000000"
+                value={code}
+                onChange={(event) => setCode(event.target.value.replace(/\D/g, "").slice(0, 6))}
+                aria-describedby="verify-code-help"
+              />
+            </label>
+            <p id="verify-code-help" className="auth-code-help">
+              O código vale por 10 minutos. Confira também a pasta de spam.
+            </p>
+            <button className="primary" type="submit" disabled={codeBusy || code.length !== 6}>
+              {codeBusy ? "Confirmando..." : "Confirmar código"}
+            </button>
+            <div className="auth-code-actions">
+              <button
+                className="text-button"
+                type="button"
+                onClick={() => void handleResendCode()}
+                disabled={resendIn > 0 || resendState === "sending" || codeBusy}
+              >
+                {resendState === "sending"
+                  ? "Reenviando..."
+                  : resendIn > 0
+                    ? `Reenviar em ${resendIn}s`
+                    : "Reenviar código"}
+              </button>
+              <button className="back-button" type="button" onClick={() => switchPanel("signup")}>
+                Trocar e-mail
+              </button>
+            </div>
+          </form>
+        )}
+
         {panel === "recovery" && (
           <form className="stack auth-form" onSubmit={handleRecovery}>
             <label>
-              Email
+              Email da conta
               <input id="recovery-email" name="recovery-email" type="email" required autoComplete="email" inputMode="email" spellCheck={false} placeholder="seu@email.com" />
             </label>
+            <p className="auth-code-help">
+              Enviamos um código de 6 dígitos. Contas criadas com Google não usam senha: nelas, entre com o Google.
+            </p>
             <button className="primary" type="submit" disabled={busy}>
-              {busy ? busyLabel : "Enviar link"}
+              {busy ? busyLabel : "Enviar código"}
             </button>
             <button className="back-button" type="button" onClick={() => switchPanel("login")}>
               Voltar para entrar
@@ -572,16 +739,92 @@ export default function AuthPanel({
 
         {panel === "reset" && (
           <form className="stack auth-form" onSubmit={handleReset}>
+            {pendingEmail && (
+              <div className="auth-code-target" role="status">
+                <span>Código enviado para</span>
+                <strong>{pendingEmail}</strong>
+              </div>
+            )}
+            {notice && (
+              <p className="form-message success" role="status">{notice}</p>
+            )}
+            {error && (
+              <p className="form-message error" role="alert">{error}</p>
+            )}
+            {pendingEmail && (
+              <label htmlFor="reset-code">
+                Código de confirmação
+                <input
+                  ref={codeInputRef}
+                  id="reset-code"
+                  name="reset-code"
+                  className="code-input"
+                  type="text"
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  pattern="[0-9]{6}"
+                  maxLength={6}
+                  required
+                  placeholder="000000"
+                  value={code}
+                  onChange={(event) => setCode(event.target.value.replace(/\D/g, "").slice(0, 6))}
+                  aria-describedby="reset-code-help"
+                />
+              </label>
+            )}
+            {pendingEmail && (
+              <p id="reset-code-help" className="auth-code-help">
+                O código vale por 10 minutos. Se não chegar, confira o spam.
+              </p>
+            )}
             <label>
               Nova senha
-              <PasswordInput id="new-password" autoComplete="new-password" />
+              <div onChangeCapture={(event) => setResetPasswordValue((event.target as HTMLInputElement).value)}>
+                <PasswordInput id="new-password" autoComplete="new-password" placeholder="Mínimo de 8 caracteres" />
+              </div>
+              <span className={`password-help${resetPasswordValue.length >= 8 ? " is-valid" : ""}`}>
+                {resetPasswordValue.length >= 8 ? "✓ Senha pronta para usar" : "Use pelo menos 8 caracteres"}
+              </span>
             </label>
             <label>
               Confirmar senha
-              <PasswordInput id="confirm-password" autoComplete="new-password" />
+              <PasswordInput id="confirm-password" autoComplete="new-password" placeholder="Repita a nova senha" />
             </label>
-            <button className="primary" type="submit" disabled={busy}>
-              {busy ? busyLabel : "Salvar nova senha"}
+            <button
+              className="primary"
+              type="submit"
+              disabled={codeBusy || busy || (Boolean(pendingEmail) && code.length !== 6)}
+            >
+              {codeBusy || busy ? busyLabel : "Salvar nova senha"}
+            </button>
+            {pendingEmail && (
+              <div className="auth-code-actions">
+                <button
+                  className="text-button"
+                  type="button"
+                  onClick={() => void handleResendReset()}
+                  disabled={resendIn > 0 || resendState === "sending" || codeBusy}
+                >
+                  {resendState === "sending"
+                    ? "Reenviando..."
+                    : resendIn > 0
+                      ? `Reenviar em ${resendIn}s`
+                      : "Reenviar código"}
+                </button>
+                <button className="back-button" type="button" onClick={() => switchPanel("recovery")}>
+                  Trocar e-mail
+                </button>
+              </div>
+            )}
+            <button
+              className="back-button"
+              type="button"
+              onClick={() => {
+                onExitRecovery?.();
+                switchPanel("login");
+              }}
+            >
+              Voltar para entrar
             </button>
           </form>
         )}
@@ -589,11 +832,11 @@ export default function AuthPanel({
         {(error || recoveryHint) && panel === "reset" && !error && (
           <p className="form-message error" role="alert">{recoveryHint}</p>
         )}
-        {error && <p className="form-message error" role="alert">{error}</p>}
-        {notice && <p className="form-message success" role="status">{notice}</p>}
+        {error && panel !== "reset" && <p className="form-message error" role="alert">{error}</p>}
+        {notice && panel !== "reset" && <p className="form-message success" role="status">{notice}</p>}
         </section>
-        <AuthPreview />
       </div>
+      <AuthPreview />
       <Link className="back-home" href="/"><Icon name="arrow-left" size={14} /> Voltar para o início</Link>
     </main>
   );

@@ -9,6 +9,8 @@
 > ⚠️ **Licença e escopo da skill.** O material de Revenue-Centric Design é de uso livre sob uma condição: **nunca** para produtos de apostas/cassino/gambling. A TemTrend é uma plataforma de conteúdo para afiliados do TikTok Shop — o uso é permitido.
 >
 > 📌 **Na redação deste relatório nenhuma alteração de código foi feita.** O catálogo AbacatePay foi consultado apenas em leitura. Este é um diagnóstico com recomendações, cada uma ancorada em evidência (`arquivo:linha`), princípio (com fonte) e movimento concreto.
+>
+> 🗂️ **Documento histórico (diagnóstico de 18/10/2026).** As Partes I–IV descrevem o estado **anterior** à implementação e mantêm recomendações da época — inclusive a escada Essencial/Scale e o trial de 7 dias, que **não existem hoje**. Os caminhos de arquivo citados são os do repositório na data do diagnóstico e alguns foram renomeados ou removidos desde então (`landing-rebuild.tsx`, `creator-carousel.tsx`, `lib/guide-progress.ts`). Para o estágio atual, use `docs/inventario-funcional.md` (funcionalidades) e `docs/relatorio-precificacao.md` (catálogo vigente).
 
 ---
 
@@ -31,17 +33,13 @@
 > | 11 | Linha `creator_*` na AbacatePay + arquivar legado | ✅ | 6 produtos de assinatura ativos; avulso **excluído em 18/10**; webhook v2 criado (`webh_prod_xS6hzaujufu2sQxkpYpAZ434`); produtos v1 seguem ativos (arquivar é opcional/manual) |
 > | 12 | Painel de ROI + celebração de ativação | ⏳ fase 3 | — |
 >
-> **Decisão de produto (18/10, 2ª rodada):** plano grátis e compra avulsa **removidos** — plataforma paga, com trial Pro de 7 dias sem cartão como única entrada grátis e estado "sem plano" (travado, conteúdo antigo visível) depois. Em troca, foi entregue **canal de suporte in-platform** (`/app/suporte`) conectado ao **painel admin modernizado** (abas Assinaturas e Suporte, funil 30d na visão geral).
+> **Atualização de produto e precificação (24/10):** A escada antiga Essencial / Scale foi **aposentada do catálogo de vendas**. A plataforma consolidou o **Plano Pro único** (R$ 49,90/mês ou R$ 499/ano, com condição de lançamento para as primeiras 100 vagas a R$ 39,90/mês ou R$ 399/ano), com **geração ilimitada de kits e buscas** (sem cotas diárias; política interna de uso justo de 1.000 kits/mês para segurança). A porta de entrada é o **Plano Grátis**, com 100 buscas/semana e 10 roteiros/semana. Enterprise sob consulta.
 >
-> **Backlog de produto:** reenvio de confirmação de e-mail ✅; link do TikTok validado em "publicado" ✅ (`validTikTokUrl` em `Production.tsx`); tela de cancelamento ✅ (modal na conta); código morto da landing ✅ (verificado: `lib/landing-data.ts` está em uso); links de saída do Pexels ✅ (atribuição em texto, sem link). **Fase 3:** persistir progresso de gravação no servidor, painel de ROI + streak, sample data na Produção, auditoria de LCP/peso, redução de variantes de easing.
+> **Backlog de produto:** reenvio de confirmação de e-mail ✅; link do TikTok validado em "publicado" ✅ (`validTikTokUrl` em `Production.tsx`); tela de cancelamento ✅ (modal na conta); canal de suporte in-platform ✅ (`/app/suporte`); painel admin modernizado ✅. **Fase 3:** persistir progresso de gravação no servidor, painel de ROI + streak, sample data na Produção, auditoria de LCP/peso, e-mails transacionais (Resend).
 >
-> **Migrations `027`, `028` e `029`:** aplicadas em produção em 18/10/2026 (verificado em `information_schema`; advisors de segurança sem alertas). A `029_support` cria o suporte (`support_tickets`/`support_messages` + RPC de funil) e remove `creators.kits_extra`. **Guia de go-live da cobrança:** `docs/go-live-billing.md`.
+> **Migrations `027` a `032`:** aplicadas em produção (incluindo `028_billing`, `029_support`, `031_pricing_launch_fair_use` e `032_launch_seats_distinct`). O repositório vai até `035`, mas `033`–`035` ainda não constam como aplicadas no projeto Supabase verificado em 27/10/2026 (ver `backend/supabase/migrations/README.md`). O go-live da cobrança aguarda apenas a `ABACATEPAY_API_KEY` no Render (ação do dono).
 >
-> **Verificações da implementação:** backend `typecheck` + 161 testes ✅ · frontend `lint` + `build` ✅ · E2E 40 testes ✅.
->
-> **Go-live (18/10):** deploy `live` com o código novo ✅ · envs do Render 3/4 ✅ · webhook v2 criado ✅ · avulso excluído ✅ · rotas novas verificadas em produção ✅ (plans 200; webhook/support/admin 401) · **pendente: `ABACATEPAY_API_KEY` + Starter**.
->
-> **Doc & skills refresh (20/10):** README, `backend/docs/DEPLOY.md`, READMEs do frontend e o relatório de precificação (v1.1, seção 0) atualizados ao estado real · agente auditor `revisor-fluxos` revisitado · skill `design-taste-frontend` sincronizada na v2 via `npx skills update` (as demais skills do mesmo repositório foram descontinuadas upstream — cópias locais preservadas).
+> **Verificações da implementação:** backend `typecheck` + 161 testes ✅ · frontend `lint` + `build` ✅ · E2E testes ✅.
 
 ---
 
@@ -65,7 +63,7 @@ A TemTrend chegou ao ponto raro de ter **produto pronto para cobrar**: descobert
 
 Três lacunas estruturais dominam tudo o mais:
 
-1. **Receita zero.** O "Plano gratuito" é um literal no código (`backend/src/modules/account/account.routes.ts:35`) — sem assinatura, trial ou paywall. É um produto que roda **tokens de IA de graça para o usuário**.
+1. **Receita zero (à época).** O "Plano gratuito" era um literal no código (`backend/src/modules/account/account.routes.ts:35`) — sem assinatura, trial ou paywall. **Corrigido depois** com o módulo de billing, o gating por plano e o checkout AbacatePay.
 2. **Persistência zero.** A sessão vive só em memória (`frontend/lib/supabase.ts:30-33`, `persistSession:false`): recarregar a página desloga **e reinicia o onboarding**. É churn de dia 1 estrutural — e a correção é barata.
 3. **Prova zero.** A landing não tem um único depoimento, número ou print real; as imagens são de acervo rotuladas como tal (`frontend/app/creator-carousel.tsx:125`). A headline descreve o que o produto faz, mas não para quem nem o resultado.
 
@@ -130,7 +128,7 @@ O que existe: hero com busca ("O que você quer vender?", CTA "Encontrar produto
 Problemas e movimentos:
 1. **Zero prova social.** Nenhum depoimento, contagem, nota ou creator real; só acervo rotulado ("Vídeo de acervo · Pexels", `creator-carousel.tsx:125`). *Princípio:* "Real humans outconvert models" — fotos de clientes reais venceram banco de imagem (+102,5%) [@richardrx · 2025-11-04]; "Aim for 4.2–4.5 stars" [@richardrx · 2026-05-14]. *Movimento:* 3 depoimentos verificáveis, número real de planos gerados, prints reais do produto.
 2. **Copy não promete resultado.** H1 "Descubra o que vale a pena vender." descreve a função, não o *para quem* + *resultado*. Falha no teste dos 5 segundos. *Princípio:* "Specificity is the difference between decoration and persuasion" (30 LPs BR: 0,5% → 3%) [@richardrx · 2026-04-17]; "Pass the 5-second test" [@richardrx · 2026-05-01]. *Movimento:* hero *para quem → resultado → prova*.
-3. **CTA responde zero das três perguntas.** "Começar agora" não diz o que acontece, quanto demora nem o custo. *Princípio:* "Write the CTA microcopy, not the button color" [@richardrx · 2026-05-25]. *Movimento:* "Começar grátis" + "Sem cartão. Seu primeiro plano de gravação em 2 minutos."
+3. **CTA responde zero das três perguntas.** "Começar agora" não diz o que acontece, quanto demora nem o custo. *Princípio:* "Write the CTA microcopy, not the button color" [@richardrx · 2026-05-25]. *Movimento:* "Começar grátis" + "Seu primeiro plano de gravação em 2 minutos."
 4. **O valor real está atrás do login.** A landing diz que os produtos são "exemplos visuais" e que as oportunidades "aparecem na plataforma" (`landing-rebuild.tsx:105`). O maior ativo (catálogo real + um plano completo) fica invisível. *Princípio:* "Value first, ask later"; "Show-don't-explain visual" [@richardrx · 2026-05-29]. *Movimento:* mostrar **um plano completo real** (blur no fim) e/ou permitir 1 busca real antes do cadastro.
 5. **Cliques de saída não controlados.** O carrossel linka para o Pexels (`creator-carousel.tsx:123-126`). Remover links externos.
 6. **Código morto.** `frontend/lib/landing-data.ts` ainda define `problems`, `transformation`, `profiles`, `products`, `workflow`, `benefits` — nada disso é usado pela landing viva. Parece uma seção de público/prova abandonada. *Movimento:* finalizar (é exatamente o que falta) ou apagar.
@@ -184,7 +182,9 @@ O que está bom: busca com IA e fallback, cards com métricas, geração de kit,
 
 ---
 
-# PARTE II — Precificação & Monetização
+# PARTE II - Precificação & Monetização
+
+> **[histórico]** Os preços, planos (Essencial/Scale) e o trial citados nesta parte são o estudo de 17–18/10/2026. O catálogo vigente é **Plano Grátis + Pro único (R$ 39,90/49,90 ou R$ 399/499) + Enterprise sob consulta** — ver `docs/relatorio-precificacao.md`, seção 1.
 
 > **Nota de verificação.** O catálogo da loja TemTrend.AI na AbacatePay foi consultado via API em 18/10/2026 e confirma **11 produtos ativos** (idênticos ao estudo v1). O valor de plano fixo (`account.routes.ts:35`), a ausência de billing e os limites de IA (`ai-metrics.ts:23-27`) foram confirmados no código. Números de custo/imposto são premissas a validar com o contador.
 
@@ -194,20 +194,20 @@ O que está bom: busca com IA e fallback, cards com métricas, geração de kit,
 
 A TemTrend já tem produto pronto para cobrar. O custo marginal por usuário é baixo (IA ≈ R$ 0,03 por roteiro; infra enxuta ≈ R$ 41/mês), o que permite preço de entrada acessível com margem alta. O risco não é custo — é **posicionamento e catálogo**: a loja tem 11 produtos legados, duplicados e de outra fase (marketplace).
 
-**Recomendação em uma tabela**
+**Estrutura de planos e catálogo vigente (24/10):**
 
-| Plano | Mensal | Anual | Papel na escada |
-|---|---|---|---|
-| Essencial | R$ 29,90 | R$ 299 | Isca/entrada (decoy) |
-| **Pro** | **R$ 59,90** | **R$ 599** | Plano-alvo (~50% dos clientes) |
-| Scale | R$ 149 | R$ 1.490 | Âncora para agências/duplas |
-| Enterprise | R$ 499+ | sob consulta | Âncora de preço |
-| Avulso (experimento) | R$ 19,90 / 10 kits | — | Decoy que empurra a assinatura |
+| Plano | Mensal | Anual | Uso | Papel no modelo |
+|---|---|---|---|---|
+| **Grátis** | R$ 0 | R$ 0 | 100 buscas/semana e 10 roteiros/semana | Degustação gratuita |
+| **Pro (Lançamento)** | **R$ 39,90** | **R$ 399** | **Ilimitado** (fair use 1.000/mês) | 100 primeiras vagas com preço vitalício |
+| **Pro (Padrão)** | **R$ 49,90** | **R$ 499** | **Ilimitado** (fair use 1.000/mês) | Oferta principal para creators ativos |
+| **Enterprise** | Sob consulta | Sob consulta | Personalizado | Agências e grandes operações |
+| ~~Essencial~~ | ~~R$ 29,90~~ | ~~R$ 299~~ | — | Aposentado do catálogo de vendas |
+| ~~Scale~~ | ~~R$ 149~~ | ~~R$ 1.490~~ | — | Aposentado do catálogo de vendas |
 
-- **Trial:** 7 dias de Pro sem cartão; ao fim, amostra gratuita de 3 kits (não um plano free permanente).
-- **Break-even:** 6 assinantes no modo "sério" (infra paga) ou 1 no modo enxuto. Com pró-labore de R$ 3.000: ~57 assinantes.
-- **Margem de contribuição:** ~89–90% em qualquer cenário acima de 50 assinantes.
-- **Primeira ação:** limpar o catálogo da AbacatePay, criar a linha "TemTrend Creator" e implementar billing + gating por plano.
+- **Sem cotas diárias de bloqueio:** No plano Pro, o usuário cria kits e realiza buscas sem limites diários restritivos.
+- **Porta de entrada:** degustação gratuita com 100 buscas/semana e 10 roteiros/semana (sem expiração temporal de trial).
+- **Break-even:** Apenas 1 a 6 assinantes dependendo do plano de hospedagem. Margem de contribuição média de ~89–90%.
 
 ## 2.2 Inventário completo
 
@@ -324,7 +324,7 @@ O Pro é ~5–10% de uma agência e menos que 1 roteiro de freelancer. Essa é a
 ## 2.6 Estratégia de precificação (racional)
 
 - **GBB (Good-Better-Best):** três planos visíveis + Enterprise como âncora. O Essencial é a isca: limite que dói (sem voz personalizada, sem "gerar outra versão") faz o Pro parecer óbvio por +R$ 30. *Princípios:* "Engineer the pricing page with GBB" [@richardrx · 2026-02-03]; "Engineer the comparison frame with a decoy and a high anchor" [@richardrx · 2026-04-14]; "Frame the upgrade as a loss at the moment of value" (sunk cost: "você criou 47 roteiros; no gratuito perde acesso a 40") [@richardrx · 2026-04-21].
-- **Sem plano gratuito permanente:** free ancora o preço em zero e destrói a percepção de valor. No lugar: trial de 7 dias + amostra de 3 kits. *Princípio:* "Whether freemium works is decided by the cost to serve a free user" — "For an AI product, your free user was never free." [@richardrx · 2026-06-30]; "The freemium trap, in numbers" (8% signup vs 3% direto: R$ 6.368 vs R$ 59.700 MRR no mesmo tráfego) [@richardrx · 2026-07-01]; "Charge your first ten users from day one" [@richardrx · 2026-04-26].
+- **Sem plano gratuito permanente:** free ancora o preço em zero e destrói a percepção de valor. No lugar: trial de 7 dias + amostra gratuita. *Princípio:* "Whether freemium works is decided by the cost to serve a free user" — "For an AI product, your free user was never free." [@richardrx · 2026-06-30]; "The freemium trap, in numbers" (8% signup vs 3% direto: R$ 6.368 vs R$ 59.700 MRR no mesmo tráfego) [@richardrx · 2026-07-01]; "Charge your first ten users from day one" [@richardrx · 2026-04-26].
 - **Uma única escada de valor:** volume de kits/mês (30 → 100 → 300 → fair use). Não misturar tokens com suporte na mesma comparação.
 - **Anual com desconto de 2 meses:** melhora caixa, reduz churn e a taxa PIX cai para centavos.
 - **Preço como filtro:** não descer de R$ 29,90. Preço baixo atrai comprador não comprometido e aumenta churn. *Princípio:* spine #9 "Price is a filter".
@@ -361,9 +361,9 @@ O Pro é ~5–10% de uma agência e menos que 1 roteiro de freelancer. Essa é a
 Preço por kit percebido: Essencial R$ 1,00 · Pro R$ 0,60 · Scale R$ 0,50 — escada linear e fácil de explicar.
 
 ### Trial
-- 7 dias de Pro, **sem cartão**, com onboarding completo (o "aha" é o primeiro kit pronto + guia).
+- 7 dias de Pro, com onboarding completo (o "aha" é o primeiro kit pronto + guia).
 - E-mails: dia 0 (boas-vindas), dia 2 (primeiro kit), dia 5 (o que você já criou), dia 7 (fim do trial + oferta anual).
-- Ao expirar: cai para a amostra de 3 kits, **sem apagar nada**. O histórico fica visível, bloqueado para novos roteiros — perda percebida no momento certo.
+- Ao expirar: cai para a amostra gratuita, **sem apagar nada**. O histórico fica visível, bloqueado para novos roteiros — perda percebida no momento certo.
 - Não pedir cartão no trial nesta fase: preço baixo e público BR responde melhor a PIX. Medir conversão; se < 10%, testar trial com cartão no Pro. *Princípios:* "Ask for the card in trial — but optimize for the right ICP" [@richardrx · 2026-05-15]; "Tie the trial's end to value consumed, not the calendar" [@richardrx · 2026-03-16].
 
 ## 2.8 Unit economics
@@ -400,7 +400,7 @@ Preço por kit percebido: Essencial R$ 1,00 · Pro R$ 0,60 · Scale R$ 0,50 — 
 | Não existe billing no código | Nenhuma receita | Plano de dados, checkout, webhook e gating (roadmap) |
 | Cold start do Render Free | Perda de conversão no login | Subir para Starter antes de cobrar |
 | Usuário-pesado de IA | Consome o ticket inteiro | Teto mensal de kits por plano; fair use nas buscas |
-| Churn do PIX recorrente | Receita instável | Empurrar anual no PIX; trial sem cartão; lembretes de valor |
+| Churn do PIX recorrente | Receita instável | Empurrar anual no PIX; trial; lembretes de valor |
 | Trial abuse | Custo e suporte | Limite de 1 trial por conta/CPF; amostra limitada |
 | Webhook não verificado | Fraude/ativação indevida | Validar assinatura e idempotência |
 | Chave de produção em testes | Cobranças reais | Chave dev/teste local; produção só no Render |
@@ -458,7 +458,7 @@ Além disso, há **cores não documentadas em uso** (`#c9f5ff`, `#e2e8d9`, `#90b
 
 Isso explica inconsistências visíveis (raios, pesos, alturas) e torna cada mudança arriscada.
 
-> **Movimento:** consolidar numa arquitetura em camadas — `tokens.css` (variáveis) → `base.css` (reset, tipografia) → `components.css` (botões, inputs, cards, pills, dialog) → `pages/*.css` — e **deletar** os arquivos "fix/polish/refine". Usar `@layer` para ordem explícita em vez de depender da ordem de import. Mover `legacy-static/` para fora do app.
+> **Movimento:** consolidar numa arquitetura em camadas - `tokens.css` (variáveis) → `base.css` (reset, tipografia) → `components.css` (botões, inputs, cards, pills, dialog) → `pages/*.css` - e **deletar** os arquivos "fix/polish/refine". Usar `@layer` para ordem explícita em vez de depender da ordem de import. O `legacy-static/` foi removido em 27/10/2026; a recomendação está cumprida.
 
 ## 3.4 🔴 Acessibilidade e interface (achados por `arquivo:linha`)
 
@@ -501,7 +501,7 @@ Estrutura recomendada, já no sistema visual:
 4. **Avulso** como _decoy_ discreto ("10 kits por R$ 19,90") ao lado dos planos.
 5. **Comparação completa** (tabela da matriz de recursos) — colapsável no mobile.
 6. **Prova + FAQ curto** (5 perguntas: cancelamento, PIX, meus roteiros ficam?, garantia, o que não está incluído).
-7. **Rodapé de confiança:** "Sem cartão no trial · Cancele quando quiser · Seus kits continuam seus".
+7. **Rodapé de confiança:** "Cancele quando quiser · Seus kits continuam seus".
 8. **Estado logado:** se já assina, a página vira "Meu plano" (upgrade/downgrade), nunca tela de venda repetida.
 
 ### B) Card "Meu plano" na Conta
@@ -556,7 +556,9 @@ Após o 1º kit: gráfico/itens "subindo" + próximo passo, em vez de redirecion
 
 ---
 
-# PARTE IV — Roadmap unificado
+# PARTE IV - Roadmap unificado
+
+> **[histórico]** O roadmap abaixo é o plano de 18/10/2026. Ele foi executado com mudanças de produto (sem escada Essencial/Scale e sem trial). O que segue pendente está em `docs/inventario-funcional.md` e `docs/go-live-billing.md`.
 
 Ordem recomendada: **medir → corrigir a base → provar → cobrar → expandir.**
 
@@ -591,7 +593,7 @@ Ver tabela em **3.2**. Resumo: 4 de 10 tokens conferem; 6 divergem; ≥ 7 cores 
 - **Base de features:** código em `backend/` e `frontend/`.
 
 ## Anexo D — Inventário técnico (design)
-- **CSS:** 22 arquivos, 366 KB, ~7.300 linhas, todos globais (`frontend/styles/`); `legacy-static/` com HTML/CSS/JS da fase anterior ainda no repo.
+- **CSS:** 22 arquivos, 366 KB, ~7.300 linhas, todos globais (`frontend/styles/`); o `legacy-static/` citado no diagnóstico foi removido em 27/10/2026.
 - **Arquivos de maior peso:** `platform-redesign.css` (45 KB), `design-system.css` (37 KB), `platform-theme.css` (34 KB), `landing-polish.css` (32 KB).
 - **Camadas concorrentes de botão/card:** `design-system.css`, `platform-theme.css`, `ux-overhaul.css`, `platform-redesign.css`.
 - **Fontes:** Manrope + Instrument Serif via `next/font` (`layout.tsx:26-36`) — aprovado, manter.

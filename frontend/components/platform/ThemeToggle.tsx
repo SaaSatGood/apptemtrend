@@ -54,7 +54,7 @@ export default function ThemeToggle() {
       title={dark ? "Modo claro" : "Modo noturno"}
       onClick={toggle}
     >
-      <Icon name={dark ? "sun" : "moon"} size={17} />
+      <Icon name={dark ? "sun" : "moon"} size={21} />
     </button>
   );
 }

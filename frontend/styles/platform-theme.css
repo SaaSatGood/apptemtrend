@@ -3,8 +3,8 @@
    Espelha os tokens, tipografia, botões, pills, cards e
    hero da landing (tt-home) em todo o /app.
    Tokens landing:
-   --tt-ink #10110f · --tt-lime #c8ff2e · --tt-soft #f4f6ef
-   --tt-line #dce3d3 · --tt-blue #c9f5ff · deep #385400
+   --tt-ink #0e0b16 · --tt-lime #a894f9 · --tt-soft #f6f3fe
+   --tt-line #e4ddf7 · --tt-blue #e2deea · deep #3b2296
    ============================================================ */
 
 #app-view,
@@ -13,7 +13,7 @@
 .account-load-error,
 #admin-view {
   --tt-lime-deep: var(--tt-deep);
-  --tt-blue: #c9f5ff;
+  --tt-blue: #e2deea;
   --ink: var(--tt-ink);
   --muted: var(--tt-muted);
   --line: var(--tt-line);
@@ -39,10 +39,10 @@
 .auth-view,
 .onboarding {
   background:
-    radial-gradient(ellipse 45% 43% at 8% 40%, #faff40 0%, #efff76 42%, transparent 100%),
-    radial-gradient(ellipse 48% 40% at 42% 97%, #b9fff5 0%, #e5fff9 55%, transparent 100%),
-    radial-gradient(ellipse 34% 38% at 77% 8%, #faffdd 0%, transparent 100%),
-    #fafff0;
+    radial-gradient(ellipse 45% 43% at 8% 40%, #8d55ec 0%, #b08cee 42%, transparent 100%),
+    radial-gradient(ellipse 48% 40% at 42% 97%, #dad4e4 0%, #f1eff5 55%, transparent 100%),
+    radial-gradient(ellipse 34% 38% at 77% 8%, #f3eefb 0%, transparent 100%),
+    #f3eefb;
 }
 
 /* ---------- Tipografia landing ---------- */
@@ -96,7 +96,7 @@
   height: 8px;
   border-radius: 50%;
   background: var(--tt-lime);
-  box-shadow: 0 0 0 3px #c8ff2e38;
+  box-shadow: 0 0 0 3px #a894f938;
   flex: 0 0 auto;
 }
 
@@ -141,7 +141,7 @@
   height: 28px;
   border-radius: 50%;
   background: var(--tt-lime);
-  color: #111;
+  color: var(--tt-on-lime, #fff);
   font-size: 13px;
   font-weight: 900;
   box-shadow: none;
@@ -180,14 +180,14 @@
   border: 1px solid #ffffffbd;
   border-radius: 999px;
   background: #fffffff0;
-  box-shadow: 0 12px 42px #233d1719;
+  box-shadow: 0 12px 42px #2c1a4d19;
   backdrop-filter: blur(18px);
   -webkit-backdrop-filter: blur(18px);
   transition: background-color .25s ease, box-shadow .25s ease;
 }
 #app-view .topbar.is-scrolled {
   background: #ffffffcc;
-  box-shadow: 0 14px 42px #233d1722;
+  box-shadow: 0 14px 42px #2c1a4d22;
 }
 #app-view .app-nav {
   position: absolute;
@@ -301,12 +301,12 @@
 #app-view .production-new {
   border: 0;
   background: var(--tt-lime);
-  color: #111;
+  color: var(--tt-on-lime, #fff);
   font-size: 13px;
 }
 #app-view #assistant-submit:hover:not(:disabled),
 #app-view .production-new:hover:not(:disabled) {
-  background: #d9ff74;
+  background: #b08cee;
   border-color: transparent;
   color: #111;
 }
@@ -419,28 +419,28 @@
 }
 #app-view :is(input, textarea, select):focus,
 .auth-view :is(input, textarea):focus {
-  border-color: #8aad3c;
-  box-shadow: 0 0 0 3px #c8ff2e4d;
+  border-color: #7a5ce0;
+  box-shadow: 0 0 0 3px #a894f94d;
   outline: none;
 }
 #app-view :where(a, button, input, textarea, select, summary):focus-visible,
 .auth-view :where(a, button, input, textarea, summary):focus-visible,
 .onboarding :where(a, button, input, textarea, summary):focus-visible {
-  outline: 3px solid #385400;
+  outline: 3px solid #3b2296;
   outline-offset: 3px;
 }
 
 /* ---------- Cards = tt-story / tt-kit-piece ---------- */
 #app-view :is(.card, .product-card, .kit-card, .kit-document, .account-card, .account-summary, .production-card, .production-overview, .assistant-message, .metric, .empty-state),
 #admin-view :is(.card, .metric, .empty-state) {
-  border: 1px solid #dce3d3;
+  border: 1px solid #e4ddf7;
   border-radius: var(--tt-radius-card);
   background: #fff;
-  box-shadow: 0 12px 35px #2438130c;
+  box-shadow: 0 12px 35px #1b112c0c;
 }
 #app-view :is(.product-card, .production-card, .kit-card):hover {
-  border-color: #b7d973;
-  box-shadow: 0 18px 36px #324b131a;
+  border-color: #8d55ec;
+  box-shadow: 0 18px 36px #2c1a4d1a;
   transform: translateY(-2px);
 }
 #app-view :is(.product-card, .production-card, .kit-card),
@@ -460,7 +460,7 @@
 /* Métricas internas = mockup landing */
 #app-view :is(.product-detail-metrics, .product-metrics, .plan-card) {
   background: var(--tt-soft);
-  border: 1px solid #dce3d3;
+  border: 1px solid #e4ddf7;
   border-radius: 14px;
 }
 #app-view .production-overview {
@@ -479,7 +479,7 @@
   align-content: center;
   min-height: 118px;
   padding: 20px 22px;
-  border: 1px solid #dce3d3;
+  border: 1px solid #e4ddf7;
   border-radius: 16px;
   background: #fff;
 }
@@ -488,12 +488,12 @@
   border-color: var(--tt-lime);
 }
 #app-view .production-overview > div:last-child {
-  background: #131511;
-  border-color: #131511;
+  background: #120c1d;
+  border-color: #120c1d;
   color: #fff;
 }
 #app-view .production-overview > div:last-child span {
-  color: #c9cfc2;
+  color: #cfbbf1;
 }
 #app-view .production-overview strong {
   font-size: 2rem;
@@ -525,9 +525,9 @@
   pointer-events: none;
   border-radius: 28px;
   background:
-    radial-gradient(ellipse 45% 43% at 8% 40%, #faff40 0%, #efff76 42%, transparent 100%),
-    radial-gradient(ellipse 48% 40% at 42% 97%, #b9fff5 0%, #e5fff9 55%, transparent 100%),
-    #fafff0;
+    radial-gradient(ellipse 45% 43% at 8% 40%, #8d55ec 0%, #b08cee 42%, transparent 100%),
+    radial-gradient(ellipse 48% 40% at 42% 97%, #dad4e4 0%, #f1eff5 55%, transparent 100%),
+    #f3eefb;
   opacity: 0.9;
 }
 #app-view .discover-intro h1 {
@@ -556,7 +556,7 @@
   grid-template-columns: 1fr auto;
   gap: 8px;
   padding: 7px;
-  border: 1px solid #dce7cf;
+  border: 1px solid #cfbbf1;
   border-radius: 999px;
   background: #fff;
   box-shadow: 0 12px 36px rgba(103, 143, 58, 0.12);
@@ -574,8 +574,8 @@
   border-color: transparent;
 }
 #app-view .assistant-input-row:focus-within {
-  border-color: #8aad3c;
-  box-shadow: 0 0 0 3px #c8ff2e4d, 0 12px 36px rgba(103, 143, 58, 0.12);
+  border-color: #7a5ce0;
+  box-shadow: 0 0 0 3px #a894f94d, 0 12px 36px rgba(103, 143, 58, 0.12);
 }
 #app-view .assistant-examples button {
   border: 1px solid var(--tt-line);
@@ -591,14 +591,14 @@
   transform: translateY(-1px);
 }
 #app-view .assistant-response {
-  border-top: 1px solid #dce3d3;
+  border-top: 1px solid #e4ddf7;
 }
 #app-view .assistant-message {
   grid-template-columns: 42px minmax(0, 1fr) auto;
   padding: 14px 16px;
   border-radius: 16px;
   background: var(--tt-soft);
-  border-color: #dce3d3;
+  border-color: #e4ddf7;
 }
 #app-view .assistant-mark {
   display: grid;
@@ -607,7 +607,7 @@
   height: 38px;
   border-radius: 50%;
   background: var(--tt-lime);
-  color: #111;
+  color: var(--tt-on-lime, #fff);
   font-weight: 900;
   box-shadow: none;
 }
@@ -637,11 +637,11 @@
 /* ---------- Produto detalhe ---------- */
 #app-view .product-detail-hero > img {
   border-radius: 20px;
-  border: 1px solid #dce3d3;
+  border: 1px solid #e4ddf7;
 }
 #app-view .product-saved-badge {
-  background: #eaffba;
-  color: #3f5c00;
+  background: #e7dff6;
+  color: #2c1a4d;
   padding: 8px 12px;
 }
 #app-view .product-shop-link {
@@ -649,12 +649,12 @@
   text-underline-offset: 3px;
 }
 #app-view .kits-section {
-  border-top: 1px solid #dce3d3;
+  border-top: 1px solid #e4ddf7;
 }
 #app-view .kits-section-heading > span {
   border-radius: 999px;
   background: var(--tt-soft);
-  border: 1px solid #dce3d3;
+  border: 1px solid #e4ddf7;
 }
 #app-view .kit-card strong {
   font-size: 12px;
@@ -668,7 +668,7 @@
 }
 #app-view .kit-block {
   padding: 28px;
-  border-bottom: 1px solid #e7ebdf;
+  border-bottom: 1px solid #e7dff6;
 }
 #app-view .kit-block small,
 #app-view .scene-card small,
@@ -677,14 +677,14 @@
   font-weight: 850;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: #6b705f;
+  color: #6e6780;
 }
 #app-view .hook-block {
   background: var(--tt-lime);
   border-bottom-color: var(--tt-lime);
 }
 #app-view .hook-block small {
-  color: #2c3400;
+  color: #1b112c;
 }
 #app-view .hook-block h2 {
   font-size: clamp(1.6rem, 3vw, 2.2rem);
@@ -693,7 +693,7 @@
 #app-view .block-heading button {
   min-height: 34px;
   padding: 7px 12px;
-  border: 1px solid #d6dccb;
+  border: 1px solid #cfbbf1;
   border-radius: 999px;
   background: #fff;
   cursor: pointer;
@@ -705,20 +705,20 @@
   padding: 8px 12px;
   border-radius: 999px;
   background: var(--tt-soft);
-  border: 1px solid #dce3d3;
+  border: 1px solid #e4ddf7;
   font-size: 12px;
   font-weight: 700;
 }
 #app-view .content-kit-layout .kit-actions {
-  border: 1px solid #dce3d3;
+  border: 1px solid #e4ddf7;
   border-radius: 20px;
   padding: 26px;
   background: #fff;
-  box-shadow: 0 12px 35px #2438130c;
+  box-shadow: 0 12px 35px #1b112c0c;
 }
 #app-view .production-badge {
-  background: #eaffba;
-  color: #3f5c00;
+  background: #e7dff6;
+  color: #2c1a4d;
   padding: 8px 12px;
 }
 #app-view .published-check {
@@ -734,13 +734,13 @@
 #app-view .production-guidance {
   border-radius: 14px;
   background: var(--tt-soft);
-  border: 1px solid #dce3d3;
+  border: 1px solid #e4ddf7;
   color: var(--tt-muted);
 }
 
 /* ---------- Produção ---------- */
 #app-view .production-card-topline > small {
-  color: #6b705f;
+  color: #6e6780;
 }
 #app-view .production-step {
   border-radius: 999px;
@@ -750,7 +750,7 @@
 #app-view .production-progress-compact span {
   height: 5px;
   border-radius: 999px;
-  background: #e6e8df;
+  background: #e7dff6;
 }
 #app-view .production-progress-compact span.done,
 #app-view .onboarding-progress div {
@@ -801,10 +801,10 @@
 }
 .auth-view .auth-shell {
   padding: 36px;
-  border: 1px solid #dce3d3;
+  border: 1px solid #e4ddf7;
   border-radius: 24px;
   background: #fffffff0;
-  box-shadow: 0 22px 65px #273a1319;
+  box-shadow: 0 22px 65px #1b112c19;
 }
 .auth-view .auth-heading h1 {
   font-weight: 610;
@@ -818,7 +818,7 @@
   padding: 4px;
   border-radius: 999px;
   background: var(--tt-soft);
-  border: 1px solid #dce3d3;
+  border: 1px solid #e4ddf7;
 }
 .auth-view .auth-tabs button {
   border: 0;
@@ -827,7 +827,7 @@
   border-radius: 999px;
   font-weight: 800;
   font-size: 13px;
-  color: #6b705f;
+  color: #6e6780;
   cursor: pointer;
 }
 .auth-view .auth-tabs button[aria-selected="true"] {
@@ -840,7 +840,7 @@
 }
 .auth-view .divider span {
   background: transparent;
-  color: #6b705f;
+  color: #6e6780;
 }
 
 /* ---------- Onboarding = landing steps ---------- */
@@ -853,7 +853,7 @@
 .onboarding .onboarding-progress {
   height: 6px;
   border-radius: 999px;
-  background: #e6eddb;
+  background: #e7dff6;
   overflow: hidden;
 }
 .onboarding .selection-card {
@@ -910,13 +910,13 @@
   height: 56px;
   border-radius: 50%;
   background: var(--tt-lime);
-  color: #111;
+  color: var(--tt-on-lime, #fff);
   font-size: 22px;
   font-weight: 900;
   margin-bottom: 20px;
 }
 .onboarding .onboarding-summary > span {
-  border: 1px solid #dce3d3;
+  border: 1px solid #e4ddf7;
   border-radius: 16px;
   background: #fff;
 }
@@ -934,8 +934,8 @@
   border-radius: 20px;
 }
 #app-view .account-plan-pill {
-  background: #eaffba;
-  color: #3f5c00;
+  background: #e7dff6;
+  color: #2c1a4d;
   padding: 8px 12px;
   text-transform: none;
   letter-spacing: 0;
@@ -952,14 +952,14 @@
   height: 34px;
   border-radius: 50%;
   background: var(--tt-lime);
-  color: #111;
+  color: var(--tt-on-lime, #fff);
   font-size: 12px;
   font-weight: 900;
 }
 #app-view .account-preference-list span {
   border-radius: 999px;
   background: var(--tt-soft);
-  border: 1px solid #dce3d3;
+  border: 1px solid #e4ddf7;
 }
 
 /* ---------- Admin herda landing ---------- */
@@ -970,7 +970,7 @@
   letter-spacing: -0.05em;
 }
 #admin-view .admin-row {
-  border: 1px solid #dce3d3;
+  border: 1px solid #e4ddf7;
   border-radius: 14px;
   padding: 14px 16px;
   background: #fff;
@@ -979,7 +979,7 @@
 /* ---------- Dialogs / Toast / Estados ---------- */
 .publication-dialog,
 .content-kit-dialog {
-  border: 1px solid #dce3d3;
+  border: 1px solid #e4ddf7;
   border-radius: 24px;
   box-shadow: 0 30px 80px rgba(16, 17, 15, 0.22);
   padding: 30px;
@@ -1008,18 +1008,57 @@
 }
 #app-view .toast,
 .toast {
-  background: var(--tt-ink);
-  color: #fff;
-  border-radius: 999px;
-  padding: 12px 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: min(380px, calc(100vw - 36px));
+  padding: 13px 18px;
+  border: 1px solid var(--tt-app-line, #e7dff6);
+  border-radius: 14px;
+  background: var(--tt-app-surface, #fff);
+  color: var(--tt-app-ink, #272131);
+  font-family: var(--font-bricolage), "Bricolage Fallback", sans-serif;
   font-size: 13px;
-  font-weight: 700;
-  box-shadow: 0 12px 32px rgba(16, 17, 15, 0.22);
+  font-weight: 650;
+  line-height: 1.35;
+  box-shadow: 0 18px 40px -22px rgba(74, 43, 192, .45);
+  z-index: 90;
+  animation: tt-toast-in .22s var(--tt-app-ease, cubic-bezier(.22, 1, .36, 1)) both;
+}
+
+#app-view .toast::before,
+.toast::before {
+  content: "";
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--tt-app-lime, #6d28d9);
+  box-shadow: 0 0 0 4px rgba(109, 40, 217, .14);
+}
+
+@keyframes tt-toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+[data-theme="dark"] #app-view .toast,
+[data-theme="dark"] .toast {
+  border-color: #3a3a47;
+  background: #17171f;
+  color: #f3eefb;
+  box-shadow: 0 18px 40px -22px rgba(0, 0, 0, .8);
 }
 #app-view .empty-state,
 .auth-view .empty-state {
   border-radius: 20px;
-  border: 1px solid #dce3d3;
+  border: 1px solid #e4ddf7;
   background: #fff;
 }
 #app-view .skeleton,
@@ -1027,7 +1066,7 @@
   border-radius: 16px;
 }
 .app-boot {
-  background: #fafff0;
+  background: #f3eefb;
   font-family: var(--font-manrope), Arial, sans-serif;
 }
 .app-boot-bar {
@@ -1048,7 +1087,7 @@
 
 /* Breadcrumb landing */
 #app-view .detail-breadcrumb {
-  color: #6b705f;
+  color: #6e6780;
   font-size: 12px;
   font-weight: 700;
 }
@@ -1061,7 +1100,7 @@
   gap: 8px;
   margin: 0 0 18px;
   padding: 7px 12px;
-  border: 1px solid #dce7cf;
+  border: 1px solid #cfbbf1;
   border-radius: 999px;
   background: #ffffff90;
   font-size: 12px;
@@ -1074,7 +1113,7 @@
   height: 7px;
   border-radius: 50%;
   background: var(--tt-lime);
-  box-shadow: 0 0 0 3px #c8ff2e38;
+  box-shadow: 0 0 0 3px #a894f938;
 }
 
 /* ---------- Responsivo alinhado à landing ---------- */
@@ -1178,31 +1217,31 @@
   gap: 10px;
   min-height: 155px;
   padding: 22px;
-  border: 1px solid #dce3d3;
+  border: 1px solid #e4ddf7;
   border-radius: 18px;
   background: #fff;
-  box-shadow: 0 10px 28px #2438130a;
+  box-shadow: 0 10px 28px #1b112c0a;
 }
 #app-view .discover-journey > div:first-child { background: var(--tt-lime); border-color: var(--tt-lime); }
 #app-view .discover-journey > div:last-child { background: var(--tt-ink); border-color: var(--tt-ink); color: #fff; }
 #app-view .discover-journey span { font-size: 11px; font-weight: 850; letter-spacing: .12em; }
 #app-view .discover-journey strong { align-self: end; font-size: 20px; font-weight: 650; letter-spacing: -.04em; line-height: 1.1; }
 #app-view .discover-journey small { color: #63675e; font-size: 12px; line-height: 1.4; }
-#app-view .discover-journey > div:last-child small { color: #c6cbbe; }
+#app-view .discover-journey > div:last-child small { color: #cfbbf1; }
 
 /* Make the recording document scan like the landing's step cards. */
 #app-view .scene-list { gap: 10px; }
 #app-view .scene-card,
 #app-view .scene-card:first-child {
   padding: 19px 20px;
-  border: 1px solid #e3e9da;
+  border: 1px solid #e7dff6;
   border-radius: 15px;
-  background: #f9fbf5;
+  background: #f3eefb;
 }
-#app-view .scene-card > strong { margin-bottom: 12px; color: #557400; font-size: 12px; }
-#app-view .scene-card p { color: #333b2b; line-height: 1.55; }
-#app-view .kit-actions .production-progress span.done { color: #456600; font-weight: 750; }
-#app-view .kit-actions .production-progress span.done::before { content: "✓ "; color: #6ea800; }
+#app-view .scene-card > strong { margin-bottom: 12px; color: #2c1a4d; font-size: 12px; }
+#app-view .scene-card p { color: #2c1a4d; line-height: 1.55; }
+#app-view .kit-actions .production-progress span.done { color: #2c1a4d; font-weight: 750; }
+#app-view .kit-actions .production-progress span.done::before { content: "✓ "; color: #6d28d9; }
 
 /* Clear navigation and feedback across the content workflow. */
 #app-view .kit-card.open-kit {
@@ -1231,7 +1270,7 @@
   align-items: center;
   min-height: 44px;
   padding: 8px 13px;
-  border: 1px solid #dfe7d4;
+  border: 1px solid #e7dff6;
   border-radius: 999px;
   background: #fff;
   color: var(--tt-ink);
@@ -1261,7 +1300,7 @@
 #app-view .production-results-bar button {
   border: 0;
   background: transparent;
-  color: #3f6100;
+  color: #2c1a4d;
   font: inherit;
   font-weight: 750;
   text-decoration: underline;
@@ -1303,11 +1342,11 @@
   height: 38px;
   border-radius: 12px;
   background: var(--tt-soft);
-  color: #3a5200;
+  color: #2c1a4d;
   font-size: 18px;
   font-weight: 800;
 }
-.onboarding .selection-card.selected .selection-icon { background: var(--tt-lime); color: #111; }
+.onboarding .selection-card.selected .selection-icon { background: var(--tt-lime); color: var(--tt-on-lime, #fff); }
 .onboarding .selection-copy { display: grid; flex: 1; min-width: 0; gap: 3px; }
 .onboarding .selection-copy strong { font-size: 14px; line-height: 1.25; }
 .onboarding .selection-copy small { color: #70776b; font-size: 11px; font-weight: 550; line-height: 1.3; }
@@ -1317,8 +1356,8 @@
   padding: 13px 15px;
   border-left: 3px solid var(--tt-lime);
   border-radius: 0 10px 10px 0;
-  background: #f5f9ec;
-  color: #57604d;
+  background: #f3eefb;
+  color: #6d28d9;
   font-size: 12px;
   line-height: 1.45;
 }
@@ -1331,7 +1370,7 @@
 }
 .onboarding .voice-field { display: block; }
 .onboarding .voice-field textarea { min-height: 110px; resize: vertical; }
-.onboarding .onboarding-next-tip { max-width: 440px; margin: 20px auto 0; color: #58624a; font-size: 13px; line-height: 1.5; }
+.onboarding .onboarding-next-tip { max-width: 440px; margin: 20px auto 0; color: #6d28d9; font-size: 13px; line-height: 1.5; }
 #app-view .assistant-interest-shortcuts {
   display: flex;
   align-items: center;
@@ -1339,17 +1378,17 @@
   gap: 8px;
   margin-top: 17px;
 }
-#app-view .assistant-interest-shortcuts > span { margin-right: 2px; color: #58624c; font-size: 12px; font-weight: 750; }
+#app-view .assistant-interest-shortcuts > span { margin-right: 2px; color: #6d28d9; font-size: 12px; font-weight: 750; }
 #app-view .assistant-interest-shortcuts button {
   display: inline-flex;
   align-items: center;
   gap: 9px;
   min-height: 44px;
   padding: 7px 13px;
-  border: 1px solid #b9d484;
+  border: 1px solid #b08cee;
   border-radius: 999px;
   background: var(--tt-lime-soft);
-  color: #27380e;
+  color: #1b112c;
   font-size: 12px;
   font-weight: 750;
   cursor: pointer;

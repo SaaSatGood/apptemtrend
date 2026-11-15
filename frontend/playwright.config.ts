@@ -7,13 +7,13 @@ export default defineConfig({
   retries: process.env.CI ? 2 : 0,
   reporter: process.env.CI ? "github" : "list",
   use: {
-    baseURL: "http://127.0.0.1:3000",
+    baseURL: "http://127.0.0.1:3100",
     trace: "on-first-retry",
   },
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
   webServer: {
-    command: "npm run dev -- --hostname 127.0.0.1",
-    url: "http://127.0.0.1:3000",
+    command: "npm run build && npm run start -- --hostname 127.0.0.1 --port 3100",
+    url: "http://127.0.0.1:3100",
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,
     // Liga o hook de sessão do store (sem persistência, localStorage é ignorado).

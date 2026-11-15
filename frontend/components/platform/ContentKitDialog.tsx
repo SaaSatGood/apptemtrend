@@ -7,10 +7,11 @@ import { supabase } from "@/lib/supabase";
 import { api, friendlyError, type ApiError } from "@/lib/api";
 import { track, ttvMs } from "@/lib/track";
 import { upsertProductKit } from "@/lib/product-detail-cache";
+import { notifyPlanUsageChanged } from "@/lib/usage-events";
 import { usePlatform } from "./store";
 import ProductImage from "./ProductImage";
 import { displayProductName } from "@/lib/format";
-import type { Product } from "@/lib/types";
+import type { ContentKit, Product } from "@/lib/types";
 
 const SUGGESTIONS = [
   { label: "Direto ao ponto", description: "Sem introdução longa", group: "Tom", instruction: "Use um tom direto e objetivo." },
@@ -36,7 +37,7 @@ export default function ContentKitDialog({
   forceNew: boolean;
   initialBriefing?: string;
   onClose: () => void;
-  onCreated: (kit: import("@/lib/types").ContentKit, fallback: boolean) => void;
+  onCreated: (kit: ContentKit, fallback: boolean) => void;
 }) {
   const { toast, loadProductions } = usePlatform();
   const dialogRef = useRef<HTMLDialogElement>(null);
@@ -89,23 +90,24 @@ export default function ContentKitDialog({
         });
         await loadProductions().catch(() => {});
         onClose();
-        toast("Produto salvo ✓ Seu conteúdo está na área Produção.");
+        toast("Produto salvo. Ele já está em Produtos selecionados.");
       } else {
         const result = await api<{ content_kit?: import("@/lib/types").ContentKit; created?: boolean; fallback?: boolean }>(
           `/products/${productId}/content-kit`,
           token,
-          { method: "POST", body: JSON.stringify({ force_new: forceNew, instructions: text || undefined }) }
+          { method: "POST", body: JSON.stringify({ force_new: forceNew, instructions: text || undefined }), timeoutMs: 90_000 }
         );
         await loadProductions().catch(() => {});
         onClose();
         if (result?.content_kit) {
           track("kit_created", { fallback: Boolean(result.fallback), force_new: forceNew ? 1 : 0, ttv_ms: ttvMs() ?? 0 });
           upsertProductKit(productId, result.content_kit);
+          notifyPlanUsageChanged();
           onCreated(result.content_kit, Boolean(result.fallback));
         }
         toast(
           result?.fallback
-            ? "IA indisponível. Salvamos um roteiro base para você gerar outra versão depois."
+            ? "O assistente não respondeu agora. Deixei um roteiro base pronto — você pode gerar outra versão depois."
             : result?.created
               ? "Conteúdo criado ✓ Agora você pode começar a produção."
               : "Seu conteúdo está pronto ✓"
@@ -116,10 +118,10 @@ export default function ContentKitDialog({
       setPlanLimit(code === "PLAN_LIMIT");
       setError(
         code === "AI_UNAVAILABLE"
-          ? "A IA está indisponível agora. Tente novamente em alguns minutos."
+          ? "O assistente não está respondendo agora. Tenta de novo em alguns minutos."
           : code === "SERVICE_UNAVAILABLE"
-            ? "Não conseguimos gerar seu plano de gravação agora. Tente novamente em alguns segundos."
-            : friendlyError(err, "Não conseguimos preparar seu plano de gravação agora. Tente novamente.")
+            ? "Não deu para montar seu plano de gravação agora. Tenta de novo em alguns segundos."
+            : friendlyError(err, "Não deu para preparar seu plano de gravação agora. Tenta de novo?")
       );
     } finally {
       setBusy(false);
@@ -182,6 +184,7 @@ export default function ContentKitDialog({
             <label className="content-kit-custom">
               <span>Algum detalhe importante? <small>(opcional)</small></span>
               <textarea
+                name="content-kit-briefing"
                 rows={3}
                 maxLength={customLimit}
                 placeholder="Ex.: Tenho pouco espaço e quero mostrar o produto em uso."
@@ -195,7 +198,7 @@ export default function ContentKitDialog({
             {error && <p className="form-message error" role="alert">{error}</p>}
             {planLimit && (
               <p className="form-message">
-                <Link href="/planos" onClick={onClose}>Ver planos e limites <Icon name="arrow-right" size={13} /></Link>
+                <Link href="/conta/planos" onClick={onClose}>Ver planos e limites <Icon name="arrow-right" size={13} /></Link>
               </p>
             )}
           </div>

@@ -1,5 +1,5 @@
 import { findCreatorByUserId } from '../creators/creator.repository.js';
-import { findContentKitById } from '../content-kits/content-kit.repository.js';
+import { findContentKitById, listContentKitsByProductId } from '../content-kits/content-kit.repository.js';
 import { findProductById } from '../products/product.repository.js';
 import { ensureContentKit } from '../products/product.service.js';
 import {
@@ -16,6 +16,20 @@ import {
 import { Errors } from '../../types/index.js';
 import type { UpdateCreatorContentInput } from './creator-content.schema.js';
 import { CONTENT_STATUS, PRODUCT_STATUS } from '../../config/constants.js';
+import {
+  assertKitQuota,
+  assertProductionQuota,
+  planContextForCreator,
+  planLimitError,
+} from '../billing/billing.gating.js';
+import { FAIR_USE_KITS_PER_MONTH, FREE_KITS_PER_WEEK } from '../billing/plans.js';
+import {
+  releaseFreeQuota,
+  releaseQuota,
+  reserveFreeKitQuota,
+  reserveKitQuota,
+} from '../../lib/ai-metrics.js';
+import { creatorPreferencesBriefing } from '../creators/creator.service.js';
 
 const NEXT_STATUS: Record<string, string> = {
   [CONTENT_STATUS.SALVO]: CONTENT_STATUS.EM_PRODUCAO,
@@ -63,28 +77,63 @@ export async function startProduction(userId: string, productId: string, briefin
   if (!product || product.status !== PRODUCT_STATUS.ATIVO) throw Errors.NOT_FOUND('Produto');
 
   if (existing?.content_kit_id) return existing;
+  if (!existing) await assertProductionQuota(creator);
 
-  const { content_kit: contentKit } = await ensureContentKit(productId, creator.id, briefing);
-  const current = existing ?? await findAnyByCreatorAndProduct(creator.id, productId);
+  // Mesma proteção da rota /products/:id/content-kit: salvar um produto pela
+  // produção também gera roteiro e precisa consumir a cota do plano. Se o
+  // creator já tem um roteiro deste produto, o kit é reutilizado sem nova
+  // cobrança de cota.
+  const existingKits = await listContentKitsByProductId(productId, creator.id);
+  const needsGeneration = existingKits.length === 0;
+  const { plan } = planContextForCreator(creator);
+  const releaseReservedQuota = () => plan === 'free'
+    ? releaseFreeQuota(userId, 'kit')
+    : releaseQuota(userId, 'kit');
 
-  if (current) {
-    if (current.content_kit_id) return current;
-    return updateCreatorContent(current.id, { content_kit_id: contentKit.id });
+  if (needsGeneration) {
+    await assertKitQuota(creator, productId);
+    const reserved = plan === 'free'
+      ? await reserveFreeKitQuota(userId, creator.id, FREE_KITS_PER_WEEK)
+      : await reserveKitQuota(userId, FAIR_USE_KITS_PER_MONTH);
+    if (!reserved) {
+      throw plan === 'free'
+        ? planLimitError('Você atingiu o limite semanal de roteiros do plano Grátis. Assine Pro para continuar criando.')
+        : planLimitError('Você atingiu o limite de uso justo deste mês. Fale com a gente para ajustar seu plano e continuar criando.');
+    }
   }
 
+  let quotaReleased = !needsGeneration;
   try {
-    return await createCreatorContent({
-      creator_id: creator.id,
-      product_id: productId,
-      content_kit_id: contentKit.id,
-      status: CONTENT_STATUS.SALVO,
-    });
-  } catch (error) {
-    // Corrida double-submit: unique parcial -> relê e retorna existente.
-    if ((error as { code?: string }).code === '23505') {
-      const raced = await findAnyByCreatorAndProduct(creator.id, productId);
-      if (raced) return raced;
+    const generated = await ensureContentKit(productId, creator.id, briefing, null, userId, creatorPreferencesBriefing(creator));
+    const contentKit = generated.content_kit;
+    if (needsGeneration && !generated.created) {
+      await releaseReservedQuota();
+      quotaReleased = true;
     }
+    const current = existing ?? await findAnyByCreatorAndProduct(creator.id, productId);
+
+    if (current) {
+      if (current.content_kit_id) return current;
+      return updateCreatorContent(current.id, { content_kit_id: contentKit.id });
+    }
+
+    try {
+      return await createCreatorContent({
+        creator_id: creator.id,
+        product_id: productId,
+        content_kit_id: contentKit.id,
+        status: CONTENT_STATUS.SALVO,
+      });
+    } catch (error) {
+      // Corrida double-submit: unique parcial -> relê e retorna existente.
+      if ((error as { code?: string }).code === '23505') {
+        const raced = await findAnyByCreatorAndProduct(creator.id, productId);
+        if (raced) return raced;
+      }
+      throw error;
+    }
+  } catch (error) {
+    if (!quotaReleased) await releaseReservedQuota();
     throw error;
   }
 }
@@ -93,10 +142,10 @@ export async function selectContentKit(userId: string, contentId: string, conten
   const { creator, content } = await requireOwnedProduction(userId, contentId);
   const kit = await findContentKitById(contentKitId);
   if (!kit || kit.product_id !== content.product_id || kit.creator_id !== creator.id) {
-    throw Errors.BAD_REQUEST('O Content Kit não pertence a esta produção.');
+    throw Errors.BAD_REQUEST('O roteiro não pertence a esta produção.');
   }
   if (content.status !== CONTENT_STATUS.SALVO && content.content_kit_id !== contentKitId) {
-    throw Errors.CONFLICT('Esta produção já possui um Content Kit escolhido.');
+    throw Errors.CONFLICT('Esta produção já possui um roteiro escolhido.');
   }
   if (content.content_kit_id === contentKitId && content.status !== CONTENT_STATUS.SALVO) return content;
   return updateCreatorContent(contentId, {
@@ -117,7 +166,7 @@ export async function saveOpportunity(userId: string, contentKitId: string) {
   if (creator.status === 'bloqueado') throw Errors.FORBIDDEN;
 
   if (!contentKit || contentKit.creator_id !== creator.id) {
-    throw Errors.NOT_FOUND('Content Kit');
+    throw Errors.NOT_FOUND('Roteiro');
   }
 
   const [product, existing, productProduction] = await Promise.all([
@@ -147,6 +196,7 @@ export async function saveOpportunity(userId: string, contentKitId: string) {
   }
 
   // Legacy shortcut: choosing a Content Kit means production has started.
+  await assertProductionQuota(creator);
   try {
     return await createCreatorContent({
       creator_id: creator.id,
@@ -176,7 +226,7 @@ export async function updateCreatorContentStatus(
       throw Errors.CONFLICT('Transição de status inválida para esta produção.');
     }
     if (data.status === CONTENT_STATUS.EM_PRODUCAO && !content.content_kit_id) {
-      throw Errors.BAD_REQUEST('Escolha um Content Kit antes de produzir o vídeo.');
+      throw Errors.BAD_REQUEST('Escolha um roteiro antes de produzir o vídeo.');
     }
   }
   if (data.published_url !== undefined && data.status !== CONTENT_STATUS.PUBLICADO && content.status !== CONTENT_STATUS.PUBLICADO) {

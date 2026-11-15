@@ -1,6 +1,7 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title">
-  <title id="title">TemTrend</title>
-  <rect width="64" height="64" rx="19" fill="#c8ff2e"/>
-  <path d="M13 17h38v10H37v23H27V27H13V17Z" fill="#10110f"/>
-  <path d="m42 47 10-10m-7 0h7v7" fill="none" stroke="#10110f" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" role="img" aria-labelledby="title desc">
+  <title id="title">Temtrend</title>
+  <desc id="desc">Símbolo abstrato de duas fitas que se cruzam e formam um ciclo de movimento.</desc>
+  <rect x="2" y="2" width="44" height="44" rx="14" fill="#6c4ae2"/>
+  <path d="M11 17 17.3 10.7a5 5 0 0 1 7.1 0L37 23.3a5 5 0 0 1 0 7.1L30.7 36.7" fill="none" stroke="#ffffff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M37 17 30.7 10.7a5 5 0 0 0-7.1 0L11 23.3a5 5 0 0 0 0 7.1l6.3 6.3" fill="none" stroke="#baa9fb" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
 </svg>

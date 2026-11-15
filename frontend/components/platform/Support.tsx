@@ -143,7 +143,7 @@ export default function Support() {
       <header className="support-hero">
         <div>
           <p className="eyebrow">Suporte</p>
-          <h1>Conte com a <em>gente.</em></h1>
+          <h1>Conte com a <span className="tt-hl">gente.</span></h1>
           <p className="support-hero-copy">
             Dúvidas, problemas ou sugestões — abra uma conversa e acompanhe a resposta por aqui mesmo.
             Você também recebe um aviso no email da conta.
@@ -169,17 +169,19 @@ export default function Support() {
               <label>
                 Assunto
                 <input
+                  name="support-subject"
+                  autoComplete="off"
                   value={subject}
                   onChange={(e) => setSubject(e.target.value)}
                   minLength={3}
                   maxLength={120}
                   required
-                  placeholder="Ex.: Não consigo gerar o roteiro de um produto"
+                  placeholder="Ex.: Não consigo gerar o roteiro de um produto…"
                 />
               </label>
               <label>
                 Categoria
-                <select value={category} onChange={(e) => setCategory(e.target.value)}>
+                <select name="support-category" value={category} onChange={(e) => setCategory(e.target.value)}>
                   {Object.entries(SUPPORT_CATEGORY_LABEL).map(([value, label]) => (
                     <option key={value} value={value}>{label}</option>
                   ))}
@@ -189,13 +191,14 @@ export default function Support() {
             <label>
               Descreva o que está acontecendo
               <textarea
+                name="support-message"
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
                 minLength={5}
                 maxLength={2000}
                 rows={5}
                 required
-                placeholder="Quanto mais detalhe, mais rápido a gente resolve. Se puder, diga o produto ou a tela onde aconteceu."
+                placeholder="Quanto mais detalhe, mais rápido a gente resolve. Se puder, diga o produto ou a tela onde aconteceu…"
               />
             </label>
             {formError && <p className="form-message error" role="alert">{formError}</p>}
@@ -278,6 +281,7 @@ export default function Support() {
                   <label className="sr-only" htmlFor="support-reply-input">Sua mensagem</label>
                   <textarea
                     id="support-reply-input"
+                    name="support-reply"
                     value={reply}
                     onChange={(e) => setReply(e.target.value)}
                     rows={3}

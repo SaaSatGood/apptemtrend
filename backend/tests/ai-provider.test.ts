@@ -5,6 +5,11 @@ vi.mock('../src/modules/assistant/openrouter.service.js', () => ({
   generateContentKit: vi.fn(),
 }));
 
+vi.mock('../src/modules/assistant/opencode.service.js', () => ({
+  classifyCatalogRequest: vi.fn(),
+  generateContentKit: vi.fn(),
+}));
+
 vi.mock('../src/modules/assistant/gemini.service.js', () => ({
   classifyCatalogRequest: vi.fn(),
 }));
@@ -31,11 +36,14 @@ async function loadAiService() {
 
 async function mockedTransports() {
   const or = await import('../src/modules/assistant/openrouter.service.js');
+  const oc = await import('../src/modules/assistant/opencode.service.js');
   const gem = await import('../src/modules/assistant/gemini.service.js');
   const gen = await import('../src/modules/assistant/gemini-generation.service.js');
   return {
     orClassify: vi.mocked(or.classifyCatalogRequest),
     orGenerate: vi.mocked(or.generateContentKit),
+    ocClassify: vi.mocked(oc.classifyCatalogRequest),
+    ocGenerate: vi.mocked(oc.generateContentKit),
     geminiClassify: vi.mocked(gem.classifyCatalogRequest),
     geminiGenerate: vi.mocked(gen.generateContentKit),
   };
@@ -51,7 +59,9 @@ describe('AI provider routing', () => {
     vi.stubEnv('FRONTEND_URL', 'https://example.com');
     vi.stubEnv('AI_PROVIDER', 'openrouter');
     vi.stubEnv('OPENROUTER_API_KEY', 'test-key');
+    vi.stubEnv('OPENCODE_API_KEY', 'test-key');
     vi.stubEnv('GEMINI_API_KEY', 'test-key');
+    vi.clearAllMocks();
   });
 
   afterEach(() => {
@@ -90,5 +100,26 @@ describe('AI provider routing', () => {
   it('expõe o provider ativo no status', async () => {
     const { aiStatus } = await loadAiService();
     expect(aiStatus()).toMatchObject({ provider: 'openrouter', configured: true });
+  });
+
+  it('usa OpenCode Go como primário quando AI_PROVIDER=opencode', async () => {
+    vi.stubEnv('AI_PROVIDER', 'opencode');
+    const { AIService } = await loadAiService();
+    const t = await mockedTransports();
+    t.ocClassify.mockResolvedValue({ ...decision, provider: 'opencode' } as never);
+    const result = await AIService.interpretIntent('mensagem', []);
+    expect(result?.provider).toBe('opencode');
+    expect(t.orClassify).not.toHaveBeenCalled();
+    expect(t.geminiClassify).not.toHaveBeenCalled();
+  });
+
+  it('cai para o Gemini quando o OpenCode Go falha', async () => {
+    vi.stubEnv('AI_PROVIDER', 'opencode');
+    const { AIService } = await loadAiService();
+    const t = await mockedTransports();
+    t.ocClassify.mockResolvedValue(null);
+    t.geminiClassify.mockResolvedValue({ ...decision, provider: 'gemini' } as never);
+    const result = await AIService.interpretIntent('mensagem', []);
+    expect(result?.provider).toBe('gemini');
   });
 });

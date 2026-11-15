@@ -41,6 +41,14 @@ import { supabaseAdmin } from '../src/lib/supabase.js';
 import { RATE_LIMITS } from '../src/config/constants.js';
 
 const creatorA = { id: '11111111-1111-4111-8111-111111111111', user_id: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa' };
+// A geração de kit no fluxo de produção consome cota; usa um Pro ativo para os
+// testes unitários não dependerem das funções de cota no banco.
+const paidCreatorA = {
+  ...creatorA,
+  plan: 'pro',
+  plan_status: 'active',
+  current_period_end: new Date(Date.now() + 30 * 86_400_000).toISOString(),
+};
 const creatorB = { id: '22222222-2222-4222-8222-222222222222', user_id: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb' };
 const kit = {
   id: '33333333-3333-4333-8333-333333333333',
@@ -83,7 +91,7 @@ describe('critical Beta rules', () => {
   it('returns 403 when a creator is not an admin', async () => {
     vi.spyOn(supabaseAdmin.auth, 'getUser').mockResolvedValue({ data: { user: { id: creatorA.user_id } }, error: null } as any);
     const query = { select: vi.fn(() => query), eq: vi.fn(() => query), single: vi.fn().mockResolvedValue({ data: null, error: new Error('not admin') }) };
-    vi.spyOn(supabaseAdmin, 'from').mockReturnValue(query as any);
+    vi.spyOn(supabaseAdmin, 'from').mockReturnValueOnce(query as any);
     const reply = replyMock();
     await requireAdmin({ headers: { authorization: 'Bearer creator-token' } } as any, reply);
     expect(reply.status).toHaveBeenCalledWith(403);
@@ -154,7 +162,7 @@ describe('critical Beta rules', () => {
   });
 
   it('starts a production from an active real product', async () => {
-    vi.mocked(creatorRepo.findCreatorByUserId).mockResolvedValue(creatorA as any);
+    vi.mocked(creatorRepo.findCreatorByUserId).mockResolvedValue(paidCreatorA as any);
     vi.mocked(productRepo.findProductById).mockResolvedValue({ id: kit.product_id, status: 'ativo' } as any);
     vi.mocked(kitRepo.listContentKitsByProductId).mockResolvedValue([kit] as any);
     vi.mocked(creatorContentRepo.findAnyByCreatorAndProduct).mockResolvedValue(null);
@@ -164,7 +172,7 @@ describe('critical Beta rules', () => {
   });
 
   it('adds the Content Kit when an older saved product does not have one', async () => {
-    vi.mocked(creatorRepo.findCreatorByUserId).mockResolvedValue(creatorA as any);
+    vi.mocked(creatorRepo.findCreatorByUserId).mockResolvedValue(paidCreatorA as any);
     vi.mocked(productRepo.findProductById).mockResolvedValue({ id: kit.product_id, status: 'ativo' } as any);
     vi.mocked(kitRepo.listContentKitsByProductId).mockResolvedValue([kit] as any);
     vi.mocked(creatorContentRepo.findAnyByCreatorAndProduct).mockResolvedValue({
@@ -287,9 +295,18 @@ describe('critical Beta rules', () => {
   });
 
   it('keeps the service role key out of frontend source and redacts sensitive logs', () => {
-    const frontend = fs.readFileSync(path.resolve(process.cwd(), '../frontend/legacy-static/app.js'), 'utf8');
+    const sourceRoots = ['app', 'components', 'lib', 'styles'].map((dir) => path.resolve(process.cwd(), '../frontend', dir));
+    const readTree = (dir: string): string => fs.readdirSync(dir, { withFileTypes: true })
+      .flatMap((entry) => {
+        const full = path.join(dir, entry.name);
+        if (entry.isDirectory()) return [readTree(full)];
+        return /\.(tsx?|jsx?|mjs|cjs)$/.test(entry.name) ? [fs.readFileSync(full, 'utf8')] : [];
+      })
+      .join('\n');
+    const frontend = sourceRoots.map(readTree).join('\n');
     const logger = fs.readFileSync(path.resolve(process.cwd(), 'src/lib/logger.ts'), 'utf8');
     expect(frontend).not.toContain('SUPABASE_SERVICE_ROLE_KEY');
+    expect(frontend).not.toContain('service_role');
     expect(logger).toContain('body.service_role');
     expect(logger).toContain('body.password');
     expect(logger).toContain('req.headers.authorization');

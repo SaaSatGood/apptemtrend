@@ -3,25 +3,20 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import Icon from "@/components/ui/Icon";
 import { supabase } from "@/lib/supabase";
 import { api, friendlyError } from "@/lib/api";
-import { loadProductDetail, peekProductDetail, type ProductDetail } from "@/lib/product-detail-cache";
-import { fullProductName } from "@/lib/format";
+import { loadProductDetail, peekProductDetail, removeProductKit, type ProductDetail } from "@/lib/product-detail-cache";
 import type { CreatorContent } from "@/lib/types";
 import { usePlatform } from "./store";
 import { Skeletons } from "./ProductKit";
-import ContentKitDialog from "./ContentKitDialog";
 import { PublicationDialog } from "./Production";
 import { productionForProduct } from "./production-helpers";
-import { displayKitTitle, kitContext } from "./kit-presentation";
-import GuidedKit from "./GuidedKit";
-import ProductionSteps from "./ProductionSteps";
-import EmphasizedTitle from "./EmphasizedTitle";
-import ProductImage from "./ProductImage";
+import RecordingWizard from "./RecordingWizard";
 
-export default function KitDetail({ productId, kitId }: { productId: string; kitId: string }) {
+export default function KitDetail({ productId, kitId: initialKitId, embedded = false, onClose }: { productId: string; kitId: string; embedded?: boolean; onClose?: () => void }) {
   const router = useRouter();
+  // Dentro do popup do chat, trocar de roteiro acontece aqui, sem mudar de página.
+  const [kitId, setKitId] = useState(initialKitId);
   const { session, productions, productionsLoading, productionsError, toast, loadProductions } = usePlatform();
   const [detail, setDetail] = useState<ProductDetail | null>(() => {
     const cached = peekProductDetail(productId);
@@ -29,7 +24,6 @@ export default function KitDetail({ productId, kitId }: { productId: string; kit
   });
   const [failed, setFailed] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [generatingBriefing, setGeneratingBriefing] = useState<string | null>(null);
   const [publishing, setPublishing] = useState<CreatorContent | null>(null);
 
   useEffect(() => {
@@ -74,20 +68,17 @@ export default function KitDetail({ productId, kitId }: { productId: string; kit
 
   if (failed || (!product && !kit)) {
     if (!failed) return <section className="detail-view" aria-live="polite"><p role="status">Carregando seu conteúdo…</p><div className="product-grid"><Skeletons /></div></section>;
-    return <section className="detail-view" aria-live="polite"><div className="empty-state"><h3>Não encontramos este plano de gravação.</h3><p>Ele pode ter sido removido ou pertencer a outro produto.</p><Link className="primary" href={`/app/produtos/${productId}`}>Voltar para o produto</Link></div></section>;
+    return <section className="detail-view" aria-live="polite"><div className="empty-state"><h3>Não encontramos este plano de gravação.</h3><p>Ele pode ter sido removido ou pertencer a outro produto.</p>{!embedded && <Link className="primary" href={`/produtos/${productId}`}>Voltar para o produto</Link>}</div></section>;
   }
   if (!product || !kit) return null;
 
   const currentProduct = product;
   const currentKit = kit;
-  const productName = fullProductName(currentProduct);
-  const productFacts = [currentProduct.categoria, currentProduct.preco_texto].filter((value): value is string => Boolean(value?.trim())).join(" · ");
-  const context = kitContext(currentKit, currentProduct);
   const productProduction = productionForProduct(productions, currentProduct.id);
   const otherKitInProgress = productProduction && productProduction.status !== "salvo" && productProduction.content_kit_id !== currentKit.id;
   const production = productions.find((item) => item.content_kit_id === currentKit.id || item.content_kits?.id === currentKit.id || (!item.content_kit_id && item.product_id === currentProduct.id));
   const statusLabel = productionsError ? "Progresso indisponível" : productionsLoading ? "Conferindo progresso" : otherKitInProgress ? "Outro roteiro em produção" : production ? ({ salvo: "Roteiro salvo", em_producao: "Em produção", gravado: "Vídeo gravado", publicado: "Publicado" } as Record<string, string>)[production.status] || "Roteiro pronto" : "Roteiro pronto";
-  const readyLabel = productionsError ? "Tentar novamente" : productionsLoading ? "Conferindo…" : otherKitInProgress ? "Continuar produção" : production?.status === "gravado" ? "Marcar como publicado" : production?.status === "publicado" ? "Minha produção" : "Marcar como gravado";
+  const readyLabel = productionsError ? "Tentar novamente" : productionsLoading ? "Conferindo…" : otherKitInProgress ? "Continuar produção" : production?.status === "gravado" ? "Marcar como publicado" : production?.status === "publicado" ? "Produtos selecionados" : "Marcar como gravado";
 
   async function markRecorded() {
     if (busy || productionsLoading || productionsError) return;
@@ -99,56 +90,58 @@ export default function KitDetail({ productId, kitId }: { productId: string; kit
       else if (active.status === "salvo") active = await api<CreatorContent>(`/creator-content/${active.id}/content-kit`, data.session?.access_token, { method: "POST", body: JSON.stringify({ content_kit_id: currentKit.id }) });
       if (active.status === "em_producao") await api(`/creator-content/${active.id}`, data.session?.access_token, { method: "PATCH", body: JSON.stringify({ status: "gravado" }) });
       await loadProductions().catch(() => {});
-      toast("Vídeo marcado como gravado ✓ Próximo passo: publicar.");
+      toast("Vídeo marcado como gravado. Próximo passo: publicar.");
     } catch (error) { toast(friendlyError(error, "Não conseguimos atualizar sua produção. Tente novamente.")); }
     finally { setBusy(false); }
+  }
+
+  async function deleteKit(): Promise<boolean> {
+    if (busy) return false;
+    setBusy(true);
+    try {
+      const { data } = await supabase().auth.getSession();
+      await api(`/products/${productId}/content-kits/${currentKit.id}`, data.session?.access_token, { method: "DELETE" });
+      removeProductKit(productId, currentKit.id);
+      await loadProductions().catch(() => {});
+      toast("Roteiro excluído.");
+      if (embedded) onClose?.();
+      else router.replace(`/produtos/${productId}`);
+      return true;
+    } catch (error) {
+      toast(friendlyError(error, "Não conseguimos excluir este roteiro. Tente novamente."));
+      return false;
+    } finally {
+      setBusy(false);
+    }
   }
 
   function continueProduction() {
     if (productionsError) { void loadProductions().catch(() => {}); return; }
     if (productionsLoading || busy) return;
-    if (otherKitInProgress && productProduction.content_kit_id) { router.push(`/app/produtos/${productId}/kits/${productProduction.content_kit_id}`); return; }
+    if (otherKitInProgress && productProduction.content_kit_id) {
+      if (embedded) setKitId(productProduction.content_kit_id);
+      else router.push(`/produtos/${productId}/kits/${productProduction.content_kit_id}`);
+      return;
+    }
     if (!production || production.status === "salvo" || production.status === "em_producao") { void markRecorded(); return; }
     if (production.status === "gravado" || !production.published_url) { setPublishing(production); return; }
-    router.push("/app/producao");
+    if (embedded) toast("Este conteúdo já foi publicado. Ele aparece em Produção.");
+    else router.push("/producao");
   }
 
   return (
-    <section className="detail-view kit-focus-view" aria-live="polite">
-      <nav className="detail-breadcrumb" aria-label="Navegação estrutural"><Link href="/app">Descobrir</Link><span>›</span><Link href={`/app/produtos/${currentProduct.id}`}>Produto</Link><span>›</span><strong>Roteiro</strong></nav>
-      <header className="content-kit-header">
-        <div className="content-kit-heading-copy">
-          <p className="eyebrow">Seu plano de gravação</p>
-          <h1><EmphasizedTitle text={displayKitTitle(currentKit, currentProduct)} /></h1>
-          <p className="kit-summary">{context.summary}</p>
-          {(context.audience || context.sales) && <div className="kit-context">{context.audience && <p><strong>Para quem</strong><span>{context.audience}</span></p>}{context.sales && <p><strong>Por que agora</strong><span>{context.sales}</span></p>}</div>}
-          <div className="kit-meta">{[currentKit.formato, currentKit.nivel_dificuldade, currentKit.duracao_seg ? `${currentKit.duracao_seg}s` : null].filter(Boolean).map((value) => <span key={String(value)}>{value}</span>)}{currentKit.usou_voz && <span>No seu jeito ✓</span>}</div>
-        </div>
-        <aside className="content-kit-product" aria-label="Produto deste conteúdo">
-          <ProductImage product={currentProduct} width={220} height={180} />
-          <div className="content-kit-product-copy">
-            <span className="content-kit-product-label">Produto deste conteúdo</span>
-            <strong title={productName}>{productName}</strong>
-            {productFacts && <p className="content-kit-product-meta">{productFacts}</p>}
-            <Link href={`/app/produtos/${currentProduct.id}`} aria-label={`Ver produto: ${productName}`}>Ver produto <Icon name="arrow-up-right" size={13} /></Link>
-          </div>
-        </aside>
-      </header>
-      <ProductionSteps current={production ? ({ salvo: 1, em_producao: 2, gravado: 3, publicado: 4 })[production.status] : 1} />
-      <GuidedKit
+    <section className={embedded ? "rw-embedded" : "detail-view kit-focus-view"} aria-live="polite">
+      <RecordingWizard
         kit={currentKit}
         product={currentProduct}
         readyLabel={readyLabel}
         readyDisabled={busy || productionsLoading}
-        status={production?.status || "salvo"}
         statusLabel={statusLabel}
         onReady={continueProduction}
-        onAllScenesRecorded={() => { if (!otherKitInProgress && production?.status !== "gravado" && production?.status !== "publicado") void markRecorded(); }}
-        onGenerateVariant={(idea) => setGeneratingBriefing(`Crie uma nova versão do roteiro usando esta abordagem: ${idea}`)}
-        onGenerateAnother={() => setGeneratingBriefing("")}
+        onDelete={deleteKit}
+        onClose={onClose}
       />
       {publishing && <PublicationDialog content={publishing} onClose={() => setPublishing(null)} />}
-      {generatingBriefing !== null && <ContentKitDialog productId={productId} product={currentProduct} mode="kit" forceNew initialBriefing={generatingBriefing} onClose={() => setGeneratingBriefing(null)} onCreated={(created) => { setGeneratingBriefing(null); router.push(`/app/produtos/${productId}/kits/${created.id}`); }} />}
     </section>
   );
 }

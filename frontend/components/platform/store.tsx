@@ -10,7 +10,7 @@ import {
   useState,
 } from "react";
 import type { Session } from "@/lib/supabase";
-import { e2eHookSession, resolveSession, supabase } from "@/lib/supabase";
+import { e2eHookSession, hasRecoveryIntent, clearRecoveryIntent, resolveSession, supabase } from "@/lib/supabase";
 import { api, friendlyError } from "@/lib/api";
 import { primeProductDetail } from "@/lib/product-detail-cache";
 import type { CreatorContent, MeResponse } from "@/lib/types";
@@ -26,6 +26,8 @@ interface PlatformState {
   meLoading: boolean;
   booted: boolean;
   globalError: string | null;
+  recoveryMode: boolean;
+  clearRecovery: () => void;
   admin: boolean;
   onboardingActive: boolean;
   productions: CreatorContent[];
@@ -48,31 +50,48 @@ export function usePlatform(): PlatformState {
 
 let toastId = 0;
 
-async function fetchAllProductions(token: string): Promise<CreatorContent[]> {
-  const PAGE_LIMIT = 50;
-  const MAX_PAGES = 20;
-  const CONCURRENCY = 4;
-  const first = await api<CreatorContent[]>(
-    `/creator-content?page=1&limit=${PAGE_LIMIT}`,
+const PRODUCTION_PAGE_LIMIT = 50;
+const PRODUCTION_MAX_PAGES = 20;
+const PRODUCTION_CONCURRENCY = 4;
+
+function fetchProductionPage(token: string, page: number): Promise<CreatorContent[]> {
+  return api<CreatorContent[]>(
+    `/creator-content?page=${page}&limit=${PRODUCTION_PAGE_LIMIT}`,
     token
   );
-  if (first.length < PAGE_LIMIT) return first;
+}
+
+// A primeira página pinta a tela na hora; as demais chegam em segundo plano,
+// em lotes, sem segurar a casca do app. `onPage` recebe a lista acumulada e
+// só é chamado enquanto `isCurrent()` continuar verdadeiro (evita resposta
+// antiga sobrescrevendo uma lista mais nova).
+async function fetchProductionsProgressively(
+  token: string,
+  onPage: (all: CreatorContent[], added: CreatorContent[]) => void,
+  isCurrent: () => boolean
+): Promise<CreatorContent[]> {
+  const first = await fetchProductionPage(token, 1);
   const all: CreatorContent[] = [...first];
-  for (let start = 2; start <= MAX_PAGES; start += CONCURRENCY) {
+  onPage([...all], first);
+  if (first.length < PRODUCTION_PAGE_LIMIT) return all;
+  for (let start = 2; start <= PRODUCTION_MAX_PAGES; start += PRODUCTION_CONCURRENCY) {
+    if (!isCurrent()) return all;
     const pages = Array.from(
-      { length: Math.min(CONCURRENCY, MAX_PAGES - start + 1) },
+      { length: Math.min(PRODUCTION_CONCURRENCY, PRODUCTION_MAX_PAGES - start + 1) },
       (_, i) => start + i
     );
     const batches = await Promise.all(
-      pages.map((page) =>
-        api<CreatorContent[]>(`/creator-content?page=${page}&limit=${PAGE_LIMIT}`, token)
-      )
+      pages.map((page) => fetchProductionPage(token, page))
     );
+    if (!isCurrent()) return all;
     let stop = false;
+    const added: CreatorContent[] = [];
     for (const batch of batches) {
-      all.push(...batch);
-      if (batch.length < PAGE_LIMIT) stop = true;
+      added.push(...batch);
+      if (batch.length < PRODUCTION_PAGE_LIMIT) stop = true;
     }
+    all.push(...added);
+    onPage([...all], added);
     if (stop) break;
   }
   return all;
@@ -105,7 +124,9 @@ async function fetchMeWithRetry(token: string, attempts = 3): Promise<MeResponse
   let lastError: unknown = null;
   for (let attempt = 0; attempt < attempts; attempt += 1) {
     try {
-      return await api<MeResponse>("/me", token);
+      // O primeiro request pode pegar o backend dormindo (Render Free). Dá
+      // mais tempo só na primeira tentativa; as seguintes usam o teto normal.
+      return await api<MeResponse>("/me", token, attempt === 0 ? { timeoutMs: 45_000 } : undefined);
     } catch (error) {
       lastError = error;
       const status = (error as { status?: number })?.status;
@@ -122,6 +143,9 @@ export function PlatformProvider({ children }: { children: React.ReactNode }) {
   const [me, setMe] = useState<MeResponse | null>(null);
   const [meLoading, setMeLoading] = useState(false);
   const [booted, setBooted] = useState(false);
+  // Link de recuperação de senha: precisa sobreviver ao initialize do GoTrue,
+  // que apaga o hash da URL antes da casca do app montar.
+  const [recoveryMode, setRecoveryMode] = useState(() => hasRecoveryIntent());
   const [productions, setProductions] = useState<CreatorContent[]>([]);
   const [productionsLoading, setProductionsLoading] = useState(false);
   const [productionsError, setProductionsError] = useState(false);
@@ -149,19 +173,24 @@ export function PlatformProvider({ children }: { children: React.ReactNode }) {
     const session = await resolveSession();
     if (!session) return;
     const requestId = ++productionsRequestRef.current;
+    const isCurrent = () => requestId === productionsRequestRef.current;
     setProductionsLoading(true);
     setProductionsError(false);
     try {
-      const list = await fetchAllProductions(session.access_token);
-      if (requestId === productionsRequestRef.current) {
-        primeProductDetails(list);
-        setProductions(list);
-      }
+      await fetchProductionsProgressively(
+        session.access_token,
+        (all, added) => {
+          if (!isCurrent()) return;
+          primeProductDetails(added);
+          setProductions(all);
+        },
+        isCurrent
+      );
     } catch (error) {
-      if (requestId === productionsRequestRef.current) setProductionsError(true);
+      if (isCurrent()) setProductionsError(true);
       throw error;
     } finally {
-      if (requestId === productionsRequestRef.current) setProductionsLoading(false);
+      if (isCurrent()) setProductionsLoading(false);
     }
   }, []);
 
@@ -226,24 +255,29 @@ export function PlatformProvider({ children }: { children: React.ReactNode }) {
         return;
       }
       const productionRequestId = ++productionsRequestRef.current;
+      const isCurrent = () =>
+        meRef.current?.user_id === userId &&
+        productionRequestId === productionsRequestRef.current;
       setProductionsError(false);
       setProductionsLoading(true);
       void (async () => {
         try {
-          const list = await fetchAllProductions(token);
-          if (meRef.current?.user_id === userId && productionRequestId === productionsRequestRef.current) {
-            primeProductDetails(list);
-            setProductions(list);
-          }
+          await fetchProductionsProgressively(
+            token,
+            (all, added) => {
+              if (!isCurrent()) return;
+              primeProductDetails(added);
+              setProductions(all);
+            },
+            isCurrent
+          );
         } catch {
-          if (meRef.current?.user_id === userId && productionRequestId === productionsRequestRef.current) {
+          if (isCurrent()) {
             setProductionsError(true);
             toast("Sua conta abriu, mas a produção não pôde ser atualizada.");
           }
         } finally {
-          if (meRef.current?.user_id === userId && productionRequestId === productionsRequestRef.current) {
-            setProductionsLoading(false);
-          }
+          if (isCurrent()) setProductionsLoading(false);
         }
       })();
       })();
@@ -272,10 +306,17 @@ export function PlatformProvider({ children }: { children: React.ReactNode }) {
     }
   }, [loadMeForSession]);
 
+  const clearRecovery = useCallback(() => {
+    clearRecoveryIntent();
+    setRecoveryMode(false);
+  }, []);
+
   const signOut = useCallback(async () => {
     try {
       await supabase().auth.signOut({ scope: "local" });
     } finally {
+      clearRecoveryIntent();
+      setRecoveryMode(false);
       setSession(null);
       setMe(null);
       meRef.current = null;
@@ -286,7 +327,7 @@ export function PlatformProvider({ children }: { children: React.ReactNode }) {
       } catch {
         /* noop */
       }
-      window.location.replace("/app?loggedout=1");
+      window.location.replace("/descobrir?loggedout=1");
     }
   }, [session?.user.id]);
 
@@ -336,6 +377,12 @@ export function PlatformProvider({ children }: { children: React.ReactNode }) {
     // atualizava `session`, deixando `me === null` e caindo na tela
     // "Não conseguimos carregar sua conta" mesmo logado.
     const { data: listener } = supabase().auth.onAuthStateChange((event, newSession) => {
+      if (event === "PASSWORD_RECOVERY") {
+        setRecoveryMode(true);
+      } else if (event === "SIGNED_IN") {
+        clearRecoveryIntent();
+        setRecoveryMode(false);
+      }
       // No boot, o cliente pode emitir INITIAL_SESSION null antes de ler o
       // storage (ou no E2E, onde a sessão vem do hook): não derrubar o estado.
       const effective = newSession ?? (event === "INITIAL_SESSION" ? e2eHookSession() : null);
@@ -398,6 +445,8 @@ export function PlatformProvider({ children }: { children: React.ReactNode }) {
       meLoading,
       booted,
       globalError,
+      recoveryMode,
+      clearRecovery,
       admin: me?.is_admin === true,
       onboardingActive: Boolean(session && me && !me.onboarding_completo && !me.is_admin),
       productions,
@@ -409,7 +458,7 @@ export function PlatformProvider({ children }: { children: React.ReactNode }) {
       loadProductions,
       signOut,
     }),
-    [session, me, meLoading, booted, globalError, productions, productionsLoading, productionsError, toasts, toast, reloadMe, loadProductions, signOut]
+    [session, me, meLoading, booted, globalError, recoveryMode, clearRecovery, productions, productionsLoading, productionsError, toasts, toast, reloadMe, loadProductions, signOut]
   );
 
   return (

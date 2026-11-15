@@ -36,6 +36,7 @@ export interface ContentKit {
   duracao_seg?: number | null;
   briefing_usuario?: string | null;
   usou_voz?: boolean | null;
+  source_kit_id?: string | null;
 }
 
 export interface CreatorContent {
@@ -46,6 +47,7 @@ export interface CreatorContent {
   status: "salvo" | "em_producao" | "gravado" | "publicado";
   notas?: string | null;
   published_url?: string | null;
+  scheduled_for?: string | null;
   atualizado_em?: string | null;
   products?: Product | null;
   content_kits?: ContentKit | null;
@@ -72,7 +74,9 @@ export interface MeResponse {
 
 export interface BillingLimits {
   searchesPerDay: number | null;
+  searchesPerWeek: number | null;
   kitsPerMonth: number | null;
+  kitsPerWeek: number | null;
   variations: boolean;
   variationCooldownSeconds: number;
   vozPersonalizada: boolean;
@@ -108,7 +112,12 @@ export interface BillingLaunchOffer {
 export interface BillingCatalogResponse {
   enabled: boolean;
   trial_days: number;
-  free?: { searches_total: number; kits_total: number };
+  free?: {
+    searches_per_week: number;
+    kits_per_week: number;
+    searches_total?: number;
+    kits_total?: number;
+  };
   launch?: BillingLaunchOffer | null;
   plans: BillingPlanMeta[];
 }
@@ -133,12 +142,16 @@ export interface BillingSubscriptionSummary {
   usage?: {
     kits_total: number;
     kits_month: number;
+    kits_week?: number;
     kits_limit: number | null;
-    kits_limit_period: "month" | "lifetime";
+    kits_limit_period: "month" | "week";
     searches_today: number;
+    searches_week?: number;
     searches_total?: number | null;
     searches_limit: number | null;
-    searches_limit_period?: "day" | "lifetime";
+    searches_limit_period?: "day" | "week";
+    searches_resets_at?: string;
+    kits_resets_at?: string;
   };
 }
 
@@ -178,6 +191,8 @@ export interface AssistantResponse {
   message: string;
   products: Product[];
   needs_clarification?: boolean;
+  weekly_plan_requested?: boolean;
+  image_context?: string;
 }
 
 /** Item resumido do histórico de buscas do Descobrir. */
@@ -195,4 +210,51 @@ export interface DiscoverySearch extends DiscoverySearchSummary {
   message: string;
   results: Product[];
   context_ids: string[];
+}
+
+/** Produto numa conversa compartilhada: traz os roteiros do dono do link. */
+export interface SharedProduct extends Product {
+  content_kits?: ContentKit[];
+}
+
+/** Um turno da conversa compartilhada (pergunta + resposta + produtos). */
+export interface SharedTurn {
+  query: string;
+  message: string;
+  products: SharedProduct[];
+  needs_clarification?: boolean;
+  image_name?: string | null;
+}
+
+export interface SharedConversationSummary {
+  slug: string;
+  title: string;
+  turn_count: number;
+  product_count: number;
+  criado_em: string;
+}
+
+export interface SharedConversation extends SharedConversationSummary {
+  turns: SharedTurn[];
+  is_owner: boolean;
+}
+
+export interface SharedConversationCreated {
+  conversation: SharedConversationSummary;
+  url_path: string;
+}
+
+/** Sessão resumida do chatbot do Descobrir (histórico da sidebar). */
+export interface DiscoverySessionSummary {
+  id: string;
+  title: string;
+  context: string;
+  turn_count: number;
+  created_at: string;
+  updated_at: string;
+}
+
+/** Sessão completa: reabrir restaura a conversa toda, sem nova chamada de IA. */
+export interface DiscoverySession extends DiscoverySessionSummary {
+  turns: SharedTurn[];
 }

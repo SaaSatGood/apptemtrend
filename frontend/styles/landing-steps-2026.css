@@ -1,0 +1,478 @@
+/* ============================================================
+   Landing — "Como funciona" (Da ideia ao vídeo em três passos)
+   Seção branca, tipografia de hero e cards de vidro claro.
+   Escopo fechado em .tt-lp-steps: não altera outras seções.
+   ============================================================ */
+
+.tt-lp-steps {
+  padding: clamp(72px, 8vw, 112px) 0 clamp(80px, 8vw, 120px);
+  background: #fff;
+}
+
+.tt-lp-steps .tt-lp-steps-art {
+  display: block;
+  width: min(1200px, calc(100% - 48px));
+  min-height: 0;
+  margin-inline: auto;
+  padding: 0;
+  overflow: visible;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  color: #14101f;
+}
+
+/* ---------- Cabeçalho ---------- */
+.tt-lp-steps .tt-lp-steps-intro {
+  width: min(920px, 100%);
+  padding: 0 16px clamp(40px, 4.6vw, 58px);
+  text-align: center;
+}
+
+.tt-lp-steps .tt-lp-steps-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  margin-bottom: 20px;
+  color: #4a2bc0;
+  font-family: var(--font-bricolage), "Bricolage Fallback", sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+}
+
+.tt-lp-steps .tt-lp-steps-eyebrow::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #6d28d9;
+  box-shadow: 0 0 0 4px rgba(109, 40, 217, .12);
+}
+
+.tt-lp-steps .tt-lp-steps-intro h2 {
+  max-width: 19ch;
+  margin: 0 auto;
+  color: #14101f;
+  font-family: var(--font-bricolage), "Bricolage Fallback", sans-serif;
+  font-size: clamp(40px, 5.6vw, 68px);
+  font-weight: 800;
+  line-height: 1.02;
+  letter-spacing: -.05em;
+  text-wrap: balance;
+}
+
+/* Destaque no mesmo padrão da hero: bloco roxo com texto branco. */
+.tt-lp-steps .tt-lp-steps-intro h2 .tt-hr-highlight {
+  border-radius: .18em;
+}
+
+.tt-lp-steps .tt-lp-steps-intro p {
+  max-width: 58ch;
+  margin: 20px auto 0;
+  color: #4e4665;
+  font-size: clamp(16px, 1.5vw, 18px);
+  line-height: 1.6;
+  text-wrap: pretty;
+}
+
+/* ---------- Grid de cards ---------- */
+.tt-lp-steps .tt-lp-steps-content {
+  width: min(1120px, 100%);
+  margin-inline: auto;
+}
+
+.tt-lp-steps .tt-lp-step-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: clamp(14px, 1.7vw, 22px);
+  margin: 0;
+  padding: 0;
+  border-top: 0;
+  list-style: none;
+}
+
+.tt-lp-steps .tt-lp-step {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: clamp(22px, 2vw, 28px);
+  overflow: hidden;
+  border: 1px solid rgba(109, 40, 217, .14);
+  border-radius: 24px;
+  background:
+    radial-gradient(130% 90% at 50% 0%, rgba(109, 40, 217, .055), transparent 60%),
+    #fff;
+  box-shadow:
+    0 22px 46px -36px rgba(74, 43, 192, .45),
+    inset 0 1px 0 rgba(255, 255, 255, .9);
+}
+
+.tt-lp-steps .tt-lp-step + .tt-lp-step {
+  padding-left: clamp(22px, 2vw, 28px);
+  border-left: 1px solid rgba(109, 40, 217, .14);
+}
+
+/* ---------- Topo do card: etapa + ícone ---------- */
+.tt-lp-steps .tt-lp-step-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: clamp(108px, 9.6vw, 134px);
+  margin-bottom: 4px;
+}
+
+.tt-lp-steps .tt-lp-step-num {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 7px;
+  padding: 7px 12px;
+  border: 1px solid rgba(109, 40, 217, .18);
+  border-radius: 999px;
+  background: rgba(109, 40, 217, .05);
+  color: #4a2bc0;
+  font-family: var(--font-jetbrains), "JetBrains Mono", monospace;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: .08em;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.tt-lp-steps .tt-lp-step-num-label {
+  color: #6f6685;
+  font-family: var(--font-bricolage), "Bricolage Fallback", sans-serif;
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+}
+
+.tt-lp-steps .tt-lp-step-icon-wrap {
+  position: relative;
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: clamp(152px, 15vw, 192px);
+  height: clamp(118px, 12vw, 152px);
+  margin: -8px -10px 0 0;
+}
+
+.tt-lp-steps .tt-lp-step-icon-wrap::before {
+  content: "";
+  position: absolute;
+  inset: 10% 4%;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(109, 40, 217, .14), transparent 72%);
+  opacity: .8;
+  pointer-events: none;
+}
+
+.tt-lp-steps .tt-lp-step-icon {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+/* ---------- Texto ---------- */
+.tt-lp-steps .tt-lp-step h3 {
+  margin: -8px 0 0;
+  color: #14101f;
+  font-family: var(--font-bricolage), "Bricolage Fallback", sans-serif;
+  font-size: clamp(18px, 1.5vw, 21px);
+  font-weight: 700;
+  line-height: 1.18;
+  letter-spacing: -.015em;
+  text-transform: uppercase;
+  text-wrap: balance;
+}
+
+.tt-lp-steps .tt-lp-step p {
+  max-width: 34ch;
+  margin: 10px 0 0;
+  color: #4e4665;
+  font-size: clamp(14px, 1.1vw, 15px);
+  line-height: 1.6;
+  text-wrap: pretty;
+}
+
+/* ---------- Rodapé do card: progressão ---------- */
+.tt-lp-steps .tt-lp-step-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: auto;
+  padding-top: clamp(20px, 2vw, 26px);
+}
+
+.tt-lp-steps .tt-lp-step-progress {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tt-lp-steps .tt-lp-step-progress i {
+  display: block;
+  width: clamp(20px, 1.9vw, 26px);
+  height: 3px;
+  border-radius: 999px;
+  background: rgba(20, 16, 31, .13);
+}
+
+.tt-lp-steps .tt-lp-step-progress i.is-on {
+  background: linear-gradient(90deg, #6d28d9, #a08cff);
+  box-shadow: 0 0 8px rgba(109, 40, 217, .25);
+}
+
+.tt-lp-steps .tt-lp-step-arrow {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid rgba(109, 40, 217, .18);
+  border-radius: 50%;
+  background: rgba(109, 40, 217, .05);
+  color: #6d28d9;
+  transition: none;
+}
+
+/* Sem animação de hover nos cards: o indicador permanece estático. */
+.tt-lp-steps .tt-lp-step:hover .tt-lp-step-arrow {
+  transform: none;
+}
+
+/* ---------- CTA inferior ---------- */
+.tt-lp-steps .tt-lp-steps-cta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 22px 32px;
+  margin-top: clamp(24px, 2.6vw, 34px);
+  padding: clamp(24px, 2.6vw, 32px);
+  border: 1px solid rgba(109, 40, 217, .14);
+  border-radius: 24px;
+  background: #fff;
+  box-shadow:
+    0 22px 46px -36px rgba(74, 43, 192, .45),
+    inset 0 1px 0 rgba(255, 255, 255, .9);
+}
+
+.tt-lp-steps .tt-lp-steps-cta-copy {
+  min-width: 0;
+}
+
+.tt-lp-steps .tt-lp-steps-cta-copy h3 {
+  margin: 0;
+  color: #14101f;
+  font-family: var(--font-bricolage), "Bricolage Fallback", sans-serif;
+  font-size: clamp(20px, 2vw, 26px);
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: -.03em;
+}
+
+.tt-lp-steps .tt-lp-steps-cta .tt-lp-btn {
+  flex: none;
+  min-height: 52px;
+  padding: 0 26px;
+  color: #fff;
+  font-weight: 700;
+  transition: none;
+  box-shadow: 0 18px 34px -18px rgba(109, 40, 217, .6);
+}
+
+.tt-lp-steps .tt-lp-steps-cta .tt-lp-btn:hover {
+  transform: none;
+  background: #6d28d9;
+  color: #fff;
+  box-shadow: 0 18px 34px -18px rgba(109, 40, 217, .6);
+}
+
+.tt-lp-steps .tt-lp-steps-cta .tt-lp-btn:focus-visible {
+  outline: 3px solid #14101f;
+  outline-offset: 3px;
+}
+
+/* ---------- Responsivo ---------- */
+@media (max-width: 1024px) {
+  .tt-lp-steps .tt-lp-step-top {
+    min-height: 108px;
+  }
+
+  .tt-lp-steps .tt-lp-step-num {
+    padding: 6px 10px;
+    font-size: 11px;
+  }
+
+  .tt-lp-steps .tt-lp-step-num-label {
+    display: none;
+  }
+
+  .tt-lp-steps .tt-lp-step-icon-wrap {
+    width: 148px;
+    height: 116px;
+  }
+
+  .tt-lp-steps .tt-lp-step-foot {
+    padding-top: 18px;
+  }
+
+  .tt-lp-steps .tt-lp-step-arrow {
+    width: 30px;
+    height: 30px;
+  }
+}
+
+@media (max-width: 864px) {
+  /* Só nesta faixa o título mais longo quebra em duas linhas;
+     reservar a altura mantém as descrições alinhadas. */
+  .tt-lp-steps .tt-lp-step h3 {
+    min-height: 2.36em;
+  }
+}
+
+@media (max-width: 820px) {
+  .tt-lp-steps .tt-lp-steps-art {
+    width: calc(100% - 40px);
+  }
+
+  .tt-lp-steps .tt-lp-step {
+    padding: 18px;
+  }
+
+  .tt-lp-steps .tt-lp-step + .tt-lp-step {
+    padding-left: 18px;
+  }
+
+  .tt-lp-steps .tt-lp-step-top {
+    min-height: 92px;
+  }
+
+  .tt-lp-steps .tt-lp-step-icon-wrap {
+    width: 128px;
+    height: 102px;
+  }
+
+  .tt-lp-steps .tt-lp-step p {
+    font-size: 13.5px;
+  }
+
+  .tt-lp-steps .tt-lp-steps-cta {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+@media (max-width: 760px) {
+  .tt-lp-steps {
+    padding: 64px 0 76px;
+  }
+
+  .tt-lp-steps .tt-lp-steps-art {
+    width: calc(100% - 32px);
+  }
+
+  .tt-lp-steps .tt-lp-steps-intro {
+    padding: 0 4px 32px;
+  }
+
+  .tt-lp-steps .tt-lp-steps-intro h2 {
+    max-width: 15ch;
+    font-size: clamp(38px, 10vw, 46px);
+    line-height: 1.02;
+  }
+
+  .tt-lp-steps .tt-lp-steps-intro p {
+    max-width: 46ch;
+    margin-top: 16px;
+    font-size: 15.5px;
+  }
+
+  .tt-lp-steps .tt-lp-step-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+  }
+
+  .tt-lp-steps .tt-lp-step {
+    padding: 20px;
+    border-radius: 20px;
+  }
+
+  .tt-lp-steps .tt-lp-step + .tt-lp-step {
+    padding-left: 20px;
+    border-left: 1px solid rgba(109, 40, 217, .14);
+  }
+
+  .tt-lp-steps .tt-lp-step-top {
+    min-height: 0;
+    margin-bottom: 0;
+  }
+
+  .tt-lp-steps .tt-lp-step-num-label {
+    display: inline;
+  }
+
+  .tt-lp-steps .tt-lp-step-icon-wrap {
+    width: 142px;
+    height: 112px;
+    margin: -12px -8px -8px 0;
+  }
+
+  .tt-lp-steps .tt-lp-step h3 {
+    min-height: 0;
+    font-size: 20px;
+  }
+
+  .tt-lp-steps .tt-lp-step p {
+    max-width: 46ch;
+    margin-top: 8px;
+    font-size: 14.5px;
+  }
+
+  .tt-lp-steps .tt-lp-step-foot {
+    padding-top: 18px;
+  }
+
+  .tt-lp-steps .tt-lp-steps-cta {
+    flex-direction: column;
+    align-items: flex-start;
+    margin-top: 20px;
+    padding: 24px 20px;
+    border-radius: 20px;
+  }
+
+  .tt-lp-steps .tt-lp-steps-cta-copy h3 {
+    font-size: 21px;
+  }
+
+  .tt-lp-steps .tt-lp-steps-cta .tt-lp-btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 420px) {
+  .tt-lp-steps .tt-lp-steps-art {
+    width: calc(100% - 28px);
+  }
+
+  .tt-lp-steps .tt-lp-step {
+    padding: 18px;
+  }
+
+  .tt-lp-steps .tt-lp-step + .tt-lp-step {
+    padding-left: 18px;
+  }
+
+  .tt-lp-steps .tt-lp-step-icon-wrap {
+    width: 128px;
+    height: 102px;
+  }
+}

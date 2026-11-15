@@ -86,10 +86,10 @@ test("admin organiza operação, catálogo e creators", async ({ page }, testInf
     return route.fulfill({ status: 404, json: { error: { message: "Not mocked" } } });
   });
 
-  await page.goto("/app/admin");
+  await page.goto("/admin");
   await expect(page.getByRole("heading", { name: /controle a operação/i })).toBeVisible();
   await expect(page.getByText("Resumo da plataforma")).toBeVisible();
-  await expect(page.getByText("Produtos ativos", { exact: true })).toBeVisible({ timeout: 15000 });
+  await expect(page.getByText("Creators ativos", { exact: true })).toBeVisible({ timeout: 15000 });
 
   await page.getByRole("button", { name: /^produtos/i }).click();
   await expect(page.getByPlaceholder(/buscar produto/i)).toBeVisible();

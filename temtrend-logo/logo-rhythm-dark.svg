@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" role="img" aria-labelledby="title desc">
+  <title id="title">Temtrend Rhythm dark</title>
+  <desc id="desc">Três formas ascendentes que representam ritmo e mudança contínua.</desc>
+  <rect x="7" y="27" width="8" height="13" rx="4" fill="#E7EDF7"/>
+  <rect x="20" y="19" width="8" height="21" rx="4" fill="#76A7FF"/>
+  <rect x="33" y="8" width="8" height="32" rx="4" fill="#8DE3D0"/>
+</svg>

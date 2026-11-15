@@ -1,0 +1,84 @@
+/* Catálogo bloqueado no plano Grátis: a aba Produtos é recurso do Pro. */
+
+#app-view .prod-locked {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  width: 100%;
+  max-width: 640px;
+  margin: clamp(8px, 4vw, 40px) auto 0;
+  padding: clamp(28px, 5vw, 48px);
+  border: 1px solid var(--tt-app-line);
+  border-radius: 24px;
+  background: var(--tt-app-surface);
+  text-align: center;
+}
+
+#app-view .prod-locked-icon {
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  margin-bottom: 4px;
+  border-radius: 14px;
+  background: var(--tt-app-lime-soft);
+  color: var(--tt-app-deep);
+}
+
+#app-view .prod-locked .eyebrow {
+  margin-bottom: 2px;
+}
+
+#app-view .prod-locked h1 {
+  margin: 0;
+  font-family: var(--tt-font-editorial);
+  font-size: clamp(26px, 3.4vw, 34px);
+  letter-spacing: -.04em;
+  line-height: 1.06;
+}
+
+#app-view .prod-locked p:not(.eyebrow) {
+  max-width: 46ch;
+  margin: 0;
+  color: var(--tt-app-muted);
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+#app-view .prod-locked-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+#app-view .prod-locked-actions :is(.primary, .ghost) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0 20px;
+  border-radius: 999px;
+  font-size: 13.5px;
+  font-weight: 750;
+  text-decoration: none;
+}
+
+#app-view .prod-locked small {
+  margin-top: 4px;
+  color: var(--tt-app-muted-soft);
+  font-size: 11.5px;
+}
+
+@media (max-width: 600px) {
+  #app-view .prod-locked {
+    padding: 26px 18px;
+    border-radius: 18px;
+  }
+
+  #app-view .prod-locked-actions {
+    width: 100%;
+    flex-direction: column;
+  }
+}

@@ -7,13 +7,12 @@ import { usePlatform } from "./store";
 import AuthPanel from "./Auth";
 import Onboarding from "./Onboarding";
 import Topbar from "./Topbar";
-import PageLoading from "./PageLoading";
-import { AccountLoadError, AppBoot } from "./PlatformState";
+import { AccountLoadError } from "./PlatformState";
 
 // Painel administrativo: fora do bundle inicial do creator.
 const Admin = dynamic(() => import("./Admin"), {
   ssr: false,
-  loading: () => <PageLoading />,
+  loading: () => null,
 });
 
 function nextPathFromLocation(): string | null {
@@ -35,8 +34,16 @@ function initialAuthPanel(): "login" | "signup" {
  * páginas: só o conteúdo interno da rota muda.
  */
 export default function AppShell({ children }: { children: ReactNode }) {
-  const { session, me, meLoading, globalError, booted } = usePlatform();
-  const pathname = usePathname() || "/app";
+  const {
+    session,
+    me,
+    meLoading,
+    globalError,
+    booted,
+    recoveryMode,
+    clearRecovery,
+  } = usePlatform();
+  const pathname = usePathname() || "/descobrir";
   const router = useRouter();
 
   useEffect(() => {
@@ -45,66 +52,70 @@ export default function AppShell({ children }: { children: ReactNode }) {
     if (next) router.replace(next);
   }, [me?.onboarding_completo, pathname, router, session]);
 
-  const recovery =
-    typeof window !== "undefined" && window.location.hash.includes("type=recovery");
+  // Sem tela de loading em nenhum caminho: o boot renderiza vazio e o
+  // conteúdo entra direto quando a sessão/perfil estão prontos.
+  let content: ReactNode = null;
 
-  if (!booted) {
-    return <AppBoot />;
-  }
+  if (booted) {
+    if (!session || recoveryMode) {
+      content = (
+        <AuthPanel
+          initialPanel={recoveryMode ? "reset" : initialAuthPanel()}
+          recoveryHint={
+            recoveryMode && !session
+              ? "Se o link expirou, volte e solicite um novo link de recuperação."
+              : null
+          }
+          onRecoveryDone={clearRecovery}
+          onExitRecovery={clearRecovery}
+          onAuthenticated={() => {
+            // Sessão persistida: sem reload de página. O listener do store
+            // carrega /me e a UI transita sozinha.
+            router.refresh();
+          }}
+        />
+      );
+    } else if (!me) {
+      content = meLoading || !globalError ? (
+        <div className="app-boot" role="status" aria-live="polite">
+          <div className="app-boot-brand"><span aria-hidden="true">T</span><b>TemTrend</b></div>
+          <p>Preparando sua conta…</p>
+          <div className="app-boot-bar" aria-hidden="true"><i /></div>
+        </div>
+      ) : <AccountLoadError />;
+    } else {
+      // A conta continua acessível com onboarding incompleto: é a saída para
+      // revisar dados pessoais e sessão. Preferências da IA ficam em
+      // /preferencias, depois do onboarding.
+      const allowOnboarding = pathname === "/conta";
+      const showNav = me.onboarding_completo || me.is_admin || allowOnboarding;
+      const adminHome =
+        me.is_admin &&
+        (pathname === "/descobrir" || pathname === "/admin");
 
-  if (!session || recovery) {
-    return (
-      <AuthPanel
-        initialPanel={recovery ? "reset" : initialAuthPanel()}
-        recoveryHint={
-          recovery && !session
-            ? "Se o link expirou, volte e solicite um novo link de recuperação."
-            : null
-        }
-        onAuthenticated={() => {
-          // Sessão em memória: sem reload de página (derrubaria a sessão).
-          // O listener do store carrega /me e a UI transita sozinha.
-          router.refresh();
-        }}
-      />
-    );
-  }
-
-  if (!me) {
-    // Sessão válida mas perfil ainda carregando (login recente, retry em
-    // voo): mostra boot em vez do erro "conta não encontrada".
-    if (meLoading || !globalError) {
-      return <AppBoot />;
+      content = (
+        <main id="app-view">
+          {showNav && <Topbar />}
+          <section id="page-content" className={`page-wrap${showNav ? "" : " page-wrap--onboarding"}`}>
+            {!me.onboarding_completo && !me.is_admin && !allowOnboarding ? (
+              <Onboarding
+                onDone={(target) => {
+                  // reloadMe() já atualizou o perfil; navegação sem reload.
+                  // `target` leva direto ao roteiro do primeiro vídeo quando o
+                  // usuário escolhe um produto na etapa final.
+                  router.push(target ?? nextPathFromLocation() ?? "/descobrir");
+                }}
+              />
+            ) : adminHome ? (
+              <Admin />
+            ) : (
+              children
+            )}
+          </section>
+        </main>
+      );
     }
-    return <AccountLoadError />;
   }
 
-  // A conta é o único lugar que aceita onboarding incompleto, como antes:
-  // é por lá que a pessoa revisa preferências.
-  const allowOnboarding = pathname === "/app/conta";
-  const showNav = me.onboarding_completo || me.is_admin || allowOnboarding;
-  const adminHome =
-    me.is_admin &&
-    (pathname === "/app" || pathname === "/app/descobrir" || pathname === "/app/admin");
-
-  return (
-    <main id="app-view">
-      {showNav && <Topbar />}
-      <section id="page-content" className={`page-wrap${showNav ? "" : " page-wrap--onboarding"}`}>
-        {!me.onboarding_completo && !me.is_admin && !allowOnboarding ? (
-          <Onboarding
-            editing={false}
-            onDone={() => {
-              // reloadMe() já atualizou o perfil; navegação sem reload.
-              router.push(nextPathFromLocation() ?? "/app");
-            }}
-          />
-        ) : adminHome ? (
-          <Admin />
-        ) : (
-          children
-        )}
-      </section>
-    </main>
-  );
+  return content;
 }

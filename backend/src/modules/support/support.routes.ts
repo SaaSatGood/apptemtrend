@@ -13,13 +13,16 @@ import {
   listCreatorTickets,
 } from './support.service.js';
 import {
-  geminiSupportAnswer,
-  openrouterSupportAnswer,
+  externalTopicAnswer,
+  supportAnswer,
   supportContext,
   supportFallbackAnswer,
   type SupportChatMessage,
 } from './support-chat.service.js';
+import { detectExternalSupportQuestion } from './support-knowledge.js';
 import { getCreatorContent } from '../creator-content/creator-content.service.js';
+import { releaseSupportQuota, reserveSupportQuota } from '../../lib/ai-metrics.js';
+import { createAppError } from '../../types/index.js';
 
 const idParam = z.object({ id: z.string().uuid() });
 
@@ -79,18 +82,38 @@ async function supportRoutes(app: FastifyInstance) {
   app.post('/support/chat', write, async (request) => {
     const creator = await requireActiveCreator(request.authUser.id);
     const { message, history } = chatSchema.parse(request.body);
-    const productions = await getCreatorContent(request.authUser.id);
-    const context = supportContext({
-      plan: creator.plan,
-      planStatus: creator.plan_status,
-      productions: productions.length,
-      onboardingDone: Boolean(creator.onboarding_completo),
-    });
-    const turns = history as SupportChatMessage[] | undefined;
-    const reply = await geminiSupportAnswer(message, turns, context)
-      ?? await openrouterSupportAnswer(message, turns, context)
-      ?? supportFallbackAnswer();
-    return { reply };
+    // Trava de escopo: assunto externo é recusado antes de gastar cota e IA.
+    const externalTopic = detectExternalSupportQuestion(message);
+    if (externalTopic) {
+      return { reply: externalTopicAnswer(), scope: 'off_topic' as const, topic: externalTopic };
+    }
+    if (!(await reserveSupportQuota(request.authUser.id))) {
+      throw createAppError(
+        'SUPPORT_LIMIT',
+        'Você atingiu o limite diário do assistente de suporte. Abra uma conversa com o time para continuar.',
+        429,
+      );
+    }
+    try {
+      const productions = await getCreatorContent(request.authUser.id);
+      const context = supportContext({
+        plan: creator.plan,
+        planStatus: creator.plan_status,
+        productions: productions.length,
+        onboardingDone: Boolean(creator.onboarding_completo),
+      });
+      const turns = history as SupportChatMessage[] | undefined;
+      const reply = await supportAnswer(message, turns, context, request.authUser.id);
+      if (!reply) {
+        // Sem provedor configurado/falha: não cobra a cota do usuário.
+        await releaseSupportQuota(request.authUser.id);
+        return { reply: supportFallbackAnswer() };
+      }
+      return { reply };
+    } catch (error) {
+      await releaseSupportQuota(request.authUser.id);
+      throw error;
+    }
   });
 }
 

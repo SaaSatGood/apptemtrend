@@ -1,0 +1,521 @@
+/* Planos dentro do dashboard (/conta/planos).
+   Layout enxuto: cabeçalho, seletor de ciclo e dois cards. Sem hero de
+   marketing, faixa de lançamento, tabela comparativa ou FAQ. */
+
+#app-view .plans-view {
+  display: grid;
+  gap: clamp(20px, 3vw, 30px);
+  width: 100%;
+  max-width: 1040px;
+  margin: 0 auto;
+}
+
+/* Cabeçalho */
+
+#app-view .plans-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+#app-view .plans-head-copy {
+  max-width: 620px;
+}
+
+#app-view .plans-head h1 {
+  margin: 0 0 8px;
+  font-family: var(--tt-font-editorial);
+  font-size: clamp(28px, 3.2vw, 36px);
+  font-weight: 700;
+  letter-spacing: -.045em;
+  line-height: 1.04;
+}
+
+#app-view .plans-sub {
+  max-width: 56ch;
+  margin: 0;
+  color: var(--tt-app-muted);
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+#app-view .plans-access {
+  display: flex;
+  flex: none;
+  align-items: flex-start;
+  gap: 10px;
+  min-width: 220px;
+  max-width: 310px;
+  padding: 12px 14px;
+  border: 1px solid var(--tt-app-line);
+  border-radius: 14px;
+  background: var(--tt-app-surface);
+}
+
+#app-view .plans-access-dot {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  margin-top: 5px;
+  border-radius: 50%;
+  background: var(--tt-app-muted-soft);
+  box-shadow: 0 0 0 4px var(--tt-app-soft);
+}
+
+#app-view .plans-access-dot.is-active {
+  background: var(--tt-app-green);
+  box-shadow: 0 0 0 4px var(--tt-app-lime-soft);
+}
+
+#app-view .plans-access-copy {
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+}
+
+#app-view .plans-access-copy small {
+  display: block;
+  margin-bottom: 2px;
+  color: var(--tt-app-muted-soft);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+
+#app-view .plans-access-copy strong {
+  display: block;
+  color: var(--tt-app-ink);
+  font-size: 14px;
+  line-height: 1.3;
+}
+
+#app-view .plans-access-copy span {
+  display: block;
+  color: var(--tt-app-muted);
+  font-size: 11.5px;
+  line-height: 1.45;
+}
+
+/* Seletor de ciclo */
+
+#app-view .plans-toggle {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 7px;
+}
+
+#app-view .plans-toggle-inner {
+  display: inline-flex;
+  gap: 2px;
+  padding: 4px;
+  border: 1px solid var(--tt-app-line);
+  border-radius: 999px;
+  background: var(--tt-app-soft);
+}
+
+#app-view .plans-toggle button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 38px;
+  padding: 0 20px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--tt-app-muted);
+  font-size: 13px;
+  font-weight: 750;
+  cursor: pointer;
+  transition: background .18s ease, color .18s ease;
+}
+
+#app-view .plans-toggle button.is-active {
+  background: var(--tt-app-ink);
+  color: var(--tt-app-surface);
+}
+
+#app-view .plans-toggle button:disabled {
+  cursor: not-allowed;
+}
+
+#app-view .plans-toggle button:disabled:not(.is-active) {
+  opacity: .5;
+}
+
+#app-view .plans-toggle button.is-active:disabled {
+  opacity: 1;
+}
+
+#app-view .plans-toggle-badge {
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: var(--tt-app-lime-soft);
+  color: var(--tt-app-deep);
+  font-size: 10px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+#app-view .plans-toggle button.is-active .plans-toggle-badge {
+  background: var(--tt-app-lime);
+  color: var(--tt-on-lime, #fff);
+}
+
+#app-view .plans-toggle-note {
+  margin: 0;
+  color: var(--tt-app-muted);
+  font-size: 11.5px;
+}
+
+/* Feedback */
+
+#app-view .plans-feedback {
+  max-width: 880px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 10px 16px;
+  border-radius: 12px;
+  background: var(--tt-app-lime-soft);
+  color: var(--tt-app-deep);
+  font-size: 13px;
+  font-weight: 650;
+  text-align: center;
+}
+
+#app-view .plans-feedback.is-error {
+  background: #fdecec;
+  color: #a52727;
+}
+
+/* Cards */
+
+#app-view .plans-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+  width: 100%;
+  max-width: 880px;
+  margin: 0 auto;
+}
+
+#app-view .plans-card {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 24px;
+  border: 1px solid var(--tt-app-line);
+  border-radius: 20px;
+  background: var(--tt-app-surface);
+}
+
+#app-view .plans-card.is-featured {
+  border-color: #b08cee;
+  background: linear-gradient(180deg, #f3eefb 0%, var(--tt-app-surface) 58%);
+  box-shadow: 0 18px 40px -34px rgba(48, 92, 12, .38);
+}
+
+#app-view .plans-card-tag {
+  align-self: flex-start;
+  padding: 5px 10px;
+  border: 1px solid var(--tt-app-line);
+  border-radius: 999px;
+  background: var(--tt-app-surface);
+  color: var(--tt-app-muted);
+  font-size: 10.5px;
+  font-weight: 750;
+  letter-spacing: .02em;
+  white-space: nowrap;
+}
+
+#app-view .plans-card.is-featured .plans-card-tag {
+  border-color: #cfbbf1;
+  background: #e7dff6;
+  color: #3a3a47;
+}
+
+#app-view .plans-card-copy h2 {
+  margin: 0 0 3px;
+  color: var(--tt-app-ink);
+  font-family: var(--tt-font-editorial);
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -.03em;
+}
+
+#app-view .plans-card-copy p {
+  margin: 0;
+  color: var(--tt-app-muted);
+  font-size: 12.5px;
+  line-height: 1.45;
+}
+
+#app-view .plans-price {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+  margin-top: 2px;
+}
+
+#app-view .plans-price strong {
+  color: var(--tt-app-ink);
+  font-family: var(--tt-font-editorial);
+  font-size: 38px;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -.045em;
+  line-height: 1;
+}
+
+#app-view .plans-price span {
+  color: var(--tt-app-muted);
+  font-size: 12.5px;
+}
+
+#app-view .plans-price-note {
+  min-height: 34px;
+  margin: -8px 0 0;
+  color: var(--tt-app-muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+#app-view .plans-price-note s {
+  color: var(--tt-app-muted-soft);
+}
+
+/* Ação principal */
+
+#app-view .plans-card-actions {
+  display: grid;
+  gap: 8px;
+  margin-top: auto;
+}
+
+#app-view .plans-card-actions .plans-cta {
+  margin-top: 0;
+}
+
+#app-view .plans-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  width: 100%;
+  min-height: 46px;
+  padding: 0 20px;
+  border: 1px solid var(--tt-app-line);
+  border-radius: 999px;
+  background: var(--tt-app-surface);
+  color: var(--tt-app-ink);
+  font-size: 13.5px;
+  font-weight: 750;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background .18s ease, border-color .18s ease, transform .18s ease;
+}
+
+#app-view .plans-cta:hover:not(:disabled) {
+  border-color: var(--tt-app-line-strong);
+  background: var(--tt-app-soft);
+}
+
+#app-view .plans-card.is-featured .plans-cta {
+  border-color: transparent;
+  background: var(--tt-app-lime);
+  color: var(--tt-on-lime, #fff);
+}
+
+#app-view .plans-card.is-featured .plans-cta:hover:not(:disabled) {
+  background: var(--tt-app-lime-hover);
+}
+
+#app-view .plans-card.is-featured .plans-cta.is-secondary {
+  border-color: var(--tt-app-line-strong);
+  background: var(--tt-app-surface);
+  color: var(--tt-app-ink);
+}
+
+#app-view .plans-card.is-featured .plans-cta.is-secondary:hover:not(:disabled) {
+  border-color: var(--tt-app-line-strong);
+  background: var(--tt-app-soft);
+}
+
+#app-view .plans-cta:disabled {
+  cursor: default;
+  opacity: .58;
+}
+
+/* Lista de recursos */
+
+#app-view .plans-features {
+  display: grid;
+  gap: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--tt-app-line);
+}
+
+#app-view .plans-feature-group {
+  display: grid;
+  gap: 8px;
+}
+
+#app-view .plans-features h3 {
+  margin: 0;
+  color: var(--tt-app-muted-soft);
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: .09em;
+  text-transform: uppercase;
+}
+
+#app-view .plans-features ul {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+#app-view .plans-features li {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  color: var(--tt-app-ink);
+  font-size: 12.5px;
+  line-height: 1.45;
+}
+
+#app-view .plans-features li .tt-icon {
+  flex: none;
+  margin-top: 2px;
+  color: var(--tt-app-lime-strong);
+}
+
+#app-view .plans-feature-note {
+  margin: 2px 0 0;
+  color: var(--tt-app-muted-soft);
+  font-size: 11.5px;
+  line-height: 1.45;
+}
+
+/* Fechamento */
+
+#app-view .plans-foot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px 18px;
+  flex-wrap: wrap;
+  max-width: 880px;
+  width: 100%;
+  margin: 0 auto;
+  padding-top: 2px;
+  color: var(--tt-app-muted);
+  font-size: 11.5px;
+  text-align: center;
+}
+
+#app-view .plans-foot span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+#app-view .plans-foot .tt-icon {
+  color: var(--tt-app-lime-strong);
+}
+
+#app-view .plans-foot a {
+  color: var(--tt-app-deep);
+  font-weight: 750;
+  text-underline-offset: 3px;
+}
+
+/* Tema escuro */
+
+[data-theme="dark"] #app-view .plans-card.is-featured {
+  border-color: rgb(168 148 249 / 45%);
+  background:
+    radial-gradient(120% 80% at 50% 0%, rgb(168 148 249 / 18%), transparent 62%),
+    linear-gradient(180deg, #211e2e 0%, #1a1824 60%);
+  box-shadow:
+    0 0 0 1px rgb(168 148 249 / 14%),
+    0 24px 60px -36px rgb(108 74 226 / 55%);
+}
+
+[data-theme="dark"] #app-view .plans-card.is-featured .plans-card-tag {
+  border-color: rgb(168 148 249 / 40%);
+  background: rgb(168 148 249 / 16%);
+  color: #cfc3fb;
+}
+
+[data-theme="dark"] #app-view .plans-toggle button.is-active {
+  background: var(--tt-app-lime);
+  color: var(--tt-on-lime, #fff);
+}
+
+[data-theme="dark"] #app-view .plans-toggle-badge {
+  border: 1px solid rgb(168 148 249 / 30%);
+  background: rgb(168 148 249 / 14%);
+  color: #cfc3fb;
+}
+
+[data-theme="dark"] #app-view .plans-toggle button.is-active .plans-toggle-badge {
+  border-color: rgb(255 255 255 / 18%);
+  background: rgb(20 16 31 / 30%);
+  color: #f0ebff;
+}
+
+[data-theme="dark"] #app-view .plans-card.is-featured .plans-cta:disabled {
+  border-color: #2a2a36;
+  background: #1c1c26;
+  color: #a6a3b2;
+}
+
+[data-theme="dark"] #app-view .plans-access {
+  background: linear-gradient(135deg, #1d1a28, var(--tt-app-surface));
+}
+
+/* Responsivo */
+
+@media (max-width: 900px) {
+  #app-view .plans-head {
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  #app-view .plans-access {
+    width: 100%;
+    max-width: none;
+  }
+
+  #app-view .plans-grid {
+    grid-template-columns: 1fr;
+    max-width: 520px;
+  }
+}
+
+@media (max-width: 600px) {
+  #app-view .plans-view {
+    gap: 18px;
+  }
+
+  #app-view .plans-toggle button {
+    padding: 0 15px;
+  }
+
+  #app-view .plans-toggle-badge {
+    display: none;
+  }
+
+  #app-view .plans-card {
+    padding: 20px;
+  }
+
+  #app-view .plans-price strong {
+    font-size: 33px;
+  }
+}

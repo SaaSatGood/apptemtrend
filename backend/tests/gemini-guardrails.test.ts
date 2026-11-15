@@ -4,8 +4,10 @@ import {
   buildFallbackKit,
   isContentKitNovel,
   isProductNovel,
+  isScriptSpecific,
   missingStrategySections,
   parseGeneratedPackage,
+  productSpecificity,
   ROTEIRO_SKELETON_INSTRUCTIONS,
 } from '../src/modules/assistant/gemini-generation.service.js';
 
@@ -90,6 +92,98 @@ describe('Gemini assistant guardrails', () => {
   it('skeleton teaches the exact required titles', () => {
     const missing = missingStrategySections(ROTEIRO_SKELETON_INSTRUCTIONS);
     expect(missing).toEqual([]);
+  });
+
+  it('skeleton exige fala falada com orçamento de tempo por cena', () => {
+    expect(ROTEIRO_SKELETON_INSTRUCTIONS).toMatch(/0-3s: <fala exata do hook>/);
+    expect(ROTEIRO_SKELETON_INSTRUCTIONS).toMatch(/7-18s: <uso real/);
+    expect(ROTEIRO_SKELETON_INSTRUCTIONS).toMatch(/enquadramento fixo em 3 passos/);
+  });
+
+  it('distingue roteiro específico do produto de roteiro genérico', () => {
+    const product = {
+      nome: 'Organizador Modular de Gavetas',
+      descricao: 'Conjunto ajustável para separar peças pequenas e organizar gavetas.',
+      categoria: 'Casa',
+    };
+    const specific = buildFallbackKit(product);
+    expect(isScriptSpecific(specific, product)).toBe(true);
+    expect(productSpecificity(specific, product)).toBeGreaterThan(0);
+
+    const generic = {
+      ...specific,
+      hook: 'Olha isso de perto.',
+      descricao: 'Um vídeo curto.',
+      roteiro: 'ROTEIRO PRINCIPAL: mostre o item, depois o resultado.',
+      copy: 'Comenta aqui.',
+      cenas: specific.cenas.map((scene) => ({ ...scene, visual: 'Close', fala: 'Vou mostrar.' })),
+    };
+    expect(isScriptSpecific(generic, product)).toBe(false);
+    expect(productSpecificity(generic, product)).toBe(0);
+
+    // Uma palavra genérica da categoria não basta para provar especificidade.
+    const oneHit = { ...generic, hook: 'Olha isso na casa.' };
+    expect(isScriptSpecific(oneHit, product)).toBe(false);
+  });
+
+  it('remove direção de câmera de hook e fala, preservando o texto falado', () => {
+    const product = {
+      nome: 'Organizador Modular de Gavetas',
+      descricao: 'Conjunto ajustável para separar peças pequenas e organizar gavetas.',
+      categoria: 'Casa',
+    };
+    const kit = buildFallbackKit(product);
+    const generated = parseGeneratedPackage(JSON.stringify({
+      product,
+      content_kit: {
+        ...kit,
+        hook: '[close no produto] Olha este encaixe.',
+        cenas: kit.cenas.map((scene, index) => (
+          index === 0 ? { ...scene, fala: '(corte rápido) Olha o encaixe aqui.' } : scene
+        )),
+      },
+    }));
+    expect(generated.content_kit.hook).toBe('Olha este encaixe.');
+    expect(generated.content_kit.cenas[0].fala).toBe('Olha o encaixe aqui.');
+  });
+
+  it('separa as seções do roteiro em linhas sem perder conteúdo', () => {
+    const product = {
+      nome: 'Organizador de gavetas',
+      descricao: 'Divisores para separar peças dentro da gaveta.',
+      categoria: 'Casa',
+    };
+    const kit = buildFallbackKit(product);
+    const generated = parseGeneratedPackage(JSON.stringify({
+      product,
+      content_kit: { ...kit, roteiro: kit.roteiro.replace(/\n+/g, ' ') },
+    }));
+    const lines = generated.content_kit.roteiro.split('\n');
+    expect(lines).toHaveLength(5);
+    expect(lines[0]).toMatch(/^ROTEIRO PRINCIPAL:/);
+    expect(lines[1]).toMatch(/^3 VARIAÇÕES DE HOOK:/);
+    expect(lines[4]).toMatch(/^5 VARIAÇÕES DE ROTEIRO:/);
+    expect(generated.content_kit.roteiro).not.toMatch(/\n\s*\n/);
+  });
+
+  it('troca fala vaga por fala concreta da categoria', () => {
+    const product = {
+      nome: 'Organizador Modular de Gavetas',
+      descricao: 'Conjunto ajustável para separar peças pequenas e organizar gavetas.',
+      categoria: 'Casa',
+    };
+    const kit = buildFallbackKit(product);
+    const generated = parseGeneratedPackage(JSON.stringify({
+      product,
+      content_kit: {
+        ...kit,
+        cenas: kit.cenas.map((scene, index) => (
+          index === 1 ? { ...scene, visual: 'Produto em uso', fala: 'Vou mostrar o produto de perto.' } : scene
+        )),
+      },
+    }));
+    expect(generated.content_kit.cenas[1].visual).not.toBe('Produto em uso');
+    expect(generated.content_kit.cenas[1].fala).not.toBe('Vou mostrar o produto de perto.');
   });
 
   it('accepts decisions without motivos', () => {

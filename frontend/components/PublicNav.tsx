@@ -2,30 +2,21 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { resolveSession } from "@/lib/supabase";
+import LoginLink from "./LoginLink";
 
 type PublicNavProps = { page: "home" | "pricing" | "legal" };
 
 const links = [
   { label: "Como funciona", href: "/#como-funciona" },
-  { label: "Plano de gravação", href: "/#plano" },
+  { label: "Exemplo de roteiro", href: "/#plano" },
   { label: "Planos", href: "/planos" },
   { label: "Dúvidas", href: "/#faq" },
 ];
 
 export default function PublicNav({ page }: PublicNavProps) {
   const [open, setOpen] = useState(false);
-  const [loggedIn, setLoggedIn] = useState(false);
   const headerRef = useRef<HTMLElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
-
-  useEffect(() => {
-    let active = true;
-    void resolveSession().then((session) => {
-      if (active) setLoggedIn(Boolean(session));
-    }).catch(() => undefined);
-    return () => { active = false; };
-  }, []);
 
   useEffect(() => {
     if (!open) return;
@@ -64,17 +55,11 @@ export default function PublicNav({ page }: PublicNavProps) {
               {link.label}
             </Link>
           ))}
-          {loggedIn ? (
-            <Link className="tt-public-app-link" href="/app" onClick={() => setOpen(false)}>Ir para o app</Link>
-          ) : (
-            <Link className="tt-public-mobile-account" href="/app" onClick={() => setOpen(false)}>Entrar</Link>
-          )}
+          <LoginLink className="tt-public-mobile-account" onNavigate={() => setOpen(false)}>Entrar</LoginLink>
         </div>
         <div className="tt-public-actions">
-          {!loggedIn && <Link className="tt-public-login" href="/app">Entrar</Link>}
-          <Link className="tt-public-cta" href={loggedIn ? "/app/conta" : "/app?mode=signup"}>
-            {loggedIn ? (page === "pricing" ? "Minha assinatura" : "Minha conta") : "Criar conta grátis"}
-          </Link>
+          <LoginLink className="tt-public-login">Entrar</LoginLink>
+          <Link className="tt-public-cta" href="/descobrir?mode=signup">Começar grátis</Link>
           <button
             ref={buttonRef}
             className="tt-public-menu-button"

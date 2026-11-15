@@ -121,6 +121,23 @@ function cleanRepeatedWords(value: string) {
   return value.replace(/\b([\p{L}\p{N}]+)(?:\s+\1\b)+/giu, '$1').replace(/\s+/g, ' ').trim();
 }
 
+// Cabeçalhos que o roteiro precisa ter (mesma ordem do esqueleto).
+const SCRIPT_HEADING = /(?:ROTEIRO PRINCIPAL|(?:3\s*[–-]\s*5|[35])?\s*VARIA[ÇC][ÕO]ES DE HOOK|VERS[ÃA]O SEM SEGUIDORES|DICA DE PUBLICA[ÇC][AÃ]O|(?:3\s*[–-]\s*5|[35])?\s*VARIA[ÇC][ÕO]ES DE ROTEIRO)\s*:/gi;
+
+/**
+ * Limpa o roteiro preservando as quebras de linha. O modelo às vezes devolve
+ * todas as seções na mesma linha; separar ajuda a ler no app e não muda a
+ * detecção das seções (que usa os mesmos títulos).
+ */
+export function formatScript(value: string) {
+  const withBreaks = value.replace(SCRIPT_HEADING, (match, offset: number) => (offset === 0 ? match : `\n${match}`));
+  return withBreaks
+    .split('\n')
+    .map((line) => cleanRepeatedWords(line))
+    .filter(Boolean)
+    .join('\n');
+}
+
 function completeKitTitle(title: string, productName: string) {
   const cleanedTitle = cleanRepeatedWords(title).replace(/[.;\s]+$/g, '');
   const name = cleanRepeatedWords(productName).replace(/[.;\s]+$/g, '');
@@ -135,11 +152,24 @@ function completeKitTitle(title: string, productName: string) {
   return words.join(' ') || cleanedTitle;
 }
 
+// Direção de câmera/edição não é fala. O modelo às vezes escreve
+// "(corte rápido)" ou "[texto na tela]" dentro do campo falado.
+const STAGE_DIRECTION = /[([][^)\]]*\b(?:corte|close|zoom|texto|b-?roll|m[uú]sica|transi[cç][aã]o|plano|enquadr\w*|off|pausa|legenda)\b[^)\]]*[)\]]/gi;
+
+export function stripStageDirections(value: string) {
+  return value.replace(STAGE_DIRECTION, ' ').replace(/\s+/g, ' ').trim();
+}
+
+// Reparos de cena/fala vaga: comparação ancorada para não apagar conteúdo real.
+const VAGUE_VISUAL = /^(?:problema do dia a dia(?: que o produto resolve)?|resultado final(?: ap[oó]s o uso)?|antes e depois|demonstra[cç][aã]o do produto|produto em close|produto em uso|close no produto|o produto|produto)\s*\.?$/i;
+const VAGUE_SPEECH = /^(?:quem passa por isso vai entender|olha a diferen[cç]a no resultado|voc[eê] usaria(?: isso)?\??|vou mostrar (?:o|este) produto(?: de perto)?|veja (?:os detalhes|o produto)(?: de perto)?|aqui (?:est[aá]|esta) (?:o produto )?em uso|este [eé] o resultado(?: visual)?|é isso(?: mesmo)?)\s*\.?$/i;
+
 export function parseGeneratedPackage(text: string) {
   const generated = generatedPackageSchema.parse(JSON.parse(text));
-  const vagueVisual = /^(?:problema do dia a dia(?: que o produto resolve)?|resultado final(?: após o uso)?|antes e depois|demonstração do produto|produto em close)$/i;
-  const vagueSpeech = /^(?:quem passa por isso vai entender|olha a diferença no resultado|você usaria(?: isso)?\??)$/i;
-  const needsSceneRepair = generated.content_kit.cenas.some((scene) => vagueVisual.test(scene.visual.trim()) || vagueSpeech.test(scene.fala.trim()));
+  const sceneCount = generated.content_kit.cenas.length;
+  const needsSceneRepair = generated.content_kit.cenas.some((scene) => (
+    VAGUE_VISUAL.test(scene.visual.trim()) || VAGUE_SPEECH.test(stripStageDirections(scene.fala))
+  ));
   const fallbackScenes = needsSceneRepair ? buildFallbackKit(generated.product).cenas : null;
   return {
     ...generated,
@@ -147,19 +177,72 @@ export function parseGeneratedPackage(text: string) {
       ...generated.content_kit,
       titulo: completeKitTitle(generated.content_kit.titulo, generated.product.nome),
       descricao: cleanRepeatedWords(generated.content_kit.descricao),
-      hook: cleanRepeatedWords(generated.content_kit.hook),
-      roteiro: cleanRepeatedWords(generated.content_kit.roteiro),
-      cenas: generated.content_kit.cenas.map((scene, index) => ({
-        ...scene,
-        visual: cleanRepeatedWords(vagueVisual.test(scene.visual.trim()) ? fallbackScenes?.[index % fallbackScenes.length]?.visual || scene.visual : scene.visual),
-        fala: cleanRepeatedWords(vagueSpeech.test(scene.fala.trim()) ? fallbackScenes?.[index % fallbackScenes.length]?.fala || scene.fala : index === generated.content_kit.cenas.length - 1 ? normalizeCta(scene.fala) : scene.fala),
-        acao_edicao: cleanRepeatedWords(scene.acao_edicao),
-      })),
+      hook: cleanRepeatedWords(stripStageDirections(generated.content_kit.hook)),
+      roteiro: formatScript(generated.content_kit.roteiro),
+      cenas: generated.content_kit.cenas.map((scene, index) => {
+        const fala = stripStageDirections(scene.fala);
+        const repairedFala = !fala || VAGUE_SPEECH.test(fala)
+          ? fallbackScenes?.[index % fallbackScenes.length]?.fala || fala
+          : index === sceneCount - 1 ? normalizeCta(fala) : fala;
+        return {
+          ...scene,
+          visual: cleanRepeatedWords(VAGUE_VISUAL.test(scene.visual.trim()) ? fallbackScenes?.[index % fallbackScenes.length]?.visual || scene.visual : scene.visual),
+          fala: cleanRepeatedWords(repairedFala),
+          acao_edicao: cleanRepeatedWords(scene.acao_edicao),
+        };
+      }),
       copy: cleanRepeatedWords(generated.content_kit.copy),
       hashtags: normalizeHashtags(generated.content_kit.hashtags),
       cta: normalizeCta(cleanRepeatedWords(generated.content_kit.cta)),
     },
   };
+}
+
+// Palavras que aparecem em qualquer roteiro e não provam especificidade.
+const GENERIC_SCRIPT_WORDS = new Set([
+  'produto', 'produtos', 'coisa', 'coisas', 'melhor', 'otimo', 'otima', 'qualidade', 'praticidade',
+  'pratico', 'pratica', 'simples', 'facil', 'video', 'conteudo', 'tiktok', 'shop', 'confira',
+  'mostrar', 'mostra', 'mostro', 'veja', 'olha', 'aqui', 'isso', 'este', 'esta', 'esse', 'essa',
+  'para', 'como', 'mais', 'muito', 'muita', 'todo', 'toda', 'sem', 'com', 'uso', 'usar', 'usando',
+  'cena', 'roteiro', 'hoje', 'agora', 'depois', 'antes', 'resultado', 'detalhe', 'detalhes',
+]);
+
+/** Radicais (6 letras) das palavras que identificam ESTE produto. */
+function productRadicals(product: { nome: string; descricao?: string | null; categoria?: string | null }) {
+  const words = comparableText(`${product.nome} ${product.descricao ?? ''} ${product.categoria ?? ''}`)
+    .split(' ')
+    .filter((word) => word.length >= 4 && !GENERIC_SCRIPT_WORDS.has(word));
+  return [...new Set(words.map((word) => word.slice(0, 6)))];
+}
+
+/**
+ * Teste da troca: um roteiro bom cita o produto de verdade. Conta quantos
+ * radicais do produto aparecem no texto falado/visualizado. Serve para pedir
+ * UMA regeneração quando o modelo entrega texto que serviria para qualquer item.
+ */
+type KitForSpecificity = Pick<z.infer<typeof generatedPackageSchema>['content_kit'], 'hook' | 'descricao' | 'roteiro' | 'copy' | 'cenas'>;
+
+function specificityHits(kit: KitForSpecificity, product: { nome: string; descricao?: string | null; categoria?: string | null }) {
+  const radicals = productRadicals(product);
+  if (!radicals.length) return { hits: 0, radicals };
+  const text = [
+    kit.hook, kit.descricao, kit.roteiro, kit.copy,
+    ...kit.cenas.map((scene) => `${scene.visual} ${scene.fala}`),
+  ].join(' ');
+  const present = new Set(comparableText(text).split(' ').map((word) => word.slice(0, 6)));
+  return { hits: radicals.filter((radical) => present.has(radical)).length, radicals };
+}
+
+export function productSpecificity(kit: KitForSpecificity, product: { nome: string; descricao?: string | null; categoria?: string | null }) {
+  const { hits, radicals } = specificityHits(kit, product);
+  return radicals.length ? hits / Math.min(radicals.length, 6) : 1;
+}
+
+export function isScriptSpecific(kit: KitForSpecificity, product: { nome: string; descricao?: string | null; categoria?: string | null }) {
+  const { hits, radicals } = specificityHits(kit, product);
+  if (!radicals.length) return true;
+  // Um único acerto pode ser coincidência ("casa", "treino"): pede dois quando há.
+  return hits >= Math.min(2, radicals.length);
 }
 
 const CONTENT_KIT_RESPONSE_SCHEMA = {
@@ -208,12 +291,44 @@ export const CONTENT_STRATEGY_INSTRUCTIONS = [
   'TEMTREND: radar e estrategista de conteúdo TikTok Shop Brasil. Crie roteiro 15-30s gravável sozinho.',
   'EVIDÊNCIA: use só fatos do produto. Nunca invente marca, preço, vendas, comissão, desconto ou tendência.',
   'Sem evidência recente suficiente para classificar como tendência atual: trate internamente como EXPERIMENTAL/INSUFICIENTE. Não exponha esses rótulos. Nunca prometa venda/viralização/cura.',
-  'descricao = 1 frase legível sobre o ângulo do vídeo. Sem campos Produto/Classificação/Evidência ou jargão interno. Cite público e vendas só quando sustentados pelo catálogo.',
-  'titulo máx 8 palavras (capa). Cenas: joias close/luz/look/presente; beleza uso; casa organização; academia rotina; eletrônicos teste. Sem placeholders ou repetição. 0-3s hook, 3-7s contexto, 7-18s uso, 18-25s prova visual, 25-30s CTA. Cada cena: tempo, visual, fala, ação/edição.',
-  'roteiro inclui: "3 VARIAÇÕES DE HOOK" com 3 frases numeradas; "VERSÃO SEM SEGUIDORES" (demonstração/teste/faceless); "DICA DE PUBLICAÇÃO" (horário, frequência, comentário fixado, sem garantia); "5 VARIAÇÕES DE ROTEIRO" com 5 ideias numeradas.',
+  'descricao = 1 frase sobre o ângulo do vídeo. Sem campos Produto/Classificação/Evidência nem jargão interno. Público e vendas só se o catálogo sustentar.',
+  'titulo máx 8 palavras. Cenas: joias close/luz/look/presente; beleza uso; casa organização; academia rotina; eletrônicos teste. Sem placeholders ou repetição. 0-3s hook, 3-7s contexto, 7-18s uso, 18-25s prova, 25-30s CTA. Cada cena: tempo, visual, fala, ação/edição.',
+  'roteiro inclui: "3 VARIAÇÕES DE HOOK" (3 frases numeradas, diferentes); "VERSÃO SEM SEGUIDORES" (faceless/demonstração); "DICA DE PUBLICAÇÃO" (3 dicas específicas: horário a testar, comentário fixado, corte do que não prende em 2s; sem garantia); "5 VARIAÇÕES DE ROTEIRO" (5 ângulos numerados).',
   'Prova só com demonstração visual do produto; nunca peça print de avaliação/vendas. copy máx 150 chars, 1 emoji, 1 pergunta. Exatas 5 hashtags (#publi/#tiktokshop se divulgação). CTA direto no TikTok Shop, sem escassez ou estoque não verificados; nunca direct.',
   'TikTok: nunca cite botão, sticker, carrinho, recurso, interface ou link específico salvo se estiver no contexto. Prefira "conforme os recursos disponíveis no TikTok Shop".',
   'PT-BR falado, direto, sem placeholders, só JSON.',
+].join(' ');
+
+/**
+ * Regras de voz humana para hook, falas e copy. Fica fora de
+ * CONTENT_STRATEGY_INSTRUCTIONS (que tem teto de tamanho nos testes de custo)
+ * e é enviada só na geração de kit, em todos os provedores.
+ */
+export const HUMAN_VOICE_INSTRUCTIONS = [
+  'VOZ HUMANA: escreva como creator falando, não como anúncio.',
+  'Frases curtas, de 3 a 10 palavras, com ritmo de conversa. Comece pelo concreto: o que aparece na tela agora.',
+  'Proibido: "descubra", "eleve sua experiência", "solução completa", "transforme sua vida", "não perca", "imperdível", "incrível", superlativos vazios e sequência de frases com travessão.',
+  'Proibido também: "não é só X, é Y", "e não é que", "aqui está o segredo", "isso muda tudo", "você não vai acreditar", "spoiler" e emoji no meio da fala.',
+  'Use: "olha", "vem ver", "eu testei", "quando eu abro", "o detalhe que quase ninguém mostra", "repara nisso" — variando a abertura, sem repetir a mesma em todas as falas.',
+  'Hook 0-3s: ação concreta + curiosidade real, sem clickbait e sem promessa de resultado.',
+  'Fala sempre no presente e no singular. Sem narrar a edição em voz alta.',
+  'Dicas e falas precisam caber naquele produto: se serviria para qualquer produto, reescreva.',
+  'Antes de entregar, leia em voz alta: se soar como legenda de anúncio ou texto de IA, reescreva.',
+].join(' ');
+
+
+// Regras de ofício do roteiro. Ficam fora de CONTENT_STRATEGY_INSTRUCTIONS
+// (que tem teto de tamanho nos testes de custo) e entram só na geração de kit.
+export const SCRIPT_CRAFT_INSTRUCTIONS = [
+  'OFÍCIO DO ROTEIRO:',
+  'GRAVÁVEL SOZINHO: uma pessoa, celular apoiado, sem ator, drone, estúdio, cenário externo ou segunda pessoa. Se não der para gravar sozinho, troque a cena.',
+  'FALA CABE NO TEMPO: 0-3s até 8 palavras; 3-7s até 12; 7-18s até 30; 18-25s até 18; 25-30s até 10. fala é só o que sai da boca; direção de câmera vai em visual/ação.',
+  'DETALHE CONCRETO: cada fala e cada visual citam algo real e visível do produto (cor, material, tamanho, encaixe, textura, botão, função). Palavra vazia como "produto", "qualidade", "praticidade", "resultado final" só vale acompanhada do detalhe que prova.',
+  'PROVA VISUAL: a cena mostra o que a fala afirma; se a fala promete e a cena não mostra, reescreva a fala.',
+  'RITMO: comece no meio da ação, com o produto já na mão. Proibido "hoje eu vou mostrar", "nesse vídeo" e narrar a edição em voz alta.',
+  'TESTE DA TROCA: se outro produto da mesma categoria puder substituir este sem mudar o texto, o roteiro está genérico: reescreva com o detalhe concreto.',
+  'SEM REPETIÇÃO: cada variação avança a informação; não repita a mesma cena ou o mesmo ângulo com outra palavra.',
+  'SEJA BREVE: roteiro até 1.200 caracteres, falas de 1 frase. O JSON precisa fechar completo.',
 ].join(' ');
 
 function hasCompleteStrategy(kit: z.infer<typeof generatedPackageSchema>['content_kit']) {
@@ -232,11 +347,11 @@ export const REQUIRED_STRATEGY_SECTIONS = [
 // teto de tamanho nos testes de custo) e enviado só na geração de kit.
 export const ROTEIRO_SKELETON_INSTRUCTIONS = [
   'ESQUELETO OBRIGATÓRIO DO ROTEIRO (copie estes títulos exatamente):',
-  'ROTEIRO PRINCIPAL: <sequência 0-30s>.',
-  '3 VARIAÇÕES DE HOOK: 1) <curiosidade> 2) <identificação> 3) <resultado>.',
-  'VERSÃO SEM SEGUIDORES: <como gravar sem audiência, ex. faceless/demonstração>.',
-  'DICA DE PUBLICAÇÃO: <horário, frequência, áudio e comentário fixado, sem garantias>.',
-  '5 VARIAÇÕES DE ROTEIRO: A) <abordagem 1> B) <abordagem 2> C) <abordagem 3> D) <abordagem 4> E) <abordagem 5>.',
+  'ROTEIRO PRINCIPAL: 0-3s: <fala exata do hook> | 3-7s: <contexto concreto> | 7-18s: <uso real: o que a mão faz> | 18-25s: <prova visível> | 25-30s: <CTA falado>.',
+  '3 VARIAÇÕES DE HOOK: 1) <curiosidade visual> 2) <situação real da rotina> 3) <contraste antes/depois>; até 8 palavras cada.',
+  'VERSÃO SEM SEGUIDORES: <enquadramento fixo em 3 passos: onde apoia o celular, o que as mãos fazem, texto exato para sobrepor>.',
+  'DICA DE PUBLICAÇÃO: 1) horário: <duas janelas para testar e o que comparar> 2) comentário fixado: <pergunta específica deste produto> 3) retenção: <o que cortar nos 2 primeiros segundos>.',
+  '5 VARIAÇÕES DE ROTEIRO: A) <ângulo 1> B) <ângulo 2> C) <ângulo 3> D) <ângulo 4> E) <ângulo 5>; cada uma muda o conceito, não o adjetivo.',
 ].join(' ');
 
 // Validação tolerante: o modelo pode frasear os títulos de outro jeito
@@ -377,10 +492,10 @@ export function buildFallbackKit(product: { nome: string; descricao?: string | n
     nivel_dificuldade: 'Fácil',
     hook: template.hook,
     roteiro: [
-      `ROTEIRO PRINCIPAL: ${template.visuals.join('; ')}.`,
-      `3 VARIAÇÕES DE HOOK: 1) ${template.hook} 2) Veja os detalhes deste produto. 3) Vou mostrar como fica em uso.`,
-      'VERSÃO SEM SEGUIDORES: grave apenas as mãos e o produto durante a demonstração.',
-      'DICA DE PUBLICAÇÃO: teste horários diferentes e fixe um comentário com pergunta.',
+      `ROTEIRO PRINCIPAL: 0-3s: ${template.hook} | 3-7s: ${template.lines[1]} | 7-18s: ${template.lines[2]} | 18-25s: ${template.lines[3]} | 25-30s: ${template.lines[4]}`,
+      `3 VARIAÇÕES DE HOOK: 1) ${template.hook} 2) Veja o detalhe deste produto de perto. 3) Gravei mostrando como fica em uso.`,
+      'VERSÃO SEM SEGUIDORES: apoie o celular na mesa, grave só as mãos e o produto, sem rosto e sem falar. Deixe o texto na tela contar a história.',
+      'DICA DE PUBLICAÇÃO: 1) horário: teste meio-dia e 20h e compare qual segurou mais gente 2) comentário fixado: pergunte "você usaria isso?" 3) retenção: corte tudo que não prende nos 2 primeiros segundos.',
       `5 VARIAÇÕES DE ROTEIRO: ${template.angles.map((angle, index) => `${index + 1}) ${angle}`).join(' ')}`,
     ].join('\n'),
     cenas: template.visuals.map((visual, index) => ({ numero: index + 1, tempo: ['0–3s', '3–7s', '7–18s', '18–25s', '25–30s'][index], visual, fala: template.lines[index], acao_edicao: ['Corte rápido', 'Close estável', 'Demonstração contínua', 'Detalhe em close', 'Texto com CTA na tela'][index] })),
@@ -414,6 +529,7 @@ export async function generateContentKit(
   previousKits: Partial<ContentKit>[] = [],
   creatorBriefing?: string,
   creatorVoice?: string | null,
+  userId?: string,
 ): Promise<GeneratedContentKit | null> {
   if (env.NODE_ENV === 'test') return null;
   if (!env.GEMINI_API_KEY) {
@@ -422,23 +538,25 @@ export async function generateContentKit(
   }
   const startedAt = Date.now();
   const voice = truncateVoice(creatorVoice);
-  let missingSections: string[] = [];
+  let corrections: string[] = [];
 
   for (let attempt = 1; attempt <= MAX_GENERATION_ATTEMPTS; attempt += 1) try {
     const systemText = [
       CONTENT_STRATEGY_INSTRUCTIONS,
-      'Use só dados reais do produto. Entregue todos os campos do schema, abordagem inédita vs kits anteriores, sem genéricos/placeholders.',
+      'Use só dados reais do produto. Entregue todos os campos do schema, abordagem inédita vs roteiros anteriores, sem genéricos/placeholders.',
       'Siga o briefing do creator sem contradizer dados reais. Vídeo gravado fora da TemTrend. Hashtags com # sem espaços.',
       voice
         ? 'Escreva hook, falas e copy no jeito de falar do creator (amostra abaixo); o briefing pontual prevalece em conflito. Nunca mude dados reais para combinar com a amostra.'
         : 'Sem amostra de voz; use um tom direto e prático.',
+      HUMAN_VOICE_INSTRUCTIONS,
+      SCRIPT_CRAFT_INSTRUCTIONS,
       ROTEIRO_SKELETON_INSTRUCTIONS,
     ].join(' ');
     const userText = JSON.stringify({
       produto: productContext(product),
       orientacoes_do_creator: truncateBriefing(creatorBriefing) || 'Sem orientação adicional; crie uma abordagem clara e prática.',
       ...(voice ? { voz_do_creator: voice } : {}),
-      ...(missingSections.length ? { correcao_obrigatoria: `Na tentativa anterior faltaram estas seções do roteiro; inclua TODAS com estes títulos exatos: ${missingSections.join(' | ')}` } : {}),
+      ...(corrections.length ? { correcao_obrigatoria: `Na tentativa anterior: ${corrections.join('; ')}.` } : {}),
       contexto_temporal: { data_iso: new Date().toISOString(), pais: 'Brasil' },
       kits_anteriores_a_evitar: previousKitsCompact(previousKits),
       tentativa: attempt,
@@ -469,25 +587,34 @@ export async function generateContentKit(
 
     if (!response.ok) throw new Error(`content-kit generation failed with status ${response.status}`);
     const payload = geminiResponseSchema.parse(await response.json());
+    // Contabiliza toda tentativa que consumiu tokens, inclusive as que serão
+    // descartadas pelos guardrails abaixo (o custo já foi cobrado pelo provedor).
+    const attemptUsage = usageFromResponse(payload);
+    recordGenerateCall(systemText.length + userText.length, attemptUsage.total_tokens, attempt - 1, userId);
     const text = payload.candidates[0]?.content.parts.map((part) => part.text).join('') ?? '';
     const generated = parseGeneratedPackage(JSON.stringify({
       product: productSeed(product),
       content_kit: JSON.parse(text).content_kit,
     }));
     if (!hasCompleteStrategy(generated.content_kit)) {
-      missingSections = missingStrategySections(generated.content_kit.roteiro);
-      logger.warn({ product_name: product.nome, attempt, missing: missingSections }, 'Generated content kit was incomplete; retrying');
+      corrections = [`faltaram estas seções do roteiro; inclua TODAS com estes títulos exatos: ${missingStrategySections(generated.content_kit.roteiro).join(' | ')}`];
+      logger.warn({ product_name: product.nome, attempt, missing: missingStrategySections(generated.content_kit.roteiro) }, 'Generated content kit was incomplete; retrying');
+      continue;
+    }
+    if (!isScriptSpecific(generated.content_kit, product) && attempt === 1) {
+      corrections = ['o roteiro servia para qualquer produto; cite o detalhe concreto deste produto no hook e em pelo menos duas cenas'];
+      logger.warn({ product_name: product.nome, attempt }, 'Generated content kit was generic; retrying once');
       continue;
     }
     if (!isContentKitNovel(generated.content_kit, previousKits)) {
+      corrections = ['o kit ficou parecido com uma versão anterior; mude o ângulo, o hook e a primeira cena'];
       logger.warn({ product_name: product.nome, attempt }, 'Generated content kit was too similar; retrying');
       continue;
     }
-    const usage = usageFromResponse(payload);
+    const usage = attemptUsage;
     const latencyMs = Date.now() - startedAt;
 
     logger.info({ provider: 'gemini', model: env.GEMINI_MODEL, usage, latency_ms: latencyMs, prompt_chars: systemText.length + userText.length, prev_kits: previousKits.length }, 'Content kit generated');
-    recordGenerateCall(systemText.length + userText.length, usage.total_tokens, attempt - 1);
     return { content_kit: generated.content_kit, usage, latency_ms: latencyMs };
   } catch (error) {
     logger.warn({ err: error, attempt, provider: 'gemini', model: env.GEMINI_MODEL, latency_ms: Date.now() - startedAt }, 'Content kit generation attempt failed');

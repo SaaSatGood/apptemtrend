@@ -46,7 +46,16 @@ const demos = [
   },
 ];
 
-const planParts = ["Roteiro", "Legenda", "Chamada final", "Hashtags", "Áudio e duração"];
+const planParts = [
+  "Conceito",
+  "Abertura",
+  "Cenas",
+  "Roteiro",
+  "Legenda",
+  "Chamada final",
+  "Hashtags",
+  "Áudio e duração",
+];
 
 export default function LandingDemo() {
   const [active, setActive] = useState(0);
@@ -76,8 +85,8 @@ export default function LandingDemo() {
             <li><i aria-hidden="true"><Icon name="check" size={10} /></i> Exemplos para casa, beleza e tecnologia</li>
             <li><i aria-hidden="true"><Icon name="check" size={10} /></i> Editável para o seu estilo e a sua rotina</li>
           </ul>
-          <Link className="tt-lp-btn tt-lp-btn-lime" href="/app?mode=signup">
-            Criar meu primeiro plano
+          <Link className="tt-lp-btn tt-lp-btn-lime" href="/descobrir?mode=signup">
+            Começar grátis
             <Icon name="arrow-right" size={18} />
           </Link>
         </div>

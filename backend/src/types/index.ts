@@ -101,6 +101,8 @@ export interface ContentKit {
   hashtags: string[] | null;
   audio_sugerido: string | null;
   duracao_seg: number | null;
+  // Roteiro copiado de um link compartilhado aponta para a origem (migration 036).
+  source_kit_id?: string | null;
   criado_em: string;
   atualizado_em: string;
 }
@@ -113,6 +115,7 @@ export interface CreatorContent {
   status: string;
   notas: string | null;
   published_url: string | null;
+  scheduled_for: string | null;
   criado_em: string;
   atualizado_em: string;
 }

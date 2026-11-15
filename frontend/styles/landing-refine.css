@@ -7,11 +7,11 @@
    ========================================================================== */
 
 .tt-home {
-  --tt-accent: #5f8800;        /* serif italic em fundo claro — 4.19:1 no branco */
-  --tt-accent-strong: #385400;
+  --tt-accent: #6d28d9;        /* serif italic em fundo claro — 4.19:1 no branco */
+  --tt-accent-strong: #3b2296;
   --tt-muted: #63665e;         /* corpo secundário — 5.85:1 no branco */
   --tt-muted-soft: #6b6e66;    /* sobre --tt-soft — 4.71:1 */
-  --tt-line-soft: #e4e4de;
+  --tt-line-soft: #e7dff6;
   --tt-r-lg: 24px;
   --tt-r-md: 16px;
   --tt-r-sm: 10px;
@@ -136,7 +136,7 @@
 }
 .tt-home .tt-trust p {
   margin: 0;
-  color: #2c3327;
+  color: #2c1a4d;
   font-size: 15px;
   font-weight: 700;
   letter-spacing: -.02em;
@@ -158,7 +158,7 @@
   border: 1px solid var(--tt-line-soft);
   border-radius: 999px;
   background: #fff;
-  color: #2c3327;
+  color: #2c1a4d;
   white-space: nowrap;
 }
 .tt-home .tt-trust-flow i { color: var(--tt-accent); font-size: 14px; font-style: normal; }
@@ -180,10 +180,10 @@
   font-size: 16px;
   line-height: 1.65;
 }
-.tt-home .tt-steps-list { border-top-color: #c9cdc2; }
+.tt-home .tt-steps-list { border-top-color: #cfbbf1; }
 .tt-home .tt-steps-list article {
   padding: clamp(24px, 3vw, 34px) 0;
-  border-bottom-color: #c9cdc2;
+  border-bottom-color: #cfbbf1;
   transition: padding-left .3s cubic-bezier(.2, .7, .2, 1);
 }
 .tt-home .tt-steps-list article:hover { padding-left: 10px; }
@@ -199,7 +199,7 @@
   min-height: 235px;
 }
 .tt-home .tt-feature-small h3 { margin: auto 0 10px; }
-.tt-home .tt-feature-small:hover { border-color: #c9d9a8; }
+.tt-home .tt-feature-small:hover { border-color: #b08cee; }
 
 /* ---------------------------------------------------------------------------
    7. Produtos — CTA leve por card, com preenchimento no hover
@@ -267,12 +267,12 @@
    11. FAQ e cartão final
    ------------------------------------------------------------------------ */
 .tt-home .tt-faq-list { gap: 12px; }
-.tt-home .tt-faq-list details:hover { border-color: #b9d488; }
+.tt-home .tt-faq-list details:hover { border-color: #b08cee; }
 .tt-home .tt-faq-invite { border-radius: var(--tt-r-lg); }
 .tt-home .tt-final-card { align-items: center; padding: clamp(40px, 5vw, 64px); }
 .tt-home .tt-final-card > div { max-width: 640px; }
 .tt-home .tt-final-card h2 { max-width: 14ch; margin: 22px 0 14px; }
-.tt-home .tt-final-card p { max-width: 44ch; color: #3d4437; font-size: 16px; }
+.tt-home .tt-final-card p { max-width: 44ch; color: #2c1a4d; font-size: 16px; }
 
 /* ---------------------------------------------------------------------------
    12. Rodapé — rótulos tracked, links com micro-interação
@@ -342,7 +342,7 @@
 .tt-home .tt-steps-list i,
 .tt-home .tt-trust-flow i { color: var(--tt-accent-strong); }
 
-/* 12b.5 Número do FAQ: #8ca666 dava apenas 2.71:1. */
+/* 12b.5 Número do FAQ: #6e2ae5 dava apenas 2.71:1. */
 .tt-home .tt-faq-list summary small { color: var(--tt-accent-strong); }
 
 /* 12b.6 Nota do carrossel e legenda do telefone. */

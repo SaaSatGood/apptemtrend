@@ -75,3 +75,15 @@ export async function updateContentKit(id: string, input: Record<string, unknown
 
   return data;
 }
+
+export async function deleteContentKit(id: string): Promise<void> {
+  const { error } = await supabaseAdmin
+    .from('content_kits')
+    .delete()
+    .eq('id', id);
+
+  if (error) {
+    logger.error({ err: error }, 'Error deleting content kit');
+    throw error;
+  }
+}

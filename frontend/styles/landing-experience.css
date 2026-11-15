@@ -12,7 +12,7 @@
   border: 1px solid #ffffffbd;
   border-radius: 999px;
   background: #fffffff0;
-  box-shadow: 0 12px 42px #233d1719;
+  box-shadow: 0 12px 42px #2c1a4d19;
   backdrop-filter: blur(18px);
   -webkit-backdrop-filter: blur(18px);
   transition: background-color .25s ease, border-color .25s ease, box-shadow .25s ease;
@@ -20,7 +20,7 @@
 .tt-home .tt-header.tt-scrolled {
   border-color: #ffffffa8;
   background: #ffffffc9;
-  box-shadow: 0 15px 44px #233d1721;
+  box-shadow: 0 15px 44px #2c1a4d21;
   backdrop-filter: blur(22px) saturate(1.25);
   -webkit-backdrop-filter: blur(22px) saturate(1.25);
 }
@@ -28,26 +28,26 @@
 .tt-home .tt-hero-band { padding-top: 104px; }
 .tt-home .tt-faq {
   position: relative;
-  background: radial-gradient(circle at 4% 12%, #e6ffaf 0, transparent 27%), #f8faf5;
+  background: radial-gradient(circle at 4% 12%, #cfbbf1 0, transparent 27%), #f3eefb;
 }
 .tt-home .tt-faq-shell { grid-template-columns: minmax(0, .82fr) minmax(0, 1.18fr); gap: clamp(42px, 6vw, 100px); align-items: start; }
 .tt-home .tt-faq-intro h2 { max-width: 520px; font-size: clamp(42px, 4.7vw, 66px); line-height: 1.02; }
-.tt-home .tt-faq-intro h2 em { color: #82af00; }
+.tt-home .tt-faq-intro h2 em { color: #6d28d9; }
 .tt-home .tt-faq-intro > p { max-width: 420px; margin: 24px 0 0; color: #666a60; font-size: 16px; line-height: 1.65; }
-.tt-faq-invite { display: grid; gap: 15px; max-width: 420px; margin-top: 48px; padding: 28px; border-radius: 20px; background: #151713; color: #fff; box-shadow: 0 18px 35px #1c31121c; }
+.tt-faq-invite { display: grid; gap: 15px; max-width: 420px; margin-top: 48px; padding: 28px; border-radius: 20px; background: #120c1d; color: #fff; box-shadow: 0 18px 35px #1b112c1c; }
 .tt-faq-invite > span { color: var(--tt-lime); font-size: 10px; font-weight: 800; letter-spacing: .15em; }
 .tt-faq-invite strong { max-width: 310px; font-size: 23px; font-weight: 620; line-height: 1.16; letter-spacing: -.04em; }
-.tt-faq-invite a { display: inline-flex; align-items: center; justify-content: space-between; gap: 18px; width: fit-content; min-width: 195px; min-height: 46px; padding: 0 18px; border-radius: 999px; background: var(--tt-lime); color: #111; font-size: 13px; font-weight: 750; transition: transform .2s, background .2s; }
-.tt-faq-invite a:hover { transform: translateY(-2px); background: #ddff7c; }
+.tt-faq-invite a { display: inline-flex; align-items: center; justify-content: space-between; gap: 18px; width: fit-content; min-width: 195px; min-height: 46px; padding: 0 18px; border-radius: 999px; background: var(--tt-lime); color: var(--tt-on-lime, #fff); font-size: 13px; font-weight: 750; transition: transform .2s, background .2s; }
+.tt-faq-invite a:hover { transform: translateY(-2px); background: #b08cee; }
 .tt-home .tt-faq-list { display: grid; gap: 10px; border: 0; }
-.tt-home .tt-faq-list details { margin: 0; overflow: hidden; border: 1px solid #e2e8d9; border-radius: 16px; background: #fff; box-shadow: 0 5px 14px #1c311208; transition: border-color .25s, box-shadow .25s, transform .25s, background .25s; }
-.tt-home .tt-faq-list details:hover { transform: translateY(-2px); border-color: #accd70; box-shadow: 0 12px 24px #1c311214; }
-.tt-home .tt-faq-list details[open] { border-color: #b5dc71; background: #fcfff5; box-shadow: 0 14px 30px #4e700d17; }
+.tt-home .tt-faq-list details { margin: 0; overflow: hidden; border: 1px solid #e7dff6; border-radius: 16px; background: #fff; box-shadow: 0 5px 14px #1b112c08; transition: border-color .25s, box-shadow .25s, transform .25s, background .25s; }
+.tt-home .tt-faq-list details:hover { transform: translateY(-2px); border-color: #8d55ec; box-shadow: 0 12px 24px #1b112c14; }
+.tt-home .tt-faq-list details[open] { border-color: #8d55ec; background: #f3eefb; box-shadow: 0 14px 30px #2c1a4d17; }
 .tt-home .tt-faq-list summary { display: grid; grid-template-columns: 30px minmax(0, 1fr) 38px; align-items: center; gap: 16px; min-height: 76px; padding: 15px 18px 15px 22px; font-size: 16px; line-height: 1.35; }
-.tt-home .tt-faq-list summary small { align-self: start; padding-top: 4px; color: #8ca666; font-size: 11px; font-weight: 750; letter-spacing: .08em; }
+.tt-home .tt-faq-list summary small { align-self: start; padding-top: 4px; color: #6e2ae5; font-size: 11px; font-weight: 750; letter-spacing: .08em; }
 .tt-home .tt-faq-list .tt-faq-question { font-size: inherit; font-weight: 700; }
 .tt-home .tt-faq-list details[open] summary .tt-faq-question { transform: none; }
-.tt-home .tt-faq-list .tt-faq-toggle { display: grid; place-items: center; width: 38px; height: 38px; border-radius: 50%; background: #f0f3eb; color: #111; font-size: 23px; font-weight: 400; line-height: 1; transition: transform .25s, background .25s; }
+.tt-home .tt-faq-list .tt-faq-toggle { display: grid; place-items: center; width: 38px; height: 38px; border-radius: 50%; background: #f3eefb; color: #111; font-size: 23px; font-weight: 400; line-height: 1; transition: transform .25s, background .25s; }
 .tt-home .tt-faq-list details[open] .tt-faq-toggle { transform: rotate(45deg); background: var(--tt-lime); }
 .tt-home .tt-faq-list details p { max-width: 590px; margin: 0; padding: 0 74px 24px 68px; color: #62665d; font-size: 15px; line-height: 1.65; }
 @media (max-width: 980px) {
@@ -76,9 +76,9 @@
 /* Direção final: descoberta editorial com creators reais no primeiro quadro. */
 .tt-home .tt-hero-band {
   background:
-    radial-gradient(ellipse 34% 55% at 94% 42%, #e6ff9b 0%, transparent 100%),
-    radial-gradient(ellipse 35% 42% at 4% 79%, #efffb3 0%, transparent 100%),
-    #fbfcf8;
+    radial-gradient(ellipse 34% 55% at 94% 42%, #cfbbf1 0%, transparent 100%),
+    radial-gradient(ellipse 35% 42% at 4% 79%, #cfbbf1 0%, transparent 100%),
+    #fbfaff;
 }
 .tt-skip-link,
 .app-skip-link {
@@ -88,7 +88,7 @@
   z-index: 1000;
   padding: 12px 18px;
   border-radius: 10px;
-  background: #10110f;
+  background: #0e0b16;
   color: #fff;
   font-size: 14px;
   font-weight: 800;
@@ -123,14 +123,14 @@
   display: block;
   width: fit-content;
   margin: 2px 0 0;
-  color: #78a900;
+  color: #6d28d9;
   font-size: 1.08em;
   line-height: .92;
 }
 .tt-home .tt-discover-hero .tt-discover-sub {
   max-width: 480px;
   margin: 27px 0 0;
-  color: #4f574b;
+  color: #5c5668;
   font-size: 17px;
   line-height: 1.55;
 }
@@ -138,12 +138,12 @@
 .tt-home .tt-discover-form > label { font-size: 14px; }
 .tt-home .tt-discover-row {
   grid-template-columns: minmax(0, 1fr) auto;
-  border-color: #d1dec2;
-  box-shadow: 0 14px 32px #34491112;
+  border-color: #cfbbf1;
+  box-shadow: 0 14px 32px #2c1a4d12;
 }
 .tt-home .tt-discover-row:focus-within {
-  border-color: #668d00;
-  box-shadow: 0 0 0 3px #b7ed4c80, 0 14px 32px #34491112;
+  border-color: #6d28d9;
+  box-shadow: 0 0 0 3px #8d55ec80, 0 14px 32px #2c1a4d12;
 }
 .tt-home .tt-discover-row input { width: 100%; padding-inline: 16px; font-size: 14px; }
 .tt-home .tt-discover-row .tt-btn { padding-inline: 18px; font-size: 13px; }
@@ -165,7 +165,7 @@
   content: "";
   position: absolute;
   inset: 6% 0 3%;
-  border: 2px solid #b5e33e;
+  border: 2px solid #8d55ec;
   border-radius: 50%;
   transform: rotate(-18deg);
 }
@@ -176,8 +176,8 @@
   margin: 0;
   border: 5px solid #fff;
   border-radius: 24px;
-  background: #e9eddf;
-  box-shadow: 0 18px 45px #263b1526;
+  background: #e7dff6;
+  box-shadow: 0 18px 45px #1b112c26;
 }
 .tt-home .tt-hero-photo-1 { transform: rotate(-5deg) translateY(18px); }
 .tt-home .tt-hero-photo-2 { height: 425px; transform: rotate(2deg) translateY(-8px); }
@@ -191,7 +191,7 @@
   padding: 10px 12px;
   border-radius: 10px;
   background: #ffffffed;
-  color: #10110f;
+  color: #0e0b16;
   font-size: 13px;
   font-weight: 800;
 }
@@ -203,7 +203,7 @@
 .tt-home .tt-steps-list h3 { font-size: 20px; }
 .tt-home .tt-footer-grid strong { font-size: 14px; }
 .tt-home .tt-footer-bottom { font-size: 12px; }
-.tt-home :is(a, button, input, summary):focus-visible { outline: 3px solid #385400; outline-offset: 3px; }
+.tt-home :is(a, button, input, summary):focus-visible { outline: 3px solid #3b2296; outline-offset: 3px; }
 @media (max-width: 1000px) {
   .tt-home .tt-hero { grid-template-columns: 1fr; gap: 32px; padding-top: 68px; }
   .tt-home .tt-hero-showcase { max-width: 730px; width: 100%; min-height: 300px; margin-inline: auto; }

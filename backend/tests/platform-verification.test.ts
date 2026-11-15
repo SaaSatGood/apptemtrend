@@ -4,8 +4,9 @@ import path from 'node:path';
 import { buildApp } from '../src/app.js';
 import { assistantProductSearchSchema } from '../src/modules/assistant/assistant.schema.js';
 import { onboardingSchema } from '../src/modules/creators/creator.schema.js';
+import { creatorPreferencesBriefing } from '../src/modules/creators/creator.service.js';
 import { createCreatorContentSchema, updateCreatorContentSchema } from '../src/modules/creator-content/creator-content.schema.js';
-import { createProductSchema } from '../src/modules/products/product.schema.js';
+import { createProductSchema, catalogQuerySchema } from '../src/modules/products/product.schema.js';
 import { RATE_LIMITS, UPLOAD } from '../src/config/constants.js';
 
 const PRIVATE_ENDPOINTS: Array<{ method: 'GET' | 'POST' | 'PATCH' | 'DELETE'; url: string; payload?: unknown }> = [
@@ -13,6 +14,8 @@ const PRIVATE_ENDPOINTS: Array<{ method: 'GET' | 'POST' | 'PATCH' | 'DELETE'; ur
   { method: 'POST', url: '/creators/onboarding', payload: {} },
   { method: 'POST', url: '/assistant/products', payload: { message: 'Quero vender algo' } },
   { method: 'GET', url: '/products' },
+  { method: 'GET', url: '/products/catalog' },
+  { method: 'GET', url: '/products/categories' },
   { method: 'GET', url: '/products/11111111-1111-4111-8111-111111111111' },
   { method: 'POST', url: '/products/11111111-1111-4111-8111-111111111111/content-kit', payload: {} },
   { method: 'GET', url: '/creator-content' },
@@ -65,30 +68,58 @@ describe('platform verification', () => {
     expect(createProductSchema.safeParse({ nome: 'P', imagem_url: 'https://example.com/a.png', preco_min_brl: 5, preco_max_brl: 1 }).success).toBe(false);
   });
 
+  it('valida filtros da vitrine de produtos', () => {
+    const defaults = catalogQuerySchema.parse({});
+    expect(defaults).toMatchObject({ sort: 'relevancia', page: 1, limit: 24 });
+    expect(catalogQuerySchema.safeParse({ sort: 'aleatorio' }).success).toBe(false);
+    expect(catalogQuerySchema.safeParse({ limit: 100 }).success).toBe(false);
+    expect(catalogQuerySchema.safeParse({ comissao_min: 150 }).success).toBe(false);
+    expect(catalogQuerySchema.safeParse({ q: 'x'.repeat(121) }).success).toBe(false);
+    const filtered = catalogQuerySchema.parse({
+      q: 'organizador', categoria: 'Casa', sort: 'vendas', preco_max: '80', comissao_min: '10', page: '2',
+    });
+    expect(filtered).toMatchObject({ q: 'organizador', categoria: 'Casa', sort: 'vendas', preco_max: 80, comissao_min: 10, page: 2 });
+  });
+
   it('rate-limits de IA e upload estão configurados', () => {
     expect(RATE_LIMITS.ASSISTANT_SEARCH.max).toBeLessThanOrEqual(12);
-    expect(RATE_LIMITS.CONTENT_KIT_GENERATE.max).toBeLessThanOrEqual(6);
+    expect(RATE_LIMITS.CONTENT_KIT_GENERATE.max).toBeLessThanOrEqual(12);
     expect(UPLOAD.MAX_FILE_SIZE).toBe(5 * 1024 * 1024);
     expect(UPLOAD.ALLOWED_MIME_TYPES).toContain('image/png');
   });
 
-  it('frontend possui fluxos e legais', () => {
-    const web = path.resolve(process.cwd(), '../frontend/legacy-static');
-    for (const f of ['index.html', 'app.html', 'app.js', 'termos.html', 'privacidade.html']) {
-      expect(fs.existsSync(path.join(web, f)), f).toBe(true);
+  it('frontend Next expõe os fluxos e as páginas legais', () => {
+    const web = path.resolve(process.cwd(), '../frontend');
+    const required = [
+      'app/page.tsx',
+      'app/planos/page.tsx',
+      'app/termos/page.tsx',
+      'app/privacidade/page.tsx',
+      'app/reembolso/page.tsx',
+      'components/platform/Auth.tsx',
+      'components/platform/Assistant.tsx',
+      'components/platform/Account.tsx',
+      'components/platform/store.tsx',
+      'components/PublicFooter.tsx',
+    ];
+    for (const file of required) {
+      expect(fs.existsSync(path.join(web, file)), file).toBe(true);
     }
-    const appHtml = fs.readFileSync(path.join(web, 'app.html'), 'utf8');
-    for (const id of ['login-form', 'signup-form', 'recovery-form', 'reset-form', 'assistant-form', 'onboarding-form', 'product-detail', 'kit-detail', 'my-content', 'account-profile-form', 'product-form', 'content-kit-dialog', 'publication-dialog']) {
-      expect(appHtml).toContain(`id="${id}"`);
-    }
-    const appJs = fs.readFileSync(path.join(web, 'app.js'), 'utf8');
-    expect(appJs).not.toContain('SUPABASE_SERVICE_ROLE_KEY');
-    expect(appJs).not.toContain('GEMINI_API_KEY');
-    expect(appJs).toContain('onboarding-active');
-    const index = fs.readFileSync(path.join(web, 'index.html'), 'utf8');
-    expect(index).toContain('termos.html');
-    expect(index).toContain('privacidade.html');
-    expect(index).toContain('app.html?mode=signup');
+    const auth = fs.readFileSync(path.join(web, 'components/platform/Auth.tsx'), 'utf8');
+    expect(auth).toContain('signInWithPassword');
+    expect(auth).toContain('/auth/signup');
+    expect(auth).toContain('/auth/verify-code');
+    const footer = fs.readFileSync(path.join(web, 'components/PublicFooter.tsx'), 'utf8');
+    expect(footer).toContain('/termos');
+    expect(footer).toContain('/privacidade');
+    expect(footer).toContain('/reembolso');
+    const source = [
+      'components/platform/Auth.tsx',
+      'components/platform/store.tsx',
+      'lib/supabase.ts',
+    ].map((file) => fs.readFileSync(path.join(web, file), 'utf8')).join('\n');
+    expect(source).not.toContain('SUPABASE_SERVICE_ROLE_KEY');
+    expect(source).not.toContain('GEMINI_API_KEY');
   });
 
   it('migrations críticas existem', () => {
@@ -98,6 +129,19 @@ describe('platform verification', () => {
     }
     const rls = fs.readFileSync(path.join(dir, '020_rls_hardening.sql'), 'utf8');
     expect(rls).toContain('TO authenticated');
+  });
+
+  it('briefing das preferências usa temas, nicho e formatos sem inventar dados', () => {
+    const briefing = creatorPreferencesBriefing({
+      objetivo: 'comecar_vender',
+      temas_interesse: ['Casa', 'Outros: festas infantis'],
+      estilos_conteudo: ['Unboxing', 'Outro: react em dupla'],
+    } as never);
+    expect(briefing).toContain('objetivo: começar a vender');
+    expect(briefing).toContain('temas: Casa, festas infantis');
+    expect(briefing).toContain('formatos preferidos: Unboxing, react em dupla');
+    expect(briefing).toContain('não invente dados do produto');
+    expect(creatorPreferencesBriefing({ objetivo: null, temas_interesse: [], estilos_conteudo: [] } as never)).toBeUndefined();
   });
 
   it('erros nunca vazam stack ou secrets', async () => {

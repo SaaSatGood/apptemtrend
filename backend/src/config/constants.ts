@@ -18,10 +18,20 @@ export const CONTENT_STATUS = {
 export const RATE_LIMITS = {
   AUTH_GET: { max: 100, timeWindow: '1 minute' },
   AUTH_WRITE: { max: 30, timeWindow: '1 minute' },
+  // Cadastro com código de e-mail (rotas públicas, chaveadas por IP).
+  SIGNUP: { max: 10, timeWindow: '10 minutes' },
+  VERIFY_CODE: { max: 20, timeWindow: '10 minutes' },
+  RESEND_CODE: { max: 5, timeWindow: '10 minutes' },
+  // Recuperação de senha: pedir código e concluir a troca.
+  PASSWORD_RESET_REQUEST: { max: 5, timeWindow: '10 minutes' },
+  PASSWORD_RESET_SUBMIT: { max: 10, timeWindow: '10 minutes' },
+  // Ações destrutivas/sensíveis (senha, exclusão de conta): janela curta.
+  SENSITIVE_WRITE: { max: 5, timeWindow: '1 minute' },
   ADMIN: { max: 60, timeWindow: '1 minute' },
   // Rotas caras de IA: limites próprios para proteger custo/latência.
   ASSISTANT_SEARCH: { max: 10, timeWindow: '1 minute' },
-  CONTENT_KIT_GENERATE: { max: 5, timeWindow: '1 minute' },
+  // O planejador semanal gera até 7 kits em sequência (7 dias + retries).
+  CONTENT_KIT_GENERATE: { max: 12, timeWindow: '1 minute' },
   // Telemetria de funil: folgado para rajadas legítimas, finito contra spam.
   EVENTS: { max: 60, timeWindow: '1 minute' },
   // Checkout de assinatura e webhooks do provedor de pagamento.
@@ -29,6 +39,8 @@ export const RATE_LIMITS = {
   BILLING_WEBHOOK: { max: 300, timeWindow: '1 minute' },
   // Canal de suporte (abrir conversa, responder, encerrar).
   SUPPORT: { max: 20, timeWindow: '1 minute' },
+  // Cadastro de marcas na landing: público, então limite curto contra spam.
+  BRAND_LEAD: { max: 5, timeWindow: '10 minutes' },
   GLOBAL: { max: 200, timeWindow: '1 minute' },
 } as const;
 
@@ -46,6 +58,7 @@ export const CACHE_TTL_MS = {
   CATALOG: 5 * 60 * 1000, // 5min catálogo ativo (escritas invalidam na hora)
   DASHBOARD: 30 * 1000, // 30s métricas admin
   USER_DIRECTORY: 10 * 60 * 1000, // 10min diretório auth
+  PUBLIC_STATS: 5 * 60 * 1000, // 5min números públicos da landing
 } as const;
 
 export const PAGINATION = {
@@ -74,6 +87,8 @@ export const AI_LIMITS = {
   GENERATE_MAX_OUTPUT_TOKENS: 3000,
   MAX_PREVIOUS_KITS: 3,
   MAX_PREVIOUS_KIT_CHARS: 120,
-  MAX_BRIEFING_CHARS: 400,
+  // Alinhado ao limite aceito pela API e pela UI (1.500). Antes era 400 e
+  // truncava o briefing do usuário sem aviso.
+  MAX_BRIEFING_CHARS: 1500,
   MAX_PRODUCT_DESC_CHARS: 500,
 } as const;

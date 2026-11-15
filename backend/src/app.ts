@@ -7,15 +7,19 @@ import auth from './plugins/auth.js';
 import rateLimit from './plugins/rate-limit.js';
 import errorHandler from './plugins/error-handler.js';
 import creatorRoutes from './modules/creators/creator.routes.js';
+import signupRoutes from './modules/signup/signup.routes.js';
+import recoveryRoutes from './modules/account-recovery/recovery.routes.js';
 import productRoutes from './modules/products/product.routes.js';
 import creatorContentRoutes from './modules/creator-content/creator-content.routes.js';
 import adminRoutes from './modules/admin/admin.routes.js';
 import storageRoutes from './modules/storage/storage.routes.js';
 import accountRoutes from './modules/account/account.routes.js';
 import assistantRoutes from './modules/assistant/assistant.routes.js';
+import shareRoutes from './modules/share/share.routes.js';
 import analyticsRoutes from './modules/analytics/analytics.routes.js';
 import billingRoutes from './modules/billing/billing.routes.js';
 import supportRoutes from './modules/support/support.routes.js';
+import brandRoutes from './modules/brands/brand.routes.js';
 import { UPLOAD } from './config/constants.js';
 import { supabaseAdmin } from './lib/supabase.js';
 import { aiStatus } from './modules/assistant/ai.service.js';
@@ -39,7 +43,11 @@ export function buildApp() {
   app.register(multipart, { limits: { fileSize: UPLOAD.MAX_FILE_SIZE, files: 1, fields: 10 } });
 
   app.addHook('onRequest', async (request) => {
-    request.log.info({ requestId: request.id, method: request.method, route: request.url }, 'request.started');
+    // `request.url` inclui a query string (ex.: segredo do webhook). Loga só o caminho.
+    request.log.info(
+      { requestId: request.id, method: request.method, route: request.url.split('?')[0] },
+      'request.started',
+    );
   });
   app.addHook('onResponse', async (request, reply) => {
     request.log.info(
@@ -82,8 +90,11 @@ export function buildApp() {
     });
   });
   app.register(creatorRoutes);
+  app.register(signupRoutes);
+  app.register(recoveryRoutes);
   app.register(productRoutes);
   app.register(assistantRoutes);
+  app.register(shareRoutes);
   app.register(creatorContentRoutes);
   app.register(adminRoutes);
   app.register(storageRoutes);
@@ -91,5 +102,6 @@ export function buildApp() {
   app.register(analyticsRoutes);
   app.register(billingRoutes);
   app.register(supportRoutes);
+  app.register(brandRoutes);
   return app;
 }

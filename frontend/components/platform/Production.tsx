@@ -1,10 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Icon from "@/components/ui/Icon";
-import { copyText, fullProductName, normalizeScenes, validTikTokUrl } from "@/lib/format";
+import { fullProductName, validTikTokUrl } from "@/lib/format";
 import { supabase } from "@/lib/supabase";
 import { api, friendlyError } from "@/lib/api";
 import { track } from "@/lib/track";
@@ -12,106 +12,53 @@ import type { CreatorContent } from "@/lib/types";
 import { usePlatform } from "./store";
 import Modal from "./Modal";
 import ProductImage from "./ProductImage";
-import { readGuideProgress } from "./guide-progress";
-import { displayKitTitle } from "./kit-presentation";
+type Sort = "recentes" | "comissao" | "vendas" | "preco";
+type StatusFilter = "todos" | "salvo" | "em_producao";
 
-const FILTERS = [
-  ["todos", "Todos"],
-  ["salvo", "Salvos"],
-  ["em_producao", "Em produção"],
-  ["gravado", "Gravados"],
-  ["publicado", "Publicados"],
-] as const;
+const BRL = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
 
-type Filter = (typeof FILTERS)[number][0];
-type Sort = "prioridade" | "recentes" | "antigos";
-
-const STATUS_LABEL: Record<string, string> = {
-  salvo: "Salvo",
-  em_producao: "Em produção",
-  gravado: "Gravado",
-  publicado: "Publicado ✓",
-};
-
-const PRIORITY: Record<string, number> = { em_producao: 0, salvo: 1, gravado: 2, publicado: 3 };
-const STAGES = ["Salvo", "Em produção", "Gravado", "Publicado"];
-
-function relativeUpdate(value?: string | null): { label: string; stale: boolean } {
-  if (!value) return { label: "Data não disponível", stale: false };
-  const days = Math.max(0, Math.floor((Date.now() - new Date(value).getTime()) / 86400000));
-  if (!Number.isFinite(days)) return { label: "Data não disponível", stale: false };
-  if (days === 0) return { label: "Atualizado hoje", stale: false };
-  if (days === 1) return { label: "Atualizado ontem", stale: false };
-  return days >= 14 ? { label: `Parado há ${Math.floor(days / 7)} semanas`, stale: true } : { label: `Atualizado há ${days} dias`, stale: false };
+function commissionValue(content: CreatorContent): number | null {
+  const product = content.products;
+  return product?.preco_min_brl != null && product.comissao_percentual != null
+    ? product.preco_min_brl * product.comissao_percentual / 100
+    : null;
 }
 
-function nextHint(content: CreatorContent, scenesDone: number[]) {
-  if (content.status === "salvo") return content.content_kits ? "Revisar roteiro" : "Gerar roteiro";
-  if (content.status === "gravado") return "Publicar o vídeo";
-  if (content.status === "publicado") return content.published_url ? "Vídeo publicado" : "Publicação registrada";
-  const total = normalizeScenes(content.content_kits?.cenas).length;
-  if (!total) return "Revisar roteiro";
-  const next = Array.from({ length: total }, (_, index) => index).find((index) => !scenesDone.includes(index));
-  return next == null ? "Concluir gravação" : `Gravar cena ${next + 1} de ${total}`;
-}
-
-function progressIndex(status: string): number {
-  return ({ salvo: 1, em_producao: 2, gravado: 3, publicado: 4 } as Record<string, number>)[status] || 1;
-}
-
-function effectiveStatus(content: CreatorContent): CreatorContent["status"] {
-  return content.status;
+function salesValue(content: CreatorContent): number {
+  return content.products?.unidades_vendidas_total ?? content.products?.unidades_vendidas_periodo ?? -1;
 }
 
 export default function Production() {
   const { productions, productionsLoading, productionsError, loadProductions, toast } = usePlatform();
   const router = useRouter();
-  const [filter, setFilter] = useState<Filter>("todos");
   const [query, setQuery] = useState("");
-  const [sort, setSort] = useState<Sort>("prioridade");
-  const [recorded, setRecorded] = useState<Record<string, number[]>>({});
+  const [sort, setSort] = useState<Sort>("recentes");
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("todos");
   const [removing, setRemoving] = useState<CreatorContent | null>(null);
   const [removingBusy, setRemovingBusy] = useState(false);
   const [removingError, setRemovingError] = useState("");
-  useEffect(() => {
-    const progress: Record<string, number[]> = {};
-    productions.forEach((item) => { if (item.content_kit_id) progress[item.content_kit_id] = readGuideProgress(item.content_kit_id).scenes; });
-    queueMicrotask(() => setRecorded(progress));
-  }, [productions]);
-
-  function count(f: Filter): number {
-    if (f === "todos") return productions.length;
-    return productions.filter((i) => effectiveStatus(i) === f).length;
-  }
 
   const visible = useMemo(() => {
     const search = query.trim().toLocaleLowerCase("pt-BR");
-    const filtered = productions.filter(
-      (item) =>
-        filter === "todos" ||
-        effectiveStatus(item) === filter
-    ).filter((item) => {
+    const unique = Array.from(new Map(productions.filter((item) => item.products).map((item) => [item.product_id, item])).values());
+    const filtered = unique.filter((item) => {
+      if (statusFilter !== "todos" && item.status !== statusFilter) return false;
       if (!search) return true;
-      return [item.products?.nome, item.content_kits?.titulo]
+      return [item.products?.nome, item.products?.categoria, item.products?.loja_nome]
         .filter(Boolean)
         .some((value) => String(value).toLocaleLowerCase("pt-BR").includes(search));
     });
 
     return filtered.sort((a, b) => {
-      if (sort === "prioridade") return PRIORITY[a.status] - PRIORITY[b.status] || new Date(b.atualizado_em || 0).getTime() - new Date(a.atualizado_em || 0).getTime();
-      const aTime = new Date(a.atualizado_em || 0).getTime();
-      const bTime = new Date(b.atualizado_em || 0).getTime();
-      return sort === "antigos" ? aTime - bTime : bTime - aTime;
+      if (sort === "comissao") return (commissionValue(b) ?? -1) - (commissionValue(a) ?? -1);
+      if (sort === "vendas") return salesValue(b) - salesValue(a);
+      if (sort === "preco") return (a.products?.preco_min_brl ?? Number.MAX_SAFE_INTEGER) - (b.products?.preco_min_brl ?? Number.MAX_SAFE_INTEGER);
+      return new Date(b.atualizado_em || 0).getTime() - new Date(a.atualizado_em || 0).getTime();
     });
-  }, [filter, productions, query, sort]);
-
-  async function copyHook(content: CreatorContent) {
-    const ok = await copyText(content.content_kits?.hook || "");
-    toast(ok ? "Hook copiado ✓" : "Não conseguimos copiar. Tente novamente.");
-  }
+  }, [productions, query, sort, statusFilter]);
 
   function findProduct() {
-    router.push("/app/descobrir");
+    router.push(`/descobrir?nova=${Date.now()}`);
   }
 
   async function confirmRemove() {
@@ -123,7 +70,7 @@ export default function Production() {
       await api(`/creator-content/${removing.id}`, data.session?.access_token, { method: "DELETE" });
       track("production_removed", { status: removing.status });
       await loadProductions();
-      toast("Produto removido da produção.");
+      toast("Produto removido dos selecionados.");
       setRemoving(null);
     } catch (error) {
       setRemovingError(friendlyError(error, "Não conseguimos remover agora. Tente novamente."));
@@ -136,18 +83,25 @@ export default function Production() {
     <section id="production-section" className="dashboard-section production-section">
       <div className="production-heading">
         <div>
-          <p className="eyebrow">Sua central de conteúdo</p>
-          <h1>Minha <em>produção.</em></h1>
-          <p>Continue exatamente de onde parou em cada conteúdo.</p>
+          <h1>Meus <span className="tt-hl">conteúdos</span></h1>
+          <p>Organize o que está pronto para gravar, publique e acompanhe sua produção.</p>
         </div>
+        <button className="selected-products-discover" type="button" onClick={findProduct}>+ Novo conteúdo</button>
+      </div>
+      <div className="production-guide-strip">
+        <span className="production-guide-icon" aria-hidden="true" />
+        <p><strong>{visible[0]?.products ? fullProductName(visible[0].products) : "Nenhum conteúdo pendente"}</strong><span>{visible[0] ? "Próximo conteúdo da sua fila de gravação." : "Encontre um produto para começar."}</span></p>
+        <button type="button" onClick={findProduct}>Gravar agora</button>
       </div>
       <div className="production-toolbar">
         <div className="production-controls">
           <label className="production-search">
-            <span className="sr-only">Buscar na produção</span>
+            <span className="sr-only">Buscar nos produtos selecionados</span>
             <input
+              name="production-search"
               type="search"
-              placeholder="Buscar produto ou roteiro"
+              autoComplete="off"
+              placeholder="Buscar por produto, categoria ou loja…"
               value={query}
               onChange={(event) => setQuery(event.target.value)}
             />
@@ -157,45 +111,39 @@ export default function Production() {
           </label>
           <label className="production-sort">
             <span className="sr-only">Ordenação</span>
-            <select value={sort} onChange={(event) => setSort(event.target.value as Sort)}>
-              <option value="prioridade">Ordenar: etapa da produção</option>
+            <select name="production-sort" value={sort} onChange={(event) => setSort(event.target.value as Sort)}>
               <option value="recentes">Ordenar: mais recentes</option>
-              <option value="antigos">Ordenar: mais parados</option>
+              <option value="comissao">Ordenar: maior comissão</option>
+              <option value="vendas">Ordenar: mais vendidos</option>
+              <option value="preco">Ordenar: menor preço</option>
             </select>
           </label>
         </div>
-        <div id="production-filters" className="production-filters" role="group" aria-label="Filtrar produção">
-          {FILTERS.filter(([value]) => value === "todos" || count(value) > 0).map(([value, label]) => (
-            <button
-              key={value}
-              type="button"
-              aria-pressed={filter === value}
-              className={filter === value ? "active" : ""}
-              onClick={() => setFilter(value)}
-            >
-              {label} <span>{count(value)}</span>
-            </button>
-          ))}
+        <div className="production-toolbar-foot">
+          <p className="selected-products-count"><strong>{visible.length}</strong> {visible.length === 1 ? "produto salvo" : "produtos salvos"}</p>
+          <div className="production-status-filters" role="tablist" aria-label="Filtrar produtos por etapa">
+            {([['todos', 'Todos'], ['salvo', 'Salvos'], ['em_producao', 'Em produção']] as const).map(([value, label]) => (
+              <button key={value} type="button" role="tab" aria-selected={statusFilter === value} className={statusFilter === value ? "is-active" : ""} onClick={() => setStatusFilter(value)}>{label}</button>
+            ))}
+          </div>
         </div>
       </div>
       {!productionsLoading && productions.length > 0 && (
         <div className="production-results-bar" aria-live="polite">
           <p>
-            <strong>{visible.length}</strong> {visible.length === 1 ? "conteúdo" : "conteúdos"}
-            {query.trim() || filter !== "todos"
-              ? visible.length === 1 ? " encontrado" : " encontrados"
-              : " na sua produção"}
+            <strong>{visible.length}</strong> {visible.length === 1 ? "produto" : "produtos"}
+            {query.trim() || statusFilter !== "todos" ? visible.length === 1 ? " encontrado" : " encontrados" : " selecionados"}
           </p>
-          {(query.trim() || filter !== "todos") && (
-            <button type="button" onClick={() => { setQuery(""); setFilter("todos"); }}>
-              Limpar busca e filtros
+          {query.trim() && (
+            <button type="button" onClick={() => setQuery("")}>
+              Limpar busca
             </button>
           )}
         </div>
       )}
       <div id="my-content" className="production-grid">
-        {productionsError ? <div className="empty-state" role="alert"><p className="tt-dash-empty-kicker">Sem conexão</p><h3>Não conseguimos atualizar sua produção.</h3><p>Seus conteúdos continuam salvos. Tente carregar novamente.</p><button className="ghost" type="button" disabled={productionsLoading} onClick={() => void loadProductions().catch(() => {})}>{productionsLoading ? "Carregando…" : "Tentar novamente"}</button></div> : productionsLoading && !productions.length ? (
-          <><p className="production-loading-status" role="status">Carregando seus conteúdos e próximas ações…</p>{[0, 1, 2].map((item) => (
+        {productionsError ? <div className="empty-state" role="alert"><p className="tt-dash-empty-kicker">Sem conexão</p><h3>Não conseguimos atualizar seus produtos.</h3><p>Sua seleção continua salva. Tente carregar novamente.</p><button className="ghost" type="button" disabled={productionsLoading} onClick={() => void loadProductions().catch(() => {})}>{productionsLoading ? "Carregando…" : "Tentar novamente"}</button></div> : productionsLoading && !productions.length ? (
+          <><p className="production-loading-status" role="status">Carregando seus produtos…</p>{[0, 1, 2].map((item) => (
             <div key={item} className="production-card production-skeleton" aria-hidden="true">
               <div className="skeleton production-skeleton-image" />
               <div className="skeleton-lines"><span className="skeleton" /><span className="skeleton" /><span className="skeleton" /></div>
@@ -204,8 +152,8 @@ export default function Production() {
         ) : !productions.length ? (
           <div className="empty-state">
             <p className="tt-dash-empty-kicker">Primeiro passo</p>
-            <h3>Você ainda não começou nenhuma produção.</h3>
-            <p>Conte o que quer vender e escolha seu primeiro produto.</p>
+            <h3>Você ainda não selecionou nenhum produto.</h3>
+            <p>Encontre uma oportunidade e salve o primeiro produto que deseja transformar em conteúdo.</p>
             <button className="ghost" type="button" onClick={findProduct}>
               Encontrar produto
             </button>
@@ -213,84 +161,43 @@ export default function Production() {
         ) : !visible.length ? (
           <div className="empty-state">
             <p className="tt-dash-empty-kicker">Nada por aqui</p>
-            <h3>Nenhum conteúdo encontrado.</h3>
-            <p>{filter === "gravado" ? "Quando você marcar todas as cenas como gravadas, o conteúdo aparece aqui." : filter === "publicado" ? "Depois de publicar um vídeo, ele aparece aqui." : filter === "em_producao" ? "Escolha um roteiro para começar uma produção." : filter === "salvo" ? "Salve um produto para encontrá-lo aqui." : "Limpe a busca ou escolha outro filtro para ver sua produção."}</p>
-            {productions.some((item) => item.status === "em_producao") ? <button className="ghost" type="button" onClick={() => { setQuery(""); setFilter("em_producao"); }}>Continuar item em produção</button> : <button className="ghost" type="button" onClick={() => { setQuery(""); setFilter("todos"); }}>Ver todos</button>}
+            <h3>Nenhum produto encontrado.</h3>
+            <p>Tente outro nome, categoria ou loja.</p>
+            <button className="ghost" type="button" onClick={() => setQuery("")}>Ver todos</button>
           </div>
         ) : (
           visible.map((c) => {
-            const kit = c.content_kits;
-            const product = c.products ?? { id: c.product_id, nome: "Conteúdo sem produto vinculado" };
-            const status = effectiveStatus(c);
-            const current = progressIndex(status);
-            const updated = relativeUpdate(c.atualizado_em);
+            const product = c.products!;
+            const commission = commissionValue(c);
+            const sold = salesValue(c);
             return (
               <article key={c.id} className="production-card">
                 <div className="production-image-wrap">
                   <ProductImage product={product} width={180} height={180} />
-                  <span className={`production-step step-${current}`} title={`Etapa ${current} de 4: ${STAGES[current - 1]}`}>{STAGES[current - 1]} · {current}/4</span>
                 </div>
                 <div className="production-info">
                   <div className="production-card-topline">
-                    <span className={`production-status status-${status}`}>
-                      {STATUS_LABEL[status] || status}
-                    </span>
-                    <small className={updated.stale ? "is-stale" : ""}>{updated.label}</small>
+                    <span className="product-category">{product.categoria || "Produto"}</span>
+                    {product.loja_nome && <small>{product.loja_nome}</small>}
                   </div>
                   <h3 title={fullProductName(product)}>{fullProductName(product)}</h3>
-                  {!c.products && <p className="production-kit-name">Roteiro salvo sem vínculo com o catálogo.</p>}
-                  {kit?.titulo && displayKitTitle(kit, product).toLocaleLowerCase("pt-BR") !== fullProductName(product).toLocaleLowerCase("pt-BR") && <p className="production-kit-name">{displayKitTitle(kit, product)}</p>}
-                  <div className="production-progress-compact" role="group" aria-label={`Etapa atual: ${STAGES[current - 1]}. Etapa ${current} de 4.`}>
-                    {[1, 2, 3, 4].map((step) => (
-                      <span key={step} className={step <= current ? "done" : ""} title={STAGES[step - 1]} aria-label={`${STAGES[step - 1]}${step === current ? ", etapa atual" : ""}`} />
-                    ))}
-                  </div>
-                  <p className="production-next-hint"><strong>Próxima etapa:</strong> {nextHint(c, recorded[c.content_kit_id || ""] || [])}</p>
+                  <dl className="selected-product-metrics">
+                    <div><dt>Preço</dt><dd>{product.preco_texto || (product.preco_min_brl != null ? BRL.format(product.preco_min_brl) : "Não informado")}</dd></div>
+                    <div className="selected-product-commission"><dt>Comissão por venda</dt><dd>{commission != null ? BRL.format(commission) : "Não informada"}{product.comissao_percentual != null && <small>{product.comissao_percentual}%</small>}</dd></div>
+                    <div><dt>Vendas</dt><dd>{sold >= 0 ? sold.toLocaleString("pt-BR") : "Não informado"}</dd></div>
+                  </dl>
                   <div className="production-card-actions">
-                    {status === "publicado" && c.published_url ? (
-                      <a
-                        className="production-action continue-production"
-                        href={c.published_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        Abrir vídeo
-                      </a>
-                    ) : status === "gravado" ? (
-                      <ProductionPublishButton content={c} />
-                    ) : (
-                      <Link
-                        className="production-action continue-production"
-                        href={
-                          kit && c.products
-                            ? `/app/produtos/${c.products.id}/kits/${kit.id}`
-                            : `/app/produtos/${c.product_id}`
-                        }
-                      >
-                        {status === "salvo" ? kit ? "Ver roteiro" : "Gerar roteiro" : status === "publicado" ? "Ver roteiro" : "Continuar produção"}
-                      </Link>
-                    )}
-                    {kit?.hook && (
-                      <button className="production-action production-copy-hook" type="button" title="Copiar hook" aria-label="Copiar hook" onClick={() => copyHook(c)}>
-                        <Icon name="copy" size={18} />
-                      </button>
-                    )}
-                    {status === "publicado" && c.published_url && (
-                      <Link
-                        className="production-action production-script-link"
-                        href={kit ? `/app/produtos/${c.product_id}/kits/${kit.id}` : `/app/produtos/${c.product_id}`}
-                      >
-                        Ver roteiro
-                      </Link>
-                    )}
+                    <Link className="production-action continue-production" href={`/produtos/${product.id}`}>
+                      Gravar
+                    </Link>
                     <button
                       className="production-action production-remove"
                       type="button"
-                      title="Remover da produção"
-                      aria-label={`Remover ${fullProductName(product)} da produção`}
+                      title="Remover dos selecionados"
+                      aria-label={`Remover ${fullProductName(product)} dos produtos selecionados`}
                       onClick={() => { setRemovingError(""); setRemoving(c); }}
                     >
-                      <Icon name="trash" size={18} />
+                      •••
                     </button>
                   </div>
                 </div>
@@ -303,15 +210,15 @@ export default function Production() {
         <Modal titleId="remove-production-title" busy={removingBusy} onClose={() => setRemoving(null)}>
           <div className="stack">
             <p className="eyebrow">Remover produto</p>
-            <h2 id="remove-production-title">Remover da produção?</h2>
+            <h2 id="remove-production-title">Remover dos selecionados?</h2>
             <p className="muted">
-              <b>{removing.products?.nome || "Este produto"}</b> sai da sua produção e some do painel.
+              <b>{removing.products?.nome || "Este produto"}</b> sai de Produtos selecionados e deixa de aparecer no painel.
               O produto do catálogo continua disponível e você pode salvá-lo de novo quando quiser.
             </p>
             {removingError && <p className="form-message error" role="alert">{removingError}</p>}
             <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
               <button className="danger-button" type="button" disabled={removingBusy} onClick={confirmRemove}>
-                {removingBusy ? "Removendo..." : "Remover da produção"}
+                {removingBusy ? "Removendo..." : "Remover produto"}
               </button>
               <button className="ghost" type="button" disabled={removingBusy} onClick={() => setRemoving(null)}>
                 Cancelar
@@ -321,18 +228,6 @@ export default function Production() {
         </Modal>
       )}
     </section>
-  );
-}
-
-function ProductionPublishButton({ content }: { content: CreatorContent }) {
-  const [open, setOpen] = useState(false);
-  return (
-    <>
-      <button className="production-action" type="button" onClick={() => setOpen(true)}>
-        Publicar
-      </button>
-      {open && <PublicationDialog content={content} onClose={() => setOpen(false)} />}
-    </>
   );
 }
 
@@ -366,7 +261,7 @@ export function PublicationDialog({
       onClose();
       track("published", { with_link: Boolean(value) });
       await loadProductions().catch(() => {});
-      toast(value ? "Publicado ✓ Link salvo." : "Conteúdo marcado como publicado.");
+      toast(value ? "Publicado. Link salvo." : "Conteúdo marcado como publicado.");
     } catch {
       setError("Não conseguimos salvar a publicação. Tente novamente.");
     } finally {
@@ -389,16 +284,18 @@ export function PublicationDialog({
         <label>
           Link do TikTok (opcional)
           <input
+            name="published-url"
             type="url"
+            autoComplete="url"
             inputMode="url"
-            placeholder="https://www.tiktok.com/@usuario/video/..."
+            placeholder="https://www.tiktok.com/@usuario/video/…"
             value={url}
             onChange={(e) => setUrl(e.target.value)}
           />
         </label>
         {error && <p className="form-message error" role="alert">{error}</p>}
         <button className="primary" type="submit" disabled={busy}>
-          {busy ? "Salvando..." : "Salvar publicação"}
+          {busy ? "Salvando…" : "Salvar publicação"}
         </button>
       </form>
     </Modal>

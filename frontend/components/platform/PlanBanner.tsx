@@ -20,7 +20,7 @@ export default function PlanBanner() {
     return (
       <div className="plan-banner is-warn" role="alert">
         <span>Pagamento pendente — seu acesso segue liberado enquanto o provedor tenta de novo.</span>
-        <Link href="/app/conta">Ver na conta</Link>
+        <Link href="/conta">Ver na conta</Link>
       </div>
     );
   }
@@ -29,7 +29,7 @@ export default function PlanBanner() {
     return (
       <div className="plan-banner" role="status">
         <span>Assinatura cancelada — acesso liberado até {fmtDate(creator.current_period_end)}.</span>
-        <Link href="/planos">Reativar</Link>
+        <Link href="/conta/planos">Reativar</Link>
       </div>
     );
   }

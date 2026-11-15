@@ -108,7 +108,8 @@ interface AdminSubscription {
 type AdminView = "overview" | "products" | "creators" | "billing" | "support";
 type ProductSort = "ranking" | "sales" | "revenue" | "name";
 
-const PAGE_SIZE = 12;
+// Aba Produtos do admin: 30 itens por página.
+const PAGE_SIZE = 30;
 const EMPTY_FORM: ProductFormState = {
   externalId: "", name: "", category: "", store: "", priceText: "", commission: "",
   priceMin: "", priceMax: "", region: "BR", sourceStatus: "Disponível", salesPeriod: "",
@@ -121,8 +122,6 @@ const EMPTY_FORM: ProductFormState = {
 const METRIC_LABELS: Record<string, { label: string; detail: string }> = {
   total_creators: { label: "Creators", detail: "Contas cadastradas" },
   creators_ativos: { label: "Creators ativos", detail: "Com acesso à plataforma" },
-  total_produtos: { label: "Produtos", detail: "Itens no catálogo" },
-  produtos_ativos: { label: "Produtos ativos", detail: "Visíveis para creators" },
   total_content_kits: { label: "Conteúdos", detail: "Conteúdos disponíveis" },
   oportunidades_salvas: { label: "Oportunidades salvas", detail: "Produtos em consideração" },
   conteudos_publicados: { label: "Publicações", detail: "Conteúdos concluídos" },
@@ -418,7 +417,6 @@ export default function Admin() {
     });
   }, [creatorQuery, creatorStatus, creators]);
 
-  const activeProducts = (products ?? []).filter((product) => product.status === "ativo").length;
   const pausedProducts = (products ?? []).filter((product) => product.status === "pausado").length;
   const activeCreators = (creators ?? []).filter((creator) => creator.status === "ativo").length;
   const blockedCreators = (creators ?? []).filter((creator) => creator.status === "bloqueado").length;
@@ -453,7 +451,6 @@ export default function Admin() {
   }
 
   async function toggleCreator(creator: AdminCreator) {
-    if (creator.status === "ativo" && !window.confirm(`Bloquear ${creator.nome || creator.email || "este creator"}? O acesso à plataforma será interrompido.`)) return;
     setBusyId(creator.id);
     try {
       await api(`/admin/creators/${creator.id}/status`, await token(), { method: "PATCH", body: JSON.stringify({ status: creator.status === "ativo" ? "bloqueado" : "ativo" }) });
@@ -549,7 +546,7 @@ export default function Admin() {
 
   const metricEntries = Object.entries(METRIC_LABELS).map(([key, copy]) => ({
     key, ...copy,
-    value: metricNumber(metrics, key, key === "total_creators" ? (creators ?? []).length : key === "creators_ativos" ? activeCreators : key === "total_produtos" ? (products ?? []).length : key === "produtos_ativos" ? activeProducts : 0),
+    value: metricNumber(metrics, key, key === "total_creators" ? (creators ?? []).length : key === "creators_ativos" ? activeCreators : 0),
   }));
 
   const openSupportCount = (supportTickets ?? []).filter((ticket) => ticket.status === "open").length;
@@ -562,7 +559,7 @@ export default function Admin() {
       <header className={styles.hero}>
         <div>
           <p className="eyebrow">Painel administrativo</p>
-          <h1>Controle a <em>operação.</em></h1>
+          <h1>Controle a <span className="tt-hl">operação.</span></h1>
           <p className={styles.heroCopy}>Catálogo, creators e saúde da plataforma em uma única visão.</p>
         </div>
         <div className={styles.heroActions}>
@@ -576,7 +573,6 @@ export default function Admin() {
         {([["overview", "overview", "Visão geral"], ["products", "box", "Produtos"], ["creators", "users", "Creators"], ["billing", "card", "Assinaturas"], ["support", "message", "Suporte"]] as const).map(([key, icon, label]) => (
           <button key={key} type="button" className={view === key ? styles.activeTab : ""} onClick={() => setView(key)} aria-current={view === key ? "page" : undefined}>
             <AdminIcon name={icon} /> {label}
-            {key === "products" && products && <span>{products.length}</span>}
             {key === "creators" && creators && <span>{creators.length}</span>}
             {key === "billing" && billingSummary && <span>{billingSummary.active}</span>}
             {key === "support" && supportTickets && openSupportCount > 0 && <span>{openSupportCount}</span>}
@@ -593,14 +589,16 @@ export default function Admin() {
             <div className={styles.metricGrid} aria-live="polite">
               {metrics ? metricEntries.map((metric, index) => (
                 <article key={metric.key} className={styles.metricCard}><span className={styles.metricIndex}>{String(index + 1).padStart(2, "0")}</span><strong>{formatCount(metric.value)}</strong><h3>{metric.label}</h3><p>{metric.detail}</p></article>
-              )) : Array.from({ length: 9 }).map((_, index) => <div className={styles.metricSkeleton} key={index} aria-hidden="true" />)}
+              )) : Array.from({ length: 7 }).map((_, index) => <div className={styles.metricSkeleton} key={index} aria-hidden="true" />)}
             </div>
           )}
           <div className={styles.overviewGrid}>
             <article className={styles.healthCard}>
-              <div className={styles.cardHeading}><div><span>Saúde do catálogo</span><h2>Pronto para descoberta</h2></div><button type="button" onClick={() => setView("products")}>Ver catálogo</button></div>
-              <div className={styles.progressBlock}><div><strong>{products?.length ? Math.round((activeProducts / products.length) * 100) : 0}%</strong><span>dos produtos estão ativos</span></div><div className={styles.progressTrack}><i style={{ width: `${products?.length ? (activeProducts / products.length) * 100 : 0}%` }} /></div></div>
-              <dl className={styles.healthList}><div><dt>Ativos</dt><dd>{activeProducts}</dd></div><div><dt>Pausados</dt><dd>{pausedProducts}</dd></div><div><dt>Cadastro incompleto</dt><dd className={incompleteProducts ? styles.attention : ""}>{incompleteProducts}</dd></div></dl>
+              <div className={styles.cardHeading}><div><span>Catálogo</span><h2>Pronto para descoberta</h2></div><button type="button" onClick={() => setView("products")}>Ver catálogo</button></div>
+              <p className={styles.heroCopy}>
+                {incompleteProducts > 0 ? "Há itens com cadastro incompleto para revisar. " : "Todos os itens têm cadastro completo. "}
+                {pausedProducts > 0 ? "Há itens pausados fora da busca dos creators." : "Nenhum item pausado no momento."}
+              </p>
             </article>
             <article className={styles.healthCard}>
               <div className={styles.cardHeading}><div><span>Comunidade</span><h2>Creators com acesso</h2></div><button type="button" onClick={() => setView("creators")}>Gerenciar</button></div>
@@ -704,7 +702,7 @@ export default function Admin() {
             <select aria-label="Ordenar produtos" value={productSort} onChange={(event) => { setProductSort(event.target.value as ProductSort); setProductPage(1); }}><option value="ranking">Melhor ranking</option><option value="sales">Mais vendidos</option><option value="revenue">Maior receita</option><option value="name">Nome A–Z</option></select>
             <button className={styles.iconButton} type="button" onClick={exportCatalog} disabled={!products?.length} title="Exportar catálogo"><AdminIcon name="download" /><span>Exportar</span></button>
           </div>
-          <div className={styles.listMeta}><p><strong>{filteredProducts.length}</strong> {filteredProducts.length === 1 ? "produto encontrado" : "produtos encontrados"}</p><button type="button" onClick={openNewProduct}><AdminIcon name="plus" /> Adicionar produto</button></div>
+          <div className={styles.listMeta}><p>Produtos da plataforma</p><button type="button" onClick={openNewProduct}><AdminIcon name="plus" /> Adicionar produto</button></div>
           {productsError && products === null ? (
             <div className={styles.errorState}><strong>Não foi possível carregar os produtos.</strong><button type="button" onClick={() => void loadProducts()}>Tentar novamente</button></div>
           ) : products === null ? (
@@ -749,15 +747,15 @@ export default function Admin() {
 
       {view === "billing" && (
         <div className={styles.viewPanel}>
-          <div className={styles.sectionHeading}><div><span>Receita</span><h2>Assinaturas</h2></div><p>Planos ativos, trials e mudanças agendadas — espelho do provedor de pagamento.</p></div>
+          <div className={styles.sectionHeading}><div><span>Receita</span><h2>Assinaturas</h2></div><p>Planos ativos, pagamentos pendentes e mudanças agendadas — espelho do provedor de pagamento.</p></div>
           {billingError && !billingSummary ? (
             <div className={styles.errorState}><strong>Não foi possível carregar as assinaturas.</strong><button type="button" onClick={() => void loadBilling()}>Tentar novamente</button></div>
           ) : (
             <>
               <div className={styles.creatorSummary}>
                 <div><span>Assinaturas ativas</span><strong>{billingSummary?.active ?? 0}</strong></div>
-                <div><span>Em trial</span><strong>{billingSummary?.trialing ?? 0}</strong></div>
                 <div><span>Pagamento pendente</span><strong>{billingSummary?.past_due ?? 0}</strong></div>
+                <div><span>Assinaturas registradas</span><strong>{subscriptions?.length ?? 0}</strong></div>
                 <div><span>MRR estimado</span><strong>{billingSummary ? formatCurrency((billingSummary.mrr_cents ?? 0) / 100) : "—"}</strong></div>
               </div>
               <div className={styles.listMeta}><p><strong>{subscriptions?.length ?? 0}</strong> {subscriptions?.length === 1 ? "assinatura registrada" : "assinaturas registradas"}</p></div>

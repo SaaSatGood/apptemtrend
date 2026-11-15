@@ -2,63 +2,77 @@ import { describe, expect, it } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
 
-const web = (...p: string[]) => path.resolve(process.cwd(), '../frontend/legacy-static', ...p);
-const read = (f: string) => fs.readFileSync(web(f), 'utf8');
+const frontend = path.resolve(process.cwd(), '../frontend');
+const read = (...p: string[]) => fs.readFileSync(path.join(frontend, ...p), 'utf8');
+const component = (name: string) => read('components/platform', `${name}.tsx`);
 
 describe('ux polish', () => {
   it('navegação possui indicação de ativa', () => {
-    expect(read('styles.css')).toContain('.app-nav a.active');
-    expect(read('app.js')).toContain('aria-current');
+    const sidebar = component('AppSidebar');
+    expect(sidebar).toContain('aria-current');
+    expect(sidebar).toContain('usePathname');
   });
 
   it('cards têm ação principal Ver produto e secundária Salvar', () => {
-    const appJs = read('app.js');
-    expect(appJs).toContain('primary open-product');
-    expect(appJs).toContain('ghost save-product');
+    const productKit = component('ProductKit');
+    expect(productKit).toContain('Ver produto');
+    expect(productKit).toContain('save-product');
   });
 
   it('modal de briefing tem chips selecionáveis', () => {
-    expect(read('app.js')).toContain("briefing-suggestions button.selected");
-    expect(read('styles.css')).toContain('.briefing-suggestions button.selected');
+    const dialog = component('ContentKitDialog');
+    expect(dialog).toContain('briefing-suggestions');
+    expect(dialog).toContain('aria-pressed');
+    expect(read('styles/app-dashboard.css')).toContain('.briefing-suggestions button.selected');
   });
 
   it('kit possui copiar roteiro além de hook/legenda/hashtags', () => {
-    const appJs = read('app.js');
-    for (const id of ['copy-hook', 'copy-roteiro', 'copy-copy', 'copy-hashtags', 'copy-content-kit']) {
-      expect(appJs).toContain(id);
+    const productKit = component('ProductKit');
+    // Ids com prefixo: dois documentos de roteiro na mesma página não duplicam ids.
+    expect(productKit).toContain('idPrefix = "kit"');
+    for (const id of ['copy-hook', 'copy-roteiro', 'copy-copy', 'copy-hashtags', 'copy-scenes']) {
+      expect(productKit).toContain(`partId("${id}")`);
     }
   });
 
-  it('ação principal do kit é adicionar à produção', () => {
-    expect(read('app.js')).toContain('Adicionar à minha produção');
+  it('ação principal do kit avança a produção', () => {
+    const wizard = component('RecordingWizard');
+    // O rótulo vem do estado real da produção (KitDetail), nunca é fixo no CTA.
+    expect(wizard).toContain('readyLabel');
+    expect(wizard).toMatch(/Começar a gravar|Próxima cena|Próxima etapa/);
+    expect(component('KitDetail')).toContain('onReady={continueProduction}');
   });
 
   it('exclusão usa modal de confirmação, não confirm()', () => {
-    expect(read('app.html')).toContain('delete-account-dialog');
-    expect(read('app.js')).toContain('confirm-delete-account');
-    expect(read('app.js')).not.toContain('confirm(');
+    const account = component('Account');
+    expect(account).toContain('Excluir sua conta?');
+    expect(account).toContain('<Modal');
+    expect(account).not.toContain('window.confirm');
+    expect(component('Modal')).toContain('aria-modal="true"');
   });
 
   it('empty state de busca orienta com CTA', () => {
-    expect(read('app.js')).toContain('Nenhum produto encontrado.');
+    const production = component('Production');
+    expect(production).toContain('Nenhum produto encontrado.');
+    expect(production).toContain('Ver todos');
   });
 
   it('dialog de kit trata códigos da IA', () => {
-    const appJs = read('app.js');
-    expect(appJs).toContain('AI_UNAVAILABLE');
-    expect(appJs).toContain('SERVICE_UNAVAILABLE');
+    const dialog = component('ContentKitDialog');
+    expect(dialog).toContain('AI_UNAVAILABLE');
+    expect(dialog).toContain('SERVICE_UNAVAILABLE');
   });
 
-  it('produção mostra status, progresso e próxima ação', () => {
-    const appJs = read('app.js');
-    for (const s of ['status-salvo', 'status-em_producao', 'status-gravado', 'status-publicado']) {
-      expect(read('styles.css')).toContain(`.${s}`);
+  it('produção mostra status e próxima ação', () => {
+    const contents = component('ContentsView');
+    for (const status of ['salvo', 'em_producao', 'gravado', 'publicado']) {
+      expect(contents).toContain(status);
     }
-    expect(appJs).toContain('copy-hook-production');
-    expect(appJs).toContain('filterCount');
+    expect(component('Production')).toContain('loadProductions');
+    expect(component('Production')).toContain('publicado');
   });
 
   it('toast não estoura no mobile', () => {
-    expect(read('styles.css')).toContain('.toast{left:18px');
+    expect(read('styles/styles.css')).toContain('.toast{left:18px');
   });
 });

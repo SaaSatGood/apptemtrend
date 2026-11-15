@@ -23,6 +23,47 @@ function resultLabel(count: number): string {
   return `${count} ${count === 1 ? "produto" : "produtos"}`;
 }
 
+const FILTER_LABELS: Record<string, string> = {
+  "Quero produtos com preço de até 50 reais": "Até R$ 50",
+  "Quero produtos com preço de até 100 reais": "Até R$ 100",
+  "Quero vender produtos para casa": "Casa",
+  "Quero vender produtos de beleza": "Beleza",
+};
+
+/**
+ * Rótulo curto para os chips de busca recente: mostra os filtros aplicados
+ * em vez do começo repetido da frase. Texto livre permanece intacto.
+ */
+export function compactSearchQuery(query: string): string {
+  const trimmed = query.trim().replace(/\s+/g, " ");
+  const known = FILTER_LABELS[trimmed];
+  if (known) return known;
+
+  let rest = trimmed;
+  let matched = false;
+  let priceLabel = "";
+
+  const price = rest.match(/\s*(?:com\s+)?pre[çc]o\s+de\s+at[ée]\s+R?\$?\s*(\d+)(?:\s+reais)?\s*$/i);
+  if (price) {
+    priceLabel = `até R$ ${price[1]}`;
+    rest = rest.slice(0, price.index).trim();
+    matched = true;
+  }
+
+  const niche = rest.match(/^quero vender produtos (?:para|de)\s+(.+)$/i);
+  if (niche) {
+    rest = niche[1].trim();
+    matched = true;
+  }
+
+  if (!matched) return trimmed;
+
+  const lead = rest ? rest.charAt(0).toUpperCase() + rest.slice(1) : "";
+  if (lead && priceLabel) return `${lead} · ${priceLabel}`;
+  if (lead) return lead;
+  return priceLabel ? priceLabel.charAt(0).toUpperCase() + priceLabel.slice(1) : trimmed;
+}
+
 /** Faixa compacta de buscas recentes logo abaixo do herói do Descobrir. */
 export function RecentSearches({
   items,
@@ -52,8 +93,9 @@ export function RecentSearches({
             disabled={Boolean(busyId)}
             aria-busy={busyId === item.id}
             aria-label={`Reabrir busca: ${item.query}`}
+            title={item.query}
           >
-            <span className="discovery-history-query">{item.query}</span>
+            <span className="discovery-history-query">{compactSearchQuery(item.query)}</span>
             <small>{resultLabel(item.result_count)}</small>
           </button>
         ))}

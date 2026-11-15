@@ -2,6 +2,25 @@ import { FastifyInstance, FastifyError } from 'fastify';
 import fp from 'fastify-plugin';
 import { ZodError } from 'zod';
 import { logger } from '../lib/logger.js';
+import { env } from '../config/env.js';
+
+/**
+ * Alerta best-effort para um webhook externo (Slack/Discord). Nunca bloqueia a
+ * resposta nem inclui corpo do request, token ou dado pessoal.
+ */
+function notifyAlert(input: { requestId: string; route: string; status: number; code: string }) {
+  const url = env.ALERT_WEBHOOK_URL;
+  if (!url) return;
+  void fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      text: `[TemTrend] ${input.status} ${input.code} em ${input.route} (request ${input.requestId})`,
+    }),
+  }).catch((error: unknown) => {
+    logger.warn({ err: error }, 'Alert webhook failed');
+  });
+}
 
 async function errorHandlerPlugin(fastify: FastifyInstance) {
   fastify.setErrorHandler((error: FastifyError, request, reply) => {
@@ -23,8 +42,9 @@ async function errorHandlerPlugin(fastify: FastifyInstance) {
       });
     }
 
-    // Rate limit errors (statusCode 429)
-    if (error.statusCode === 429) {
+    // Rate limit errors (statusCode 429). Erros de aplicação que também usam
+    // 429 (ex.: throttle por e-mail no cadastro) mantêm a mensagem própria.
+    if (error.statusCode === 429 && error instanceof Error) {
       return reply.status(429).send({
         error: {
           code: 'RATE_LIMITED',
@@ -41,6 +61,7 @@ async function errorHandlerPlugin(fastify: FastifyInstance) {
       && typeof raw.message === 'string';
     if (isAppError && raw.statusCode! >= 500) {
       logger.error({ requestId, err: error }, 'Handled application error');
+      notifyAlert({ requestId, route: request.url.split('?')[0], status: raw.statusCode!, code: raw.code! });
       return reply.status(raw.statusCode!).send({
         error: { code: raw.code!, message: raw.message! },
       });
@@ -81,6 +102,7 @@ async function errorHandlerPlugin(fastify: FastifyInstance) {
 
     // Unknown/server errors
     logger.error({ requestId, err: error }, 'Internal server error');
+    notifyAlert({ requestId, route: request.url.split('?')[0], status: 500, code: 'INTERNAL_ERROR' });
     return reply.status(500).send({
       error: {
         code: 'INTERNAL_ERROR',

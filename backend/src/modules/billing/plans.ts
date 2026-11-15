@@ -7,10 +7,14 @@ export type CatalogPlanId = 'pro' | 'enterprise';
 export type PlanPeriod = 'monthly' | 'annual';
 
 export interface PlanLimits {
-  /** Buscas de IA por dia; no Grátis, o limite de 3 é vitalício. null = fair use. */
+  /** Buscas de IA por dia (planos pagos/uso justo). null = sem contagem visível. */
   searchesPerDay: number | null;
-  /** Kits por mês; no Grátis, o limite de 3 é vitalício. */
+  /** Buscas de IA por semana (plano Grátis). null = não se aplica. */
+  searchesPerWeek: number | null;
+  /** Kits por mês (planos pagos). null = ilimitado/uso justo. */
   kitsPerMonth: number | null;
+  /** Kits por semana (plano Grátis). null = não se aplica. */
+  kitsPerWeek: number | null;
   variations: boolean;
   variationCooldownSeconds: number;
   vozPersonalizada: boolean;
@@ -32,9 +36,13 @@ export interface PlanMeta {
   destaque: boolean;
 }
 
-export const TRIAL_DAYS = 7;
-export const FREE_SEARCHES_TOTAL = 3;
-export const FREE_KITS_TOTAL = 3;
+/**
+ * Plano Grátis: dá espaço para o usuário viver o
+ * primeiro valor (roteiro pronto) e voltar mais algumas vezes antes do
+ * paywall, sem transformar a conta gratuita em um plano de uso contínuo.
+ */
+export const FREE_SEARCHES_PER_WEEK: number = 100;
+export const FREE_KITS_PER_WEEK: number = 10;
 
 /**
  * Teto interno de uso justo. Não aparece na tabela de planos: a comunicação é
@@ -42,30 +50,43 @@ export const FREE_KITS_TOTAL = 3;
  * compartilhada, automação ou revenda). Ao atingir, a conversa é comercial.
  */
 export const FAIR_USE_KITS_PER_MONTH = 1_000;
-/** Proteção extra do teste grátis: 7 dias não podem virar uma fábrica de kits. */
-export const TRIAL_KITS_PER_MONTH = 100;
+
+/**
+ * Uso justo de buscas no Pro: teto diário alto o bastante para não aparecer na
+ * experiência normal, mas finito contra automação/revenda. Não é vendido como
+ * número — a comunicação é "ilimitado com uso justo".
+ */
+export const FAIR_USE_SEARCHES_PER_DAY = 1_000;
 
 export const LAUNCH_SEATS = 100;
 export const LAUNCH_MONTHLY_CENTS = 3_990;
 export const LAUNCH_ANNUAL_CENTS = 39_900;
+/** Novas vendas usam o preço cheio. Assinantes antigos de lançamento seguem
+ *  com o valor herdado na renovação. */
+export const LAUNCH_OFFER_ENABLED = false;
 export const PRO_MONTHLY_CENTS = 4_990;
 export const PRO_ANNUAL_CENTS = 49_900;
 
 export const PLAN_LIMITS: Record<PlanId, PlanLimits> = {
-  // Grátis permanente: 3 buscas e 3 roteiros por conta, sem renovação mensal.
+  // Grátis: buscas e roteiros renovam juntos toda segunda-feira.
   free: {
-    searchesPerDay: FREE_SEARCHES_TOTAL,
-    kitsPerMonth: FREE_KITS_TOTAL,
+    searchesPerDay: null,
+    searchesPerWeek: FREE_SEARCHES_PER_WEEK,
+    kitsPerMonth: null,
+    kitsPerWeek: FREE_KITS_PER_WEEK,
     variations: false,
     variationCooldownSeconds: 0,
     vozPersonalizada: false,
-    kitsPerProduct: FREE_KITS_TOTAL,
-    productionItems: 3,
+    // Variações continuam exclusivas do Pro: 1 roteiro por produto.
+    kitsPerProduct: 1,
+    productionItems: 1,
   },
   // Planos antigos: mantidos para assinaturas legadas. Não são vendidos.
   essencial: {
     searchesPerDay: null,
+    searchesPerWeek: null,
     kitsPerMonth: null,
+    kitsPerWeek: null,
     variations: true,
     variationCooldownSeconds: 60,
     vozPersonalizada: true,
@@ -74,7 +95,9 @@ export const PLAN_LIMITS: Record<PlanId, PlanLimits> = {
   },
   pro: {
     searchesPerDay: null,
+    searchesPerWeek: null,
     kitsPerMonth: null,
+    kitsPerWeek: null,
     variations: true,
     variationCooldownSeconds: 30,
     vozPersonalizada: true,
@@ -83,7 +106,9 @@ export const PLAN_LIMITS: Record<PlanId, PlanLimits> = {
   },
   scale: {
     searchesPerDay: null,
+    searchesPerWeek: null,
     kitsPerMonth: null,
+    kitsPerWeek: null,
     variations: true,
     variationCooldownSeconds: 30,
     vozPersonalizada: true,
@@ -92,7 +117,9 @@ export const PLAN_LIMITS: Record<PlanId, PlanLimits> = {
   },
   enterprise: {
     searchesPerDay: null,
+    searchesPerWeek: null,
     kitsPerMonth: null,
+    kitsPerWeek: null,
     variations: true,
     variationCooldownSeconds: 30,
     vozPersonalizada: true,
@@ -116,15 +143,16 @@ export const PLAN_META: Record<CatalogPlanId, PlanMeta> = {
     resumo: 'Para criar sem contar roteiros',
     precoMensalCents: PRO_MONTHLY_CENTS,
     precoAnualCents: PRO_ANNUAL_CENTS,
-    precoLancamentoMensalCents: LAUNCH_MONTHLY_CENTS,
-    precoLancamentoAnualCents: LAUNCH_ANNUAL_CENTS,
+    precoLancamentoMensalCents: PRO_MONTHLY_CENTS,
+    precoLancamentoAnualCents: PRO_ANNUAL_CENTS,
     bullets: [
-      'Kits de conteúdo ilimitados (uso justo)',
-      'Buscas de IA ilimitadas (uso justo)',
+      'Roteiros ilimitados',
+      'Buscas de IA ilimitadas',
+      'Catálogo completo de produtos',
       'Variações do roteiro quando quiser',
       'Voz personalizada no roteiro',
       'Roteiros salvos e produção sem teto',
-      'Suporte por email',
+      'Suporte interno na plataforma',
     ],
     destaque: true,
   },

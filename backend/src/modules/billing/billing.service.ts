@@ -3,12 +3,13 @@ import { supabaseAdmin } from '../../lib/supabase.js';
 import { logger } from '../../lib/logger.js';
 import { createAppError, Errors, type Creator } from '../../types/index.js';
 import { invalidateMeCache } from '../creators/creator.service.js';
-import { countFreeSearches } from '../../lib/ai-metrics.js';
+import { getFreeUsage, quotaDayKey, quotaResetIso } from '../../lib/ai-metrics.js';
 import { listUserDirectory } from '../admin/admin.repository.js';
 import { billingActive, planContextForCreator } from './billing.gating.js';
 import {
   LAUNCH_ANNUAL_CENTS,
   LAUNCH_MONTHLY_CENTS,
+  LAUNCH_OFFER_ENABLED,
   LAUNCH_SEATS,
   PRO_ANNUAL_CENTS,
   PRO_MONTHLY_CENTS,
@@ -24,6 +25,11 @@ import {
   cancelSubscriptionAtProvider,
   changeSubscriptionPlanAtProvider,
 } from './billing.provider.js';
+import {
+  cancelAsaasSubscription,
+  createAsaasCardCheckout,
+  findAsaasActiveSubscription,
+} from './asaas.provider.js';
 import {
   extendPeriodEnd,
   extractCheckout,
@@ -50,7 +56,6 @@ interface SubscriptionRow {
   pending_period?: string | null;
 }
 
-const PENDING_CHECKOUT_TTL_MS = 24 * 60 * 60 * 1000;
 const RENEWAL_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
 
 export interface LaunchAvailability {
@@ -72,9 +77,10 @@ export async function getLaunchAvailability(): Promise<LaunchAvailability> {
     active: false,
     seats_total: LAUNCH_SEATS,
     seats_left: 0,
-    monthly_cents: LAUNCH_MONTHLY_CENTS,
-    annual_cents: LAUNCH_ANNUAL_CENTS,
+    monthly_cents: PRO_MONTHLY_CENTS,
+    annual_cents: PRO_ANNUAL_CENTS,
   };
+  if (!LAUNCH_OFFER_ENABLED) return empty;
   const { data, error } = await supabaseAdmin.rpc('launch_seats_used');
   if (error) {
     logger.error({ err: error }, 'Failed to count launch seats');
@@ -107,12 +113,16 @@ async function invalidateCreatorCache(creatorId: string): Promise<void> {
 export interface BillingUsage {
   kits_total: number;
   kits_month: number;
+  kits_week: number;
   kits_limit: number | null;
-  kits_limit_period: 'month' | 'lifetime';
+  kits_limit_period: 'month' | 'week';
   searches_today: number;
+  searches_week: number;
   searches_total: number | null;
   searches_limit: number | null;
-  searches_limit_period: 'day' | 'lifetime';
+  searches_limit_period: 'day' | 'week';
+  searches_resets_at: string;
+  kits_resets_at: string;
 }
 
 export interface SubscriptionSummary {
@@ -138,7 +148,10 @@ export interface SubscriptionSummary {
 async function getUsage(userId: string, creator: Creator): Promise<BillingUsage> {
   const now = new Date();
   const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)).toISOString();
-  const [totalRes, monthRes, usageRes] = await Promise.all([
+  const nextMonth = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1)).toISOString();
+  const { plan, limits } = planContextForCreator(creator);
+  const free = plan === 'free';
+  const [totalRes, monthRes, usageRes, freeUsage] = await Promise.all([
     supabaseAdmin.from('content_kits').select('id', { count: 'exact', head: true }).eq('creator_id', creator.id),
     supabaseAdmin
       .from('content_kits')
@@ -149,20 +162,27 @@ async function getUsage(userId: string, creator: Creator): Promise<BillingUsage>
       .from('ai_usage_daily')
       .select('assistant_calls')
       .eq('user_id', userId)
-      .eq('usage_date', now.toISOString().slice(0, 10))
+      .eq('usage_date', quotaDayKey(now))
       .maybeSingle(),
+    free ? getFreeUsage(userId, creator.id) : Promise.resolve(null),
   ]);
-  const { plan, limits } = planContextForCreator(creator);
-  const free = plan === 'free';
+  const searchesToday = free
+    ? 0
+    : (usageRes.data as { assistant_calls?: number } | null)?.assistant_calls ?? 0;
+  const searchesWeek = freeUsage?.searchesWeek ?? 0;
   return {
     kits_total: totalRes.count ?? 0,
     kits_month: monthRes.count ?? 0,
-    kits_limit: limits.kitsPerMonth,
-    kits_limit_period: free ? 'lifetime' : 'month',
-    searches_today: (usageRes.data as { assistant_calls?: number } | null)?.assistant_calls ?? 0,
-    searches_total: free ? await countFreeSearches(userId) : null,
-    searches_limit: limits.searchesPerDay,
-    searches_limit_period: free ? 'lifetime' : 'day',
+    kits_week: freeUsage?.kitsWeek ?? 0,
+    kits_limit: free ? limits.kitsPerWeek : limits.kitsPerMonth,
+    kits_limit_period: free ? 'week' : 'month',
+    searches_today: searchesToday,
+    searches_week: searchesWeek,
+    searches_total: free ? searchesWeek : null,
+    searches_limit: free ? limits.searchesPerWeek : limits.searchesPerDay,
+    searches_limit_period: free ? 'week' : 'day',
+    searches_resets_at: free ? quotaResetIso('week', now) : quotaResetIso('day', now),
+    kits_resets_at: free ? quotaResetIso('week', now) : nextMonth,
   };
 }
 
@@ -193,6 +213,8 @@ export async function getSubscriptionSummary(
   // com acesso até o fim do que foi pago). Se não houver, mostra a mais recente.
   const row = rows.find((item) => isFuture(item.current_period_end, now)) ?? rows[0] ?? null;
   const accessUntilEnd = Boolean(row && isFuture(row.current_period_end, now));
+  // Acesso concedido diretamente ao creator não tem assinatura no provedor.
+  const directAccess = plan !== 'free' && !row && isFuture(creator.current_period_end, now);
   const manageable = Boolean(accessUntilEnd && row?.status !== 'canceled');
   const paymentMode = row?.billing_mode === 'one_time' ? 'one_time' as const : row?.billing_mode === 'recurring' ? 'recurring' as const : null;
   const periodEnd = row?.current_period_end ? Date.parse(row.current_period_end) : 0;
@@ -201,7 +223,7 @@ export async function getSubscriptionSummary(
     enabled: true,
     plan,
     plan_label: planLabel(plan),
-    status: plan === 'free' ? 'active' : accessUntilEnd
+    status: plan === 'free' || directAccess ? 'active' : accessUntilEnd
       ? (canceled ? 'canceled' : (creator.plan_status ?? 'inactive'))
       : 'inactive',
     period: creator.plan_period ?? null,
@@ -227,15 +249,19 @@ export async function getSubscriptionSummary(
 export interface CheckoutResult {
   url: string;
   mode: 'recurring' | 'one_time';
+  method: 'card' | 'pix';
   launch: boolean;
   amount_cents: number;
 }
+
+export type PaymentMethod = 'card' | 'pix';
 
 export async function startCheckout(
   _userId: string,
   creator: Creator,
   plan: PaidPlanId,
   period: PlanPeriod,
+  method?: PaymentMethod,
 ): Promise<CheckoutResult> {
   if (!billingActive()) {
     throw createAppError('BILLING_DISABLED', 'Pagamentos indisponíveis no momento.', 503);
@@ -245,7 +271,7 @@ export async function startCheckout(
     .from('subscriptions')
     .select('id, status, current_period_end, billing_mode, launch_price, launch_seat, created_at')
     .eq('creator_id', creator.id)
-    .in('status', ['active', 'past_due', 'pending', 'canceled'])
+    .in('status', ['active', 'past_due', 'canceled'])
     .order('created_at', { ascending: false })
     .limit(10);
   if (rowsError) throw rowsError;
@@ -258,15 +284,6 @@ export async function startCheckout(
     launch_seat: number | null;
     created_at: string | null;
   }>;
-
-  const pending = rows.find((row) => {
-    if (row.status !== 'pending') return false;
-    const created = row.created_at ? Date.parse(row.created_at) : 0;
-    return Number.isFinite(created) && created > now - PENDING_CHECKOUT_TTL_MS;
-  });
-  if (pending) {
-    throw Errors.BAD_REQUEST('Você já tem um pagamento em andamento. Conclua o checkout anterior ou aguarde alguns minutos.');
-  }
 
   const current = rows.find(
     (row) => (row.status === 'active' || row.status === 'past_due' || row.status === 'canceled') && isFuture(row.current_period_end, now),
@@ -291,10 +308,23 @@ export async function startCheckout(
   const renewalLaunch = Boolean(renewalBase && !canceledWithAccess && current?.launch_price === true);
 
   const base = env.FRONTEND_URL.replace(/\/$/, '');
-  const returnUrl = `${base}/app/conta`;
-  const completionUrl = `${base}/app/conta?checkout=ok`;
+  const asaasBase = (
+    env.ASAAS_CALLBACK_BASE_URL
+    ?? (base.startsWith('https://') ? base : 'https://www.temtrend.com')
+  ).replace(/\/$/, '');
+  const returnUrl = `${base}/conta`;
+  const completionUrl = `${base}/conta?checkout=ok`;
   const standardAmount = period === 'annual' ? PRO_ANNUAL_CENTS : PRO_MONTHLY_CENTS;
   const launchAmount = period === 'annual' ? LAUNCH_ANNUAL_CENTS : LAUNCH_MONTHLY_CENTS;
+
+  // Uma nova tentativa substitui checkouts pendentes anteriores. O webhook
+  // ignora linhas que não estão mais em `pending`, evitando ativação dupla se
+  // o usuário abandonar o checkout antigo e gerar outro.
+  await supabaseAdmin
+    .from('subscriptions')
+    .update({ status: 'expired', updated_at: new Date().toISOString() })
+    .eq('creator_id', creator.id)
+    .eq('status', 'pending');
 
   const { data: inserted, error } = await supabaseAdmin
     .from('subscriptions')
@@ -303,9 +333,10 @@ export async function startCheckout(
       plan,
       period,
       status: 'pending',
+      provider: method === 'card' ? 'asaas' : 'abacatepay',
       amount_cents: renewalLaunch ? launchAmount : standardAmount,
       current_period_end: renewalBase,
-      billing_mode: 'recurring',
+      billing_mode: method === 'pix' ? 'one_time' : 'recurring',
       launch_price: renewalLaunch,
       launch_seat: renewalLaunch ? current?.launch_seat ?? null : null,
     })
@@ -323,7 +354,7 @@ export async function startCheckout(
       { subscription_id: rowId, launch_seat: current?.launch_seat ?? null },
       'Launch price inherited on renewal',
     );
-  } else {
+  } else if (LAUNCH_OFFER_ENABLED) {
     // Reserva atômica de uma das 100 vagas de lançamento. A função SQL usa
     // advisory lock para impedir duas cobranças na mesma última vaga.
     const { data: seat, error: seatError } = await supabaseAdmin.rpc('claim_launch_seat', {
@@ -346,8 +377,8 @@ export async function startCheckout(
 
   const recurringProduct = productIdFor(plan, period, { launch, mode: 'recurring' });
   const oneTimeProduct = productIdFor(plan, period, { launch, mode: 'one_time' });
-  const failCheckout = async (reason: string): Promise<never> => {
-    logger.error({ subscription_id: rowId, plan, period, launch, reason }, 'Failed to create provider checkout');
+  const markFailed = async (reason: string) => {
+    logger.error({ subscription_id: rowId, plan, period, launch, method, reason }, 'Failed to create provider checkout');
     await supabaseAdmin
       .from('subscriptions')
       .update({
@@ -357,22 +388,35 @@ export async function startCheckout(
         updated_at: new Date().toISOString(),
       })
       .eq('id', rowId);
+  };
+  const failCheckout = async (reason: string): Promise<never> => {
+    await markFailed(reason);
     throw billingUnavailable();
   };
-  if (!recurringProduct || !oneTimeProduct) return failCheckout('missing_product');
-
-  let checkout = await createSubscriptionCheckout({
-    productId: recurringProduct,
-    externalId: rowId,
-    returnUrl,
-    completionUrl,
-  });
+  let checkout: { id: string; url: string } | null = null;
   let mode: 'recurring' | 'one_time' = 'recurring';
 
-  if (!checkout) {
-    // Fallback operacional: enquanto a loja não habilita cartão/Pix Automático,
-    // vende o mesmo período via PIX avulso. O acesso é liberado pelo webhook de
-    // checkout e a renovação acontece por um novo checkout.
+  if (method === 'card') {
+    const asaasCheckout = await createAsaasCardCheckout({
+      externalReference: rowId,
+      amountCents,
+      period,
+      successUrl: `${asaasBase}/conta?checkout=ok`,
+      cancelUrl: `${asaasBase}/conta`,
+      expiredUrl: `${asaasBase}/conta`,
+    });
+    if (!asaasCheckout) {
+      await markFailed('asaas_unavailable');
+      throw createAppError(
+        'CARD_UNAVAILABLE',
+        'O pagamento com cartão não está disponível agora. Tente novamente em instantes ou escolha PIX.',
+        503,
+      );
+    }
+    checkout = { id: asaasCheckout.id, url: asaasCheckout.url };
+  } else if (method === 'pix') {
+    // PIX escolhido pelo usuário: pagamento por período, sem recorrência.
+    if (!oneTimeProduct) return failCheckout('missing_product');
     checkout = await createOneTimeCheckout({
       productId: oneTimeProduct,
       externalId: rowId,
@@ -380,6 +424,25 @@ export async function startCheckout(
       completionUrl,
     });
     mode = 'one_time';
+  } else {
+    if (!recurringProduct || !oneTimeProduct) return failCheckout('missing_product');
+    checkout = await createSubscriptionCheckout({
+      productId: recurringProduct,
+      externalId: rowId,
+      returnUrl,
+      completionUrl,
+    });
+    if (!checkout) {
+      // Sem escolha explícita, mantém o fallback operacional para PIX enquanto
+      // a loja não habilita cartão.
+      checkout = await createOneTimeCheckout({
+        productId: oneTimeProduct,
+        externalId: rowId,
+        returnUrl,
+        completionUrl,
+      });
+      mode = 'one_time';
+    }
   }
   if (!checkout) return failCheckout('provider_unavailable');
 
@@ -397,7 +460,7 @@ export async function startCheckout(
     { creator_id: creator.id, plan, period, checkout_id: checkout.id, mode, launch, amount_cents: amountCents },
     'Subscription checkout created',
   );
-  return { url: checkout.url, mode, launch, amount_cents: amountCents };
+  return { url: checkout.url, mode, method: mode === 'one_time' ? 'pix' : 'card', launch, amount_cents: amountCents };
 }
 
 export async function cancelSubscription(
@@ -409,18 +472,20 @@ export async function cancelSubscription(
   }
   const { data: rowData, error } = await supabaseAdmin
     .from('subscriptions')
-    .select('id, provider_subscription_id, status')
+    .select('id, provider, provider_subscription_id, status')
     .eq('creator_id', creator.id)
     .eq('status', 'active')
     .order('created_at', { ascending: false })
     .limit(1)
     .maybeSingle();
   if (error) throw error;
-  const row = rowData as { id: string; provider_subscription_id: string | null } | null;
+  const row = rowData as { id: string; provider?: string | null; provider_subscription_id: string | null } | null;
   if (!row) throw Errors.BAD_REQUEST('Nenhuma assinatura ativa para cancelar.');
 
   if (row.provider_subscription_id) {
-    const canceled = await cancelSubscriptionAtProvider(row.provider_subscription_id);
+    const canceled = row.provider === 'asaas'
+      ? await cancelAsaasSubscription(row.provider_subscription_id)
+      : await cancelSubscriptionAtProvider(row.provider_subscription_id);
     if (!canceled) throw billingUnavailable();
   }
 
@@ -437,6 +502,63 @@ export async function cancelSubscription(
   invalidateMeCache(userId);
   logger.info({ creator_id: creator.id }, 'Subscription canceled (access kept until period end)');
   return { ok: true, canceled_at: now };
+}
+
+/**
+ * Encerra assinaturas recorrentes antes da exclusão da conta.
+ *
+ * Diferente de `cancelSubscription`, não exige `BILLING_ENABLED`: se existe
+ * `provider_subscription_id`, a cobrança é real e precisa ser cancelada no
+ * provedor antes de apagar o creator (o FK em `subscriptions` é CASCADE).
+ * Se o provedor não confirmar, lança 502 e a conta NÃO deve ser apagada —
+ * assim nunca sobra cobrança recorrente sem titular.
+ */
+export async function cancelSubscriptionsForAccountDeletion(creatorId: string): Promise<void> {
+  const { data, error } = await supabaseAdmin
+    .from('subscriptions')
+    .select('id, provider, provider_subscription_id, status')
+    .eq('creator_id', creatorId)
+    .in('status', ['active', 'past_due', 'pending'])
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+
+  const rows = (data ?? []) as Array<{ id: string; provider?: string | null; provider_subscription_id: string | null }>;
+  if (!rows.length) return;
+
+  const now = new Date().toISOString();
+  for (const row of rows) {
+    if (row.provider_subscription_id) {
+      const canceled = row.provider === 'asaas'
+        ? await cancelAsaasSubscription(row.provider_subscription_id)
+        : await cancelSubscriptionAtProvider(row.provider_subscription_id);
+      if (!canceled) {
+        logger.error(
+          { creator_id: creatorId, subscription_id: row.id },
+          'Provider cancellation failed during account deletion',
+        );
+        throw createAppError(
+          'BILLING_CANCEL_FAILED',
+          'Não conseguimos cancelar sua assinatura agora. Tente novamente em instantes ou fale com o suporte.',
+          502,
+        );
+      }
+    }
+    const { error: updateError } = await supabaseAdmin
+      .from('subscriptions')
+      .update({ status: 'canceled', canceled_at: now, updated_at: now })
+      .eq('id', row.id);
+    if (updateError) throw updateError;
+  }
+
+  await supabaseAdmin
+    .from('creators')
+    .update({ plan_status: 'canceled', cancel_at_period_end: true })
+    .eq('id', creatorId);
+
+  logger.info(
+    { creator_id: creatorId, subscriptions: rows.length },
+    'Subscriptions canceled before account deletion',
+  );
 }
 
 /** Agenda a troca de plano (upgrade/downgrade) para o próximo ciclo — sem pró-rata. */
@@ -484,10 +606,19 @@ export async function schedulePlanChange(
 }
 
 async function findSubscriptionRow(filters: {
+  rowId?: string | null;
   checkoutId?: string | null;
   providerSubscriptionId?: string | null;
 }): Promise<SubscriptionRow | null> {
   const select = 'id, creator_id, plan, period, status, billing_mode, launch_price, launch_seat, provider_checkout_id, provider_subscription_id, current_period_end, started_at, pending_plan, pending_period';
+  if (filters.rowId) {
+    const { data } = await supabaseAdmin
+      .from('subscriptions')
+      .select(select)
+      .eq('id', filters.rowId)
+      .maybeSingle();
+    if (data) return data as SubscriptionRow;
+  }
   if (filters.checkoutId) {
     const { data } = await supabaseAdmin
       .from('subscriptions')
@@ -708,6 +839,249 @@ export async function processWebhook(
       .eq('id', event.id)
       .then(({ error: deleteError }) => {
         if (deleteError) logger.error({ err: deleteError }, 'Failed to rollback billing event marker');
+      });
+    throw error;
+  }
+}
+
+// ---------- Asaas webhook (cartão) ----------
+
+export interface AsaasWebhookEvent {
+  id: string;
+  event: string;
+  checkout?: {
+    id?: string;
+    customer?: string;
+    externalReference?: string;
+    status?: string;
+  };
+  subscription?: {
+    id?: string;
+    customer?: string;
+    externalReference?: string;
+    status?: string;
+  };
+  payment?: {
+    id?: string;
+    subscription?: string;
+    customer?: string;
+    externalReference?: string;
+    dueDate?: string;
+    status?: string;
+  };
+}
+
+async function activateAsaasRenewal(row: SubscriptionRow): Promise<'processed'> {
+  const now = new Date().toISOString();
+  const periodEnd = extendPeriodEnd(row.current_period_end, row.period);
+  await supabaseAdmin
+    .from('subscriptions')
+    .update({ status: 'active', current_period_end: periodEnd, canceled_at: null, updated_at: now })
+    .eq('id', row.id);
+  await supabaseAdmin
+    .from('creators')
+    .update({
+      plan: row.plan,
+      plan_status: 'active',
+      plan_period: row.period,
+      current_period_end: periodEnd,
+      trial_ends_at: null,
+      cancel_at_period_end: false,
+    })
+    .eq('id', row.creator_id);
+  await invalidateCreatorCache(row.creator_id);
+  logger.info({ subscription_id: row.id, period_end: periodEnd }, 'Asaas subscription renewed');
+  return 'processed';
+}
+
+async function asaasCheckoutPaid(event: AsaasWebhookEvent): Promise<'processed' | 'ignored'> {
+  const checkout = event.checkout;
+  if (!checkout?.id && !checkout?.externalReference) return 'ignored';
+  let row = checkout.id ? await findSubscriptionRow({ checkoutId: checkout.id }) : null;
+  if (!row && checkout.externalReference) {
+    row = await findSubscriptionRow({ rowId: checkout.externalReference });
+  }
+  if (!row) return 'ignored';
+
+  let subscriptionId = row.provider_subscription_id;
+  if (!subscriptionId && checkout.customer) {
+    const sub = await findAsaasActiveSubscription(checkout.customer, row.id);
+    subscriptionId = sub?.id ?? null;
+  }
+  if (row.status === 'active') {
+    if (subscriptionId && !row.provider_subscription_id) {
+      await supabaseAdmin
+        .from('subscriptions')
+        .update({ provider_subscription_id: subscriptionId, updated_at: new Date().toISOString() })
+        .eq('id', row.id);
+    }
+    return 'processed';
+  }
+  if (row.status !== 'pending') return 'ignored';
+  return activateRow(row, subscriptionId);
+}
+
+async function asaasCheckoutClosed(
+  event: AsaasWebhookEvent,
+  status: 'failed' | 'expired',
+): Promise<'processed' | 'ignored'> {
+  const checkout = event.checkout;
+  if (!checkout?.id) return 'ignored';
+  const row = await findSubscriptionRow({ checkoutId: checkout.id });
+  if (!row || row.status !== 'pending') return 'ignored';
+  await supabaseAdmin
+    .from('subscriptions')
+    .update({ status, updated_at: new Date().toISOString() })
+    .eq('id', row.id);
+  return 'processed';
+}
+
+async function asaasSubscriptionCreated(event: AsaasWebhookEvent): Promise<'processed' | 'ignored'> {
+  const subscription = event.subscription;
+  if (!subscription?.id) return 'ignored';
+  const row = subscription.externalReference
+    ? await findSubscriptionRow({ rowId: subscription.externalReference })
+    : null;
+  if (!row) return 'ignored';
+  await supabaseAdmin
+    .from('subscriptions')
+    .update({
+      provider_subscription_id: subscription.id,
+      provider: 'asaas',
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', row.id);
+  return 'processed';
+}
+
+async function asaasPaymentSettled(event: AsaasWebhookEvent): Promise<'processed' | 'ignored'> {
+  const payment = event.payment;
+  if (!payment) return 'ignored';
+  let row = payment.subscription
+    ? await findSubscriptionRow({ providerSubscriptionId: payment.subscription })
+    : null;
+  if (!row && payment.externalReference) {
+    row = await findSubscriptionRow({ rowId: payment.externalReference });
+  }
+  // Sem vínculo explícito, ignora: nunca ativa a assinatura pendente de outra
+  // conta só porque o evento chegou sem referência.
+  if (!row) {
+    logger.warn({ event_id: event.id, payment_id: payment.id }, 'Asaas payment without matching subscription');
+    return 'ignored';
+  }
+
+  if (row.status === 'pending') {
+    if (payment.subscription && !row.provider_subscription_id) {
+      await supabaseAdmin
+        .from('subscriptions')
+        .update({ provider_subscription_id: payment.subscription, updated_at: new Date().toISOString() })
+        .eq('id', row.id);
+    }
+    return activateRow(row, payment.subscription ?? null);
+  }
+
+  // A primeira cobrança chega perto do início do período. Só estende quando o
+  // vencimento pertence ao próximo ciclo, evitando ativar duas vezes.
+  const due = payment.dueDate ? Date.parse(payment.dueDate) : Number.NaN;
+  const end = row.current_period_end ? Date.parse(row.current_period_end) : Number.NaN;
+  if (Number.isFinite(due) && Number.isFinite(end) && due < end - 5 * 24 * 60 * 60 * 1000) {
+    return 'ignored';
+  }
+  return activateAsaasRenewal(row);
+}
+
+async function asaasPaymentFailed(event: AsaasWebhookEvent): Promise<'processed' | 'ignored'> {
+  const payment = event.payment;
+  if (!payment) return 'ignored';
+  let row = payment.subscription
+    ? await findSubscriptionRow({ providerSubscriptionId: payment.subscription })
+    : null;
+  if (!row && payment.externalReference) {
+    row = await findSubscriptionRow({ rowId: payment.externalReference });
+  }
+  if (!row) {
+    logger.warn({ event_id: event.id, payment_id: payment.id }, 'Asaas failed payment without matching subscription');
+    return 'ignored';
+  }
+  const now = new Date().toISOString();
+  if (row.status === 'pending') {
+    await supabaseAdmin
+      .from('subscriptions')
+      .update({ status: 'failed', updated_at: now })
+      .eq('id', row.id);
+    return 'processed';
+  }
+  await supabaseAdmin
+    .from('subscriptions')
+    .update({ status: 'past_due', updated_at: now })
+    .eq('id', row.id);
+  await supabaseAdmin
+    .from('creators')
+    .update({ plan_status: 'past_due' })
+    .eq('id', row.creator_id);
+  await invalidateCreatorCache(row.creator_id);
+  logger.warn({ subscription_id: row.id }, 'Asaas payment failed (past_due)');
+  return 'processed';
+}
+
+async function asaasSubscriptionClosed(event: AsaasWebhookEvent): Promise<'processed' | 'ignored'> {
+  const subscription = event.subscription;
+  if (!subscription?.id) return 'ignored';
+  const row = await findSubscriptionRow({ providerSubscriptionId: subscription.id });
+  if (!row) return 'ignored';
+  const now = new Date().toISOString();
+  await supabaseAdmin
+    .from('subscriptions')
+    .update({ status: 'canceled', canceled_at: now, updated_at: now })
+    .eq('id', row.id);
+  await supabaseAdmin
+    .from('creators')
+    .update({ plan_status: 'canceled', cancel_at_period_end: true })
+    .eq('id', row.creator_id);
+  await invalidateCreatorCache(row.creator_id);
+  return 'processed';
+}
+
+/** Eventos do Asaas para o checkout/assinatura de cartão. */
+export async function processAsaasWebhook(
+  event: AsaasWebhookEvent,
+): Promise<'processed' | 'duplicate' | 'ignored'> {
+  const { error: insertError } = await supabaseAdmin
+    .from('billing_events')
+    .insert({ id: `asaas:${event.id}`, type: event.event });
+  if (insertError) {
+    if ((insertError as { code?: string }).code === '23505') return 'duplicate';
+    throw insertError;
+  }
+  try {
+    switch (event.event) {
+      case 'CHECKOUT_PAID':
+        return await asaasCheckoutPaid(event);
+      case 'CHECKOUT_CANCELED':
+        return await asaasCheckoutClosed(event, 'failed');
+      case 'CHECKOUT_EXPIRED':
+        return await asaasCheckoutClosed(event, 'expired');
+      case 'SUBSCRIPTION_CREATED':
+        return await asaasSubscriptionCreated(event);
+      case 'PAYMENT_CONFIRMED':
+      case 'PAYMENT_RECEIVED':
+        return await asaasPaymentSettled(event);
+      case 'PAYMENT_OVERDUE':
+      case 'PAYMENT_CREDIT_CARD_CAPTURE_REFUSED':
+        return await asaasPaymentFailed(event);
+      case 'SUBSCRIPTION_INACTIVATED':
+      case 'SUBSCRIPTION_DELETED':
+        return await asaasSubscriptionClosed(event);
+      default:
+        return 'ignored';
+    }
+  } catch (error) {
+    await supabaseAdmin
+      .from('billing_events')
+      .delete()
+      .eq('id', `asaas:${event.id}`)
+      .then(({ error: deleteError }) => {
+        if (deleteError) logger.error({ err: deleteError }, 'Failed to rollback Asaas event marker');
       });
     throw error;
   }

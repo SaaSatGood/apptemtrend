@@ -12,8 +12,9 @@ const API_TIMEOUT_MS = 12000;
 export async function api<T>(
   path: string,
   accessToken: string | undefined,
-  options: RequestInit & { json?: unknown } = {}
+  options: RequestInit & { json?: unknown; timeoutMs?: number } = {}
 ): Promise<T> {
+  const { timeoutMs = API_TIMEOUT_MS, ...requestOptions } = options;
   const headers: Record<string, string> = {};
   // Content-Type só com corpo: Fastify rejeita DELETE/GET com o header e sem body (400).
   if (options.body != null && !(options.body instanceof FormData)) headers["Content-Type"] = "application/json";
@@ -25,10 +26,10 @@ export async function api<T>(
   if (accessToken) headers.Authorization = `Bearer ${accessToken}`;
 
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), API_TIMEOUT_MS);
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
   let res: Response;
   try {
-    res = await fetch(requireApiUrl() + path, { ...options, headers, signal: controller.signal });
+    res = await fetch(requireApiUrl() + path, { ...requestOptions, headers, signal: controller.signal });
   } catch (error) {
     if (error instanceof DOMException && error.name === "AbortError") {
       throw new Error("A resposta demorou demais. Tente novamente.");
@@ -52,6 +53,10 @@ export async function api<T>(
 export function friendlyError(error: unknown, fallback: string): string {
   const message = String((error as { message?: unknown })?.message ?? "").trim();
   if (!message) return fallback;
+  // Cadastro autenticado mas sem perfil de creator (onboarding incompleto).
+  if (/creator\s+n[aã]o\s+encontrado/i.test(message)) {
+    return "Complete seu cadastro para continuar.";
+  }
   if (
     /failed to fetch|networkerror|typeerror|internal|supabase|gemini|econn|undefined|cannot read|\bnull\b|erro\s*\d|status code 5|stack trace/i.test(
       message

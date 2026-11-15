@@ -13,8 +13,8 @@ import { parseWebhookEvent } from './billing.events.js';
 import {
   PLAN_LIMITS,
   PLAN_META,
-  FREE_KITS_TOTAL,
-  FREE_SEARCHES_TOTAL,
+  FREE_KITS_PER_WEEK,
+  FREE_SEARCHES_PER_WEEK,
   formatCents,
   type CatalogPlanId,
 } from './plans.js';
@@ -22,6 +22,7 @@ import {
 const checkoutSchema = z.object({
   plan: z.enum(['pro']),
   period: z.enum(['monthly', 'annual']).optional().default('monthly'),
+  method: z.enum(['card', 'pix']).optional(),
 }).strict();
 
 function safeEqual(a: string, b: string): boolean {
@@ -43,7 +44,13 @@ async function billingRoutes(app: FastifyInstance) {
     return {
       enabled,
       trial_days: 0,
-      free: { searches_total: FREE_SEARCHES_TOTAL, kits_total: FREE_KITS_TOTAL },
+      free: {
+        searches_per_week: FREE_SEARCHES_PER_WEEK,
+        kits_per_week: FREE_KITS_PER_WEEK,
+        // Compatibilidade com clientes antigos.
+        searches_total: FREE_SEARCHES_PER_WEEK,
+        kits_total: FREE_KITS_PER_WEEK,
+      },
       launch,
       plans: PUBLIC_PLANS.map((id) => ({
         ...PLAN_META[id],
@@ -73,7 +80,7 @@ async function billingRoutes(app: FastifyInstance) {
   }, async (request) => {
     const body = checkoutSchema.parse(request.body ?? {});
     const creator = await requireActiveCreator(request.authUser.id);
-    return billingService.startCheckout(request.authUser.id, creator, body.plan, body.period);
+    return billingService.startCheckout(request.authUser.id, creator, body.plan, body.period, body.method);
   });
 
   // Cancela a assinatura (acesso mantido até o fim do período pago).
@@ -98,7 +105,9 @@ async function billingRoutes(app: FastifyInstance) {
     return billingService.schedulePlanChange(creator, body.plan, body.period);
   });
 
-  // Webhook AbacatePay v2 — autenticado por segredo na query (?webhookSecret=...).
+  // Webhook AbacatePay v2 — autenticado por segredo no header
+  // `x-webhook-secret` (preferencial) ou na query (?webhookSecret=...), que
+  // mantemos por compatibilidade com o painel do provedor. A URL nunca é logada.
   // Sem segredo configurado, recusa tudo: nunca libera plano sem prova.
   app.post('/billing/webhook', {
     config: { rateLimit: RATE_LIMITS.BILLING_WEBHOOK },
@@ -109,7 +118,12 @@ async function billingRoutes(app: FastifyInstance) {
       return reply.status(503).send({ error: { code: 'WEBHOOK_DISABLED', message: 'Webhook não configurado.' } });
     }
     const query = request.query as Record<string, unknown> | undefined;
-    const provided = typeof query?.webhookSecret === 'string' ? query.webhookSecret : '';
+    const headerSecret = request.headers['x-webhook-secret'];
+    const provided = typeof headerSecret === 'string' && headerSecret
+      ? headerSecret
+      : typeof query?.webhookSecret === 'string'
+        ? query.webhookSecret
+        : '';
     if (!provided || !safeEqual(provided, configured)) {
       logger.warn('AbacatePay webhook rejected: invalid secret');
       return reply.status(401).send({ error: { code: 'UNAUTHORIZED', message: 'Assinatura do webhook inválida.' } });
@@ -119,6 +133,29 @@ async function billingRoutes(app: FastifyInstance) {
       return reply.status(400).send({ error: { code: 'BAD_REQUEST', message: 'Evento inválido.' } });
     }
     const result = await billingService.processWebhook(event);
+    return reply.send({ ok: true, result });
+  });
+
+  // Webhook Asaas (cartão). Autenticado pelo token configurado no painel
+  // Asaas, enviado no header `asaas-access-token`.
+  app.post('/billing/webhook/asaas', {
+    config: { rateLimit: RATE_LIMITS.BILLING_WEBHOOK },
+  }, async (request, reply) => {
+    const configured = env.ASAAS_WEBHOOK_TOKEN;
+    if (!configured) {
+      logger.warn('Asaas webhook received but ASAAS_WEBHOOK_TOKEN is not configured');
+      return reply.status(503).send({ error: { code: 'WEBHOOK_DISABLED', message: 'Webhook não configurado.' } });
+    }
+    const provided = request.headers['asaas-access-token'];
+    if (typeof provided !== 'string' || !safeEqual(provided, configured)) {
+      logger.warn('Asaas webhook rejected: invalid token');
+      return reply.status(401).send({ error: { code: 'UNAUTHORIZED', message: 'Token do webhook inválido.' } });
+    }
+    const event = request.body as { id?: string; event?: string } | null;
+    if (!event?.id || !event?.event) {
+      return reply.status(400).send({ error: { code: 'BAD_REQUEST', message: 'Evento inválido.' } });
+    }
+    const result = await billingService.processAsaasWebhook(event as Parameters<typeof billingService.processAsaasWebhook>[0]);
     return reply.send({ ok: true, result });
   });
 }

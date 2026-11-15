@@ -124,12 +124,24 @@ describe('assistant experience', () => {
     vi.mocked(AIService.refineProductSearch).mockResolvedValue(null);
   });
 
+  it('recognizes a weekly chat request and returns seven distinct catalog products', async () => {
+    const weekCatalog = Array.from({ length: 8 }, (_, index) => ({
+      ...catalog[0], id: `33333333-3333-4333-8333-${String(index + 1).padStart(12, '0')}`,
+      nome: `Produto para casa ${index + 1}`, categoria: 'Casa',
+    }));
+    vi.mocked(productRepo.listActiveProducts).mockResolvedValue(weekCatalog);
+    const result = await findProductsForMessage({ message: 'Quero conteúdo para toda a semana com produtos, roteiros e hashtags' });
+    expect((result as { weekly_plan_requested?: boolean }).weekly_plan_requested).toBe(true);
+    expect(result.products).toHaveLength(7);
+    expect(new Set(result.products.map((product) => product.id)).size).toBe(7);
+  });
+
   it('answers with real catalog products and a brand message', async () => {
     const result = await findProductsForMessage({ message: 'Quero vender produtos para academia' });
 
     expect(result.products).toHaveLength(1);
     expect(result.products[0]?.id).toBe('11111111-1111-4111-8111-111111111111');
-    expect(result.message).toBe('Encontrei 1 produto para você.');
+    expect(result.message).toBe('Achei 1 produto para você.');
   });
 
   it('treats "não sei o que vender" as discovery', async () => {
@@ -137,8 +149,8 @@ describe('assistant experience', () => {
 
     const result = await findProductsForMessage({ message: 'Não sei o que vender' });
 
-    expect(result.products).toHaveLength(2);
-    expect(result.message).toBe('Separei algumas opções para você começar.');
+    expect(result.products).toHaveLength(1);
+    expect(result.message).toBe('Separei algumas opções para você começar. Abre uma e a gente monta o roteiro.');
   });
 
   it('keeps the previous options when a refinement finds nothing new', async () => {
@@ -161,7 +173,7 @@ describe('assistant experience', () => {
 
     expect(result.products).toHaveLength(1);
     expect(result.products[0]?.id).toBe('11111111-1111-4111-8111-111111111111');
-    expect(result.message).toBe('Encontrei 1 produto para você.');
+    expect(result.message).toBe('Achei 1 produto para você.');
     expect(AIService.interpretIntent).toHaveBeenCalled();
     expect(AIService.refineProductSearch).not.toHaveBeenCalled();
   });
@@ -242,7 +254,7 @@ describe('assistant experience', () => {
 
     const result = await findProductsForMessage({ message: 'Não sei o que vender' });
 
-    expect(result.products).toHaveLength(2);
+    expect(result.products).toHaveLength(1);
     expect(result.products.map((product) => product.id)).not.toContain('33333333-3333-4333-8333-333333333333');
   });
 
@@ -253,7 +265,7 @@ describe('assistant experience', () => {
     });
 
     expect(single.products).toHaveLength(1);
-    expect(single.message).toBe('Boa escolha. Esse é o produto certo para começar.');
+    expect(single.message).toBe('Boa escolha! Esse é o produto certo para começar.');
     expect(AIService.interpretIntent).not.toHaveBeenCalled();
     expect(AIService.refineProductSearch).not.toHaveBeenCalled();
 
@@ -273,7 +285,7 @@ describe('assistant experience', () => {
     const result = await findProductsForMessage({ message: 'Quero ajuda com meu trabalho de escola' });
 
     expect(result.products).toHaveLength(0);
-    expect(result.message).toBe('Não encontrei um produto para essa busca. Experimente descrever de outra forma.');
+    expect(result.message).toBe('Não achei nada com esse filtro. Tenta descrever de outro jeito ou me diz outra faixa de preço.');
   });
 
   it('keeps every assistant message friendly and on brand', async () => {
@@ -402,7 +414,7 @@ describe('content kit preparation', () => {
 
     expect(result.created).toBe(true);
     expect(result.content_kit).toMatchObject({ id: 'kit-new' });
-    expect(AIService.generateContentKit).toHaveBeenCalledWith(product, [previous], undefined, undefined);
+    expect(AIService.generateContentKit).toHaveBeenCalledWith(product, [previous], undefined, undefined, undefined);
     expect(kitRepo.createContentKit).toHaveBeenCalledOnce();
   });
 
@@ -414,7 +426,7 @@ describe('content kit preparation', () => {
     const result = await ensureContentKit(product.id, creatorId, undefined, 'falo direto e sem enrolação');
 
     expect(result.created).toBe(true);
-    expect(AIService.generateContentKit).toHaveBeenCalledWith(product, [], undefined, 'falo direto e sem enrolação');
+    expect(AIService.generateContentKit).toHaveBeenCalledWith(product, [], undefined, 'falo direto e sem enrolação', undefined);
     expect(kitRepo.createContentKit).toHaveBeenCalledWith(product.id, contentKit, {
       creatorId,
       briefing: undefined,
@@ -435,7 +447,7 @@ describe('content kit preparation', () => {
       briefing: 'Vídeo curto e agressivo, com 15 segundos',
       usouVoz: false,
     });
-    expect(AIService.generateContentKit).toHaveBeenCalledWith(product, [], 'Vídeo curto e agressivo, com 15 segundos', undefined);
+    expect(AIService.generateContentKit).toHaveBeenCalledWith(product, [], 'Vídeo curto e agressivo, com 15 segundos', undefined, undefined);
   });
 
   it('delivers a base kit when AI generation fails instead of erroring', async () => {

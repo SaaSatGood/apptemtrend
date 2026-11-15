@@ -1,24 +1,25 @@
-import type { Metadata } from "next";
 import Link from "next/link";
 import LegalPageFrame from "@/components/legal/LegalPageFrame";
+import { pageMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = {
-  title: "Termos de Uso | TemTrend",
+export const metadata = pageMetadata({
+  title: "Termos de Uso",
   description:
-    "Regras de uso da TemTrend: o que a plataforma entrega, plano grátis, planos pagos, renovação, cancelamento, direito de arrependimento (CDC) e responsabilidades.",
-};
+    "Regras de uso da TemTrend: o que a plataforma entrega, plano Grátis, planos pagos, renovação, cancelamento, direito de arrependimento (CDC) e responsabilidades.",
+  path: "/termos",
+});
 
 export default function TermosPage() {
   return (
     <LegalPageFrame
       eyebrow="Uso da plataforma"
       title="Termos de Uso"
-      updated="24 de outubro de 2026"
+      updated="13 de novembro de 2026"
       intro="As regras entre você e a TemTrend: o que a plataforma entrega, como funcionam o plano Grátis, os planos pagos e o cancelamento, seus direitos como consumidor e os limites de responsabilidade de cada lado."
     >
       <section aria-labelledby="termos-aceitacao">
         <h2 id="termos-aceitacao">Aceitação e abrangência</h2>
-        <p>Estes Termos de Uso (“Termos”) regulam a relação entre você e a TemTrend (“TemTrend”, “nós”) no uso da plataforma disponível em <strong>temtrend.online</strong> (“Plataforma”), incluindo o site, a área logada, o catálogo de produtos, a geração de roteiros e as ferramentas de produção.</p>
+        <p>Estes Termos de Uso (“Termos”) regulam a relação entre você e a TemTrend (“TemTrend”, “nós”) no uso da plataforma disponível em <strong>www.temtrend.com</strong> (“Plataforma”), incluindo o site, a área logada, o catálogo de produtos, a geração de roteiros e as ferramentas de produção.</p>
         <p>Ao criar a conta ou contratar um plano, você declara que leu, entendeu e aceita estes Termos, a <Link href="/privacidade">Política de Privacidade</Link> e a <Link href="/reembolso">Política de Reembolso</Link>, que juntos formam o contrato entre as partes. O aceite é eletrônico, feito depois que os documentos ficam disponíveis para leitura — como exige o Decreto nº 7.962/2013.</p>
         <p>Se você não concordar com alguma cláusula, não crie conta nem contrate. Dúvidas são atendidas pelo <strong>Suporte</strong> dentro da Plataforma.</p>
       </section>
@@ -28,7 +29,7 @@ export default function TermosPage() {
         <p>A TemTrend é uma ferramenta de trabalho para creators de conteúdo. Ela ajuda você a:</p>
         <ul>
           <li><strong>descobrir produtos</strong> a partir de um catálogo com preço, comissão estimada e sinais de tendência;</li>
-          <li><strong>gerar Content Kits</strong> — planos de gravação com roteiro, cenas, legenda, hashtags, áudio e duração, com apoio de inteligência artificial;</li>
+          <li><strong>gerar roteiros completos</strong> — planos de gravação com cenas, legenda, hashtags, áudio e duração, com apoio de inteligência artificial;</li>
           <li><strong>organizar a produção</strong> do roteiro até a publicação, com registro dos links publicados.</li>
         </ul>
         <p>Para evitar qualquer dúvida, a TemTrend <strong>não é</strong>:</p>
@@ -59,7 +60,7 @@ export default function TermosPage() {
 
       <section aria-labelledby="termos-gratis">
         <h2 id="termos-gratis">Plano Grátis</h2>
-        <p>Cada conta pode realizar <strong>3 pesquisas e criar 3 roteiros no total</strong>, sem cartão de crédito e sem prazo de teste. Esses limites são por conta e não se renovam mensalmente.</p>
+        <p>O plano Grátis permite experimentar a plataforma dentro dos limites definidos na conta. Esses limites são por conta e podem ser ajustados. O catálogo completo de produtos é um recurso dos planos pagos.</p>
         <ul>
           <li>Ao atingir um limite, o conteúdo já criado continua salvo e acessível; para continuar pesquisando ou criando roteiros, é necessário contratar um plano pago.</li>
           <li>Criar contas em série para repetir os créditos gratuitos é uso indevido (cláusula “Uso aceitável”) e pode levar ao bloqueio.</li>
@@ -72,18 +73,18 @@ export default function TermosPage() {
         <p>O plano pago é o <strong>Pro</strong>, com cobrança mensal ou anual. O <strong>Enterprise</strong> é contratado por conversa, com condições definidas caso a caso, sem preço de tabela. Os valores vigentes nesta versão dos Termos são:</p>
         <ul>
           <li><strong>Pro</strong>: R$ 49,90 por mês ou R$ 499,00 por ano;</li>
-          <li><strong>Pro — condição de lançamento</strong>: R$ 39,90 por mês ou R$ 399,00 por ano, exclusiva para os primeiros 100 clientes, enquanto a assinatura estiver ativa;</li>
+          <li><strong>Condição de lançamento (encerrada para novas contratações)</strong>: R$ 39,90 por mês ou R$ 399,00 por ano, mantida apenas nas renovações de quem já assinou nessa condição;</li>
           <li><strong>Enterprise</strong>: condições e valor definidos em conversa com o nosso time.</li>
         </ul>
         <p>No plano anual, você paga o equivalente a 10 meses e usa 12. A página <Link href="/planos">Planos</Link> é a fonte atualizada de preços e recursos — e o valor, a periodicidade e as condições aplicáveis são sempre os exibidos no momento da contratação.</p>
         <ul>
-          <li>Os pagamentos são processados por parceiro especializado (AbacatePay), por PIX ou cartão, conforme a disponibilidade do meio no checkout. <strong>Não armazenamos os dados completos do seu cartão</strong>.</li>
+          <li>Os pagamentos são processados por parceiros especializados: <strong>AbacatePay</strong> para PIX/assinaturas e <strong>Asaas</strong> para cartão de crédito recorrente, conforme a disponibilidade do meio no checkout. <strong>Não armazenamos os dados completos do seu cartão</strong>.</li>
           <li>Quando o meio de pagamento permitir cobrança recorrente, a renovação é automática. Quando o pagamento for avulso (por exemplo, PIX por período), o acesso vale até o fim do período pago e a renovação é feita por um novo checkout na sua conta.</li>
-          <li>O comprovante da compra é enviado por email; documentos fiscais seguem a legislação aplicável e podem ser solicitados pelo Suporte.</li>
+          <li>O comprovante da compra fica disponível no ambiente do processador de pagamentos e pode ser solicitado pelo Suporte; documentos fiscais seguem a legislação aplicável.</li>
           <li>Preços podem ser ajustados para novas contratações, mas <strong>nunca retroativamente</strong>: o período já pago é respeitado. Para assinaturas recorrentes, o novo valor vale a partir do ciclo seguinte, com aviso prévio pelos canais da Plataforma. A condição de lançamento é preservada nas renovações enquanto a assinatura permanecer ativa.</li>
         </ul>
         <h3>Uso justo</h3>
-        <p>O plano Pro entrega kits de conteúdo e buscas de IA <strong>ilimitados na experiência normal de um creator</strong>. Para proteger a estabilidade da Plataforma, o custo de IA e os termos da fonte do catálogo, podemos aplicar limites técnicos de proteção contra automação, compartilhamento de conta, revenda ou volumes anormalmente altos. Se o seu uso se aproximar desse patamar, entraremos em contato para ajustar o plano — sem apagar o que você já criou.</p>
+        <p>O plano Pro entrega roteiros e buscas de IA <strong>ilimitados na experiência normal de um creator</strong>. Para proteger a estabilidade da Plataforma, o custo de IA e os termos da fonte do catálogo, podemos aplicar limites técnicos de proteção contra automação, compartilhamento de conta, revenda ou volumes anormalmente altos. Se o seu uso se aproximar desse patamar, entraremos em contato para ajustar o plano — sem apagar o que você já criou.</p>
       </section>
 
       <section aria-labelledby="termos-renovacao">
@@ -161,7 +162,7 @@ export default function TermosPage() {
 
       <section aria-labelledby="termos-encerramento">
         <h2 id="termos-encerramento">Suspensão e encerramento</h2>
-        <p><strong>Por você:</strong> é possível encerrar a conta a qualquer momento em Conta → Excluir conta. A exclusão é permanente e remove perfil e conteúdos salvos, conforme a <Link href="/privacidade">Política de Privacidade</Link>. Se houver assinatura ativa, cancele o plano antes de excluir a conta para não haver qualquer cobrança futura.</p>
+        <p><strong>Por você:</strong> é possível encerrar a conta a qualquer momento em Conta → Excluir conta. A exclusão é permanente e remove perfil e conteúdos salvos, conforme a <Link href="/privacidade">Política de Privacidade</Link>. Se houver assinatura ativa, o cancelamento no provedor é feito automaticamente durante a exclusão, antes de apagar os dados.</p>
         <p><strong>Por nós:</strong> podemos suspender ou encerrar contas em caso de violação destes Termos, fraude, risco à segurança, ordem de autoridade ou reclamação fundamentada de terceiros. Sempre que possível, avisamos antes e damos chance de correção; em situações graves, o bloqueio pode ser imediato.</p>
         <ul>
           <li>Se encerrarmos o serviço ou a sua conta sem que você tenha dado causa, o valor correspondente ao período pago e não utilizado é devolvido proporcionalmente.</li>
@@ -191,7 +192,7 @@ export default function TermosPage() {
 
       <section aria-labelledby="termos-atendimento">
         <h2 id="termos-atendimento">Atendimento, lei aplicável e foro</h2>
-        <p>Dúvidas, reclamações e pedidos são atendidos pelo <strong>Suporte</strong> dentro da Plataforma, nas categorias Dúvida, Problema, Cobrança, Sugestão e Outro. O atendimento do plano Pro é por email; condições específicas de Enterprise são definidas em conversa, sem promessa de assentos ou de nível de serviço (SLA) neste documento.</p>
+        <p>Dúvidas, reclamações e pedidos são atendidos pelo <strong>Suporte</strong> dentro da Plataforma, nas categorias Dúvida, Problema, Cobrança, Sugestão e Outro. O atendimento do plano Pro é feito pelo canal de suporte dentro da Plataforma; condições específicas de Enterprise são definidas em conversa, sem promessa de assentos ou de nível de serviço (SLA) neste documento.</p>
         <p>Você também pode recorrer aos canais oficiais de defesa do consumidor, como a plataforma <strong>consumidor.gov.br</strong> e o Procon do seu estado.</p>
         <p>Estes Termos são regidos pelas leis brasileiras, em especial o Código de Defesa do Consumidor (Lei nº 8.078/1990), o Marco Civil da Internet (Lei nº 12.965/2014) e a Lei Geral de Proteção de Dados (Lei nº 13.709/2018). Para consumidores, é competente o foro do domicílio da pessoa consumidora (art. 101, I, do CDC). Se alguma cláusula for considerada inválida, as demais permanecem em vigor.</p>
       </section>

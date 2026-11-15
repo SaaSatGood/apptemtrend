@@ -1,5 +1,5 @@
-import { findProductByExternalId, findProductById, listActiveProducts, createProduct as createProductRepo, updateProduct as updateProductRepo } from './product.repository.js';
-import { listContentKitsByProductId, createContentKit } from '../content-kits/content-kit.repository.js';
+import { findProductByExternalId, findProductById, listActiveProducts, listActiveProductCategories, searchActiveProducts, createProduct as createProductRepo, updateProduct as updateProductRepo, type ProductSort } from './product.repository.js';
+import { listContentKitsByProductId, createContentKit, findContentKitById, deleteContentKit as removeContentKit } from '../content-kits/content-kit.repository.js';
 import { createContentKitSchema } from '../content-kits/content-kit.schema.js';
 import { AIService } from '../assistant/ai.service.js';
 import { buildFallbackKit } from '../assistant/gemini-generation.service.js';
@@ -13,6 +13,7 @@ import crypto from 'node:crypto';
 import { invalidateDashboardCache } from '../admin/admin.repository.js';
 
 const catalogCache = new TtlCache<Product[]>(50);
+const categoriesCache = new TtlCache<Array<{ categoria: string; total: number }>>(1);
 // Namespaces distintos: catálogo pesquisável (sem filtro) nunca colide com
 // catálogo filtrado (categoria/destaque). Datasets diferentes, mesma instância.
 const SEARCHABLE_CATALOG_KEY = 'searchable:all';
@@ -47,10 +48,12 @@ export async function getProducts(
 
 export function invalidateCatalogCache() {
   catalogCache.clear();
+  categoriesCache.clear();
 }
 
 export function clearCatalogCacheForTests() {
   catalogCache.clear();
+  categoriesCache.clear();
 }
 
 export async function listSearchableCatalog(): Promise<Product[]> {
@@ -63,6 +66,45 @@ export async function listSearchableCatalog(): Promise<Product[]> {
   const products = await listActiveProducts({ onlySearchable: true });
   catalogCache.set(SEARCHABLE_CATALOG_KEY, products, CACHE_TTL_MS.CATALOG);
   return products;
+}
+
+const CATEGORIES_CACHE_KEY = 'catalog:categories';
+
+export interface CatalogSearchFilters {
+  q?: string;
+  categoria?: string;
+  sort: ProductSort;
+  precoMax?: number;
+  comissaoMin?: number;
+  limit: number;
+  offset: number;
+}
+
+/** Vitrine do catálogo: busca, filtros e paginação para a tela Produtos. */
+export async function searchCatalog(filters: CatalogSearchFilters) {
+  const { items, total } = await searchActiveProducts({
+    q: filters.q,
+    categoria: filters.categoria,
+    sort: filters.sort,
+    precoMax: filters.precoMax,
+    comissaoMin: filters.comissaoMin,
+    limit: filters.limit,
+    offset: filters.offset,
+  });
+  return {
+    items: items.filter((product) => product.status === PRODUCT_STATUS.ATIVO),
+    total,
+  };
+}
+
+/** Categorias ativas com contagem; cache curto, equal ao do catálogo. */
+export async function listCatalogCategories() {
+  if (process.env.NODE_ENV === 'test') return listActiveProductCategories();
+  const cached = categoriesCache.get(CATEGORIES_CACHE_KEY);
+  if (cached) return cached;
+  const categorias = await listActiveProductCategories();
+  categoriesCache.set(CATEGORIES_CACHE_KEY, categorias, CACHE_TTL_MS.CATALOG);
+  return categorias;
 }
 
 export async function getProductById(
@@ -121,13 +163,16 @@ function briefingHash(briefing?: string): string {
   return crypto.createHash('sha256').update(normalized).digest('hex').slice(0, 16);
 }
 
-function inflightKey(productId: string, creatorId: string, briefing?: string) {
-  return `${creatorId}:${productId}:${briefingHash(briefing)}`;
+function inflightKey(productId: string, creatorId: string, briefing?: string, preferencesBriefing?: string) {
+  return `${creatorId}:${productId}:${briefingHash([preferencesBriefing, briefing].filter(Boolean).join(' '))}`;
 }
 
-async function createContentKitResult(productId: string, creatorId: string, briefing?: string, voz?: string | null) {
+async function createContentKitResult(productId: string, creatorId: string, briefing?: string, voz?: string | null, userId?: string, preferencesBriefing?: string) {
   const { product, content_kits } = await getProductById(productId, { creatorId });
   const temVoz = Boolean(voz?.trim());
+  // O briefing escrito pelo usuário prevalece; as preferências entram como
+  // contexto de estilo/foco, nunca como dado do produto.
+  const aiBriefing = [preferencesBriefing, briefing].filter(Boolean).join(' ') || undefined;
   // Roteiro base garantido: se a IA estiver fora, salva um kit honesto com os
   // dados reais do produto em vez de falhar. `fallback: true` avisa o frontend.
   if (!AIService.isAvailable() && env.NODE_ENV !== 'test') {
@@ -136,7 +181,7 @@ async function createContentKitResult(productId: string, creatorId: string, brie
     const contentKit = await createContentKit(product.id, input, { creatorId, briefing, usouVoz: false });
     return { content_kit: contentKit, created: true, fallback: true };
   }
-  const generated = await AIService.generateContentKit(product, content_kits, briefing, voz);
+  const generated = await AIService.generateContentKit(product, content_kits, aiBriefing, voz, userId);
   if (!generated) {
     // Última tentativa esgotada: entrega o roteiro base em vez de 503.
     try {
@@ -147,7 +192,7 @@ async function createContentKitResult(productId: string, creatorId: string, brie
     } catch {
       throw createAppError(
         'SERVICE_UNAVAILABLE',
-        'Não conseguimos gerar seu Content Kit agora. Tente novamente em alguns segundos.',
+        'Não conseguimos gerar seu roteiro agora. Tente novamente em alguns segundos.',
         503,
       );
     }
@@ -158,12 +203,12 @@ async function createContentKitResult(productId: string, creatorId: string, brie
   return { content_kit: contentKit, created: true };
 }
 
-async function createOnceWhilePending(productId: string, creatorId: string, briefing?: string, voz?: string | null) {
-  const key = inflightKey(productId, creatorId, briefing);
+async function createOnceWhilePending(productId: string, creatorId: string, briefing?: string, voz?: string | null, userId?: string, preferencesBriefing?: string) {
+  const key = inflightKey(productId, creatorId, briefing, preferencesBriefing);
   const pending = contentKitCreationInFlight.get(key);
   if (pending) return pending;
 
-  const creation = createContentKitResult(productId, creatorId, briefing, voz);
+  const creation = createContentKitResult(productId, creatorId, briefing, voz, userId, preferencesBriefing);
   contentKitCreationInFlight.set(key, creation);
   // Evita vazamento se a promise nunca assentar; limpa em 5min.
   const guard = setTimeout(() => {
@@ -183,17 +228,27 @@ async function createOnceWhilePending(productId: string, creatorId: string, brie
 }
 
 /** Reutiliza o kit mais recente; só cria quando o produto ainda não possui nenhum. */
-export async function ensureContentKit(productId: string, creatorId: string, briefing?: string, voz?: string | null) {
+export async function ensureContentKit(productId: string, creatorId: string, briefing?: string, voz?: string | null, userId?: string, preferencesBriefing?: string) {
   const { content_kits } = await getProductById(productId, { creatorId });
   if (content_kits[0]) return { content_kit: content_kits[0], created: false };
 
   // Uma segunda leitura dentro do bloqueio evita duplicação por cliques simultâneos.
-  const pending = contentKitCreationInFlight.get(inflightKey(productId, creatorId, briefing));
+  const pending = contentKitCreationInFlight.get(inflightKey(productId, creatorId, briefing, preferencesBriefing));
   if (pending) return pending;
-  return createOnceWhilePending(productId, creatorId, briefing, voz);
+  return createOnceWhilePending(productId, creatorId, briefing, voz, userId, preferencesBriefing);
 }
 
 /** Cria deliberadamente uma nova versão quando o usuário pede outro roteiro. */
-export function createFreshContentKit(productId: string, creatorId: string, briefing?: string, voz?: string | null) {
-  return createOnceWhilePending(productId, creatorId, briefing, voz);
+export function createFreshContentKit(productId: string, creatorId: string, briefing?: string, voz?: string | null, userId?: string, preferencesBriefing?: string) {
+  return createOnceWhilePending(productId, creatorId, briefing, voz, userId, preferencesBriefing);
+}
+
+/** Exclui um roteiro do creator. A produção ligada a ele é removida em cascata. */
+export async function deleteContentKit(productId: string, kitId: string, creatorId: string) {
+  const kit = await findContentKitById(kitId);
+  if (!kit || kit.product_id !== productId || kit.creator_id !== creatorId) {
+    throw Errors.NOT_FOUND('Roteiro');
+  }
+  await removeContentKit(kitId);
+  return { id: kitId };
 }

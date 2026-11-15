@@ -2,8 +2,6 @@ import { FastifyInstance } from 'fastify';
 import fp from 'fastify-plugin';
 import { z } from 'zod';
 import { requireAuth } from '../../plugins/auth.js';
-import { requireActiveCreator } from '../creators/creator.service.js';
-import { assertProductionQuota } from '../billing/billing.gating.js';
 import { RATE_LIMITS } from '../../config/constants.js';
 import { createCreatorContentSchema, selectContentKitSchema, updateCreatorContentSchema } from './creator-content.schema.js';
 import * as creatorContentService from './creator-content.service.js';
@@ -42,8 +40,6 @@ async function creatorContentRoutes(fastify: FastifyInstance) {
     config: { rateLimit: RATE_LIMITS.AUTH_WRITE },
   }, async (request, reply) => {
     const body = createCreatorContentSchema.parse(request.body);
-    const creator = await requireActiveCreator(request.authUser.id);
-    await assertProductionQuota(creator);
     const content = body.product_id
       ? await creatorContentService.startProduction(request.authUser.id, body.product_id, body.content_kit_briefing)
       : await creatorContentService.saveOpportunity(request.authUser.id, body.content_kit_id!);

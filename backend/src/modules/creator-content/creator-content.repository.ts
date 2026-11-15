@@ -7,6 +7,32 @@ export interface CreatorContentWithRelations extends CreatorContent {
   content_kits: ContentKit | null;
 }
 
+// Compatibilidade com bancos ainda sem a migration 034. A marca fica ao fim
+// de notas, é removida das respostas da API e migra para a coluna dedicada.
+const SCHEDULE_MARKER = /\n?\[temtrend:scheduled_for=(\d{4}-\d{2}-\d{2})\]$/;
+
+function scheduledFromNotes(notes: string | null | undefined): string | null {
+  return notes?.match(SCHEDULE_MARKER)?.[1] ?? null;
+}
+
+function cleanNotes(notes: string | null | undefined): string | null {
+  return notes?.replace(SCHEDULE_MARKER, '') || null;
+}
+
+function withScheduleNotes(notes: string | null | undefined, schedule: string | null): string | null {
+  const clean = cleanNotes(notes);
+  return schedule ? `${clean ? `${clean}\n` : ''}[temtrend:scheduled_for=${schedule}]` : clean;
+}
+
+function presentContent<T extends CreatorContent>(content: T | null): T | null {
+  if (!content) return null;
+  return {
+    ...content,
+    notas: cleanNotes(content.notas),
+    scheduled_for: content.scheduled_for ?? scheduledFromNotes(content.notas),
+  };
+}
+
 export async function findCreatorContentById(id: string): Promise<CreatorContent | null> {
   const { data, error } = await supabaseAdmin
     .from('creator_content')
@@ -19,7 +45,7 @@ export async function findCreatorContentById(id: string): Promise<CreatorContent
     throw error;
   }
 
-  return data;
+  return presentContent(data);
 }
 
 export async function findCreatorContentWithRelationsById(id: string): Promise<CreatorContentWithRelations | null> {
@@ -34,7 +60,7 @@ export async function findCreatorContentWithRelationsById(id: string): Promise<C
     throw error;
   }
 
-  return data;
+  return presentContent(data);
 }
 
 export async function listCreatorContent(
@@ -62,7 +88,7 @@ export async function listCreatorContent(
     throw error;
   }
 
-  return data || [];
+  return (data || []).map((item) => presentContent(item)!);
 }
 
 export async function findByCreatorAndKit(creatorId: string, contentKitId: string): Promise<CreatorContent | null> {
@@ -78,7 +104,7 @@ export async function findByCreatorAndKit(creatorId: string, contentKitId: strin
     throw error;
   }
 
-  return data;
+  return presentContent(data);
 }
 
 export async function findByCreatorAndProduct(creatorId: string, productId: string): Promise<CreatorContent | null> {
@@ -95,7 +121,7 @@ export async function findByCreatorAndProduct(creatorId: string, productId: stri
     throw error;
   }
 
-  return data;
+  return presentContent(data);
 }
 
 export async function findAnyByCreatorAndProduct(creatorId: string, productId: string): Promise<CreatorContent | null> {
@@ -113,7 +139,7 @@ export async function findAnyByCreatorAndProduct(creatorId: string, productId: s
     throw error;
   }
 
-  return data;
+  return presentContent(data);
 }
 
 export async function createCreatorContent(input: {
@@ -133,7 +159,7 @@ export async function createCreatorContent(input: {
     throw error;
   }
 
-  return data;
+  return presentContent(data)!;
 }
 
 export async function deleteCreatorContent(id: string): Promise<void> {
@@ -149,17 +175,53 @@ export async function deleteCreatorContent(id: string): Promise<void> {
 }
 
 export async function updateCreatorContent(id: string, input: Record<string, unknown>): Promise<CreatorContent> {
+  const changes = { ...input };
+  let existingNotes: string | null = null;
+  if ('scheduled_for' in changes || 'notas' in changes) {
+    const { data: existing, error: readError } = await supabaseAdmin
+      .from('creator_content').select('notas, scheduled_for').eq('id', id).maybeSingle();
+    if (readError?.code === '42703' || readError?.code === 'PGRST204') {
+      const fallback = await supabaseAdmin.from('creator_content').select('notas').eq('id', id).maybeSingle();
+      if (fallback.error) throw fallback.error;
+      existingNotes = fallback.data?.notas ?? null;
+    } else if (readError) {
+      throw readError;
+    } else {
+      existingNotes = existing?.notas ?? null;
+    }
+    if ('notas' in changes && !('scheduled_for' in changes)) {
+      const date = scheduledFromNotes(existingNotes);
+      if (date) changes.notas = withScheduleNotes(changes.notas as string | null, date);
+    }
+    if ('scheduled_for' in changes && scheduledFromNotes(existingNotes)) {
+      changes.notas = cleanNotes('notas' in changes ? changes.notas as string | null : existingNotes);
+    }
+  }
   const { data, error } = await supabaseAdmin
     .from('creator_content')
-    .update(input)
+    .update(changes)
     .eq('id', id)
     .select()
     .single();
 
   if (error) {
+    if ('scheduled_for' in input && (error.code === '42703' || error.code === 'PGRST204')) {
+      const { scheduled_for: schedule, ...withoutColumn } = input;
+      const notes = withScheduleNotes(
+        'notas' in withoutColumn ? withoutColumn.notas as string | null : existingNotes,
+        schedule as string | null,
+      );
+      const fallback = await supabaseAdmin.from('creator_content')
+        .update({ ...withoutColumn, notas: notes }).eq('id', id).select().single();
+      if (fallback.error) {
+        logger.error({ err: fallback.error }, 'Error updating creator content schedule fallback');
+        throw fallback.error;
+      }
+      return presentContent(fallback.data)!;
+    }
     logger.error({ err: error }, 'Error updating creator content');
     throw error;
   }
 
-  return data;
+  return presentContent(data)!;
 }

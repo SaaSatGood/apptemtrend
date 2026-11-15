@@ -13,6 +13,7 @@ export type IconName =
   | "bell"
   | "bookmark"
   | "box"
+  | "calendar"
   | "check"
   | "check-circle"
   | "chevron-down"
@@ -28,15 +29,19 @@ export type IconName =
   | "file-text"
   | "grid"
   | "home"
+  | "image"
   | "layers"
+  | "lock"
   | "log-out"
   | "message-square"
   | "minus"
+  | "more-horizontal"
   | "moon"
   | "panel-left"
   | "pencil"
   | "percent"
   | "pie-chart"
+  | "pix"
   | "plan"
   | "plus"
   | "production"
@@ -47,6 +52,7 @@ export type IconName =
   | "shopping-bag"
   | "smartphone"
   | "sparkles"
+  | "star"
   | "sun"
   | "support"
   | "target"
@@ -101,6 +107,12 @@ const ICONS: Record<IconName, ReactNode> = {
     <>
       <path d="m21 8-9 5-9-5 9-5 9 5Z" />
       <path d="m3 8 9 5 9-5v8l-9 5-9-5V8Z" />
+    </>
+  ),
+  calendar: (
+    <>
+      <rect x="3.5" y="4.5" width="17" height="15.5" rx="2.5" />
+      <path d="M16 2.5v3.5M8 2.5v3.5M3.5 9.5h17" />
     </>
   ),
   check: <path d="m4.5 12.5 5 5 10-11" />,
@@ -174,6 +186,13 @@ const ICONS: Record<IconName, ReactNode> = {
       <path d="M9 20v-6h6v6" />
     </>
   ),
+  image: (
+    <>
+      <rect x="3" y="4" width="18" height="16" rx="3" />
+      <circle cx="9" cy="9.5" r="1.7" />
+      <path d="m5 17.5 3.9-3.9a2 2 0 0 1 2.8 0l3.4 3.4" />
+    </>
+  ),
   layers: (
     <>
       <path d="M4 7.5 12 4l8 3.5-8 3.5-8-3.5Z" />
@@ -187,10 +206,18 @@ const ICONS: Record<IconName, ReactNode> = {
       <path d="M10 12h10M17 9l3 3-3 3" />
     </>
   ),
+  lock: (
+    <>
+      <rect x="4.5" y="10" width="15" height="10.5" rx="2.5" />
+      <path d="M8 10V7a4 4 0 0 1 8 0v3" />
+      <path d="M12 14v2.5" />
+    </>
+  ),
   "message-square": (
     <path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4Z" />
   ),
   minus: <path d="M5 12h14" />,
+  "more-horizontal": <><circle cx="5" cy="12" r="1" /><circle cx="12" cy="12" r="1" /><circle cx="19" cy="12" r="1" /></>,
   moon: <path d="M20.5 14.3A8.5 8.5 0 0 1 9.7 3.5a8.5 8.5 0 1 0 10.8 10.8Z" />,
   "panel-left": (
     <>
@@ -215,6 +242,12 @@ const ICONS: Record<IconName, ReactNode> = {
     <>
       <path d="M12 3.5a8.5 8.5 0 1 0 8.5 8.5H12V3.5Z" />
       <path d="M14.5 2.6A8.5 8.5 0 0 1 21.4 9.5h-6.9V2.6Z" />
+    </>
+  ),
+  pix: (
+    <>
+      <path d="m12 3 9 9-9 9-9-9 9-9Z" />
+      <path d="m8 8 4 4 4-4M8 16l4-4 4 4" />
     </>
   ),
   plan: (
@@ -271,6 +304,7 @@ const ICONS: Record<IconName, ReactNode> = {
       <path d="M18.5 15l.9 2.6 2.6.9-2.6.9-.9 2.6-.9-2.6-2.6-.9 2.6-.9.9-2.6Z" opacity=".55" />
     </>
   ),
+  star: <path d="M12 3.6l2.6 5.3 5.8.8-4.2 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8L3.6 9.7l5.8-.8L12 3.6Z" />,
   sun: (
     <>
       <circle cx="12" cy="12" r="4.2" />

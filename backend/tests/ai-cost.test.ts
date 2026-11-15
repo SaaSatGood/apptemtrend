@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { AI_LIMITS, RATE_LIMITS } from '../src/config/constants.js';
 import { env } from '../src/config/env.js';
 import { AI_QUOTA, checkAssistantQuota, checkForceNewCooldown, checkKitQuota, getAiMetrics } from '../src/lib/ai-metrics.js';
-import { CONTENT_STRATEGY_INSTRUCTIONS } from '../src/modules/assistant/gemini-generation.service.js';
+import { CONTENT_STRATEGY_INSTRUCTIONS, HUMAN_VOICE_INSTRUCTIONS, SCRIPT_CRAFT_INSTRUCTIONS } from '../src/modules/assistant/gemini-generation.service.js';
 
 describe('AI token cost', () => {
   it('usa catálogo enxuto na classificação', () => {
@@ -16,7 +16,7 @@ describe('AI token cost', () => {
     expect(AI_LIMITS.MAX_GENERATION_ATTEMPTS).toBe(3);
     expect(AI_LIMITS.GENERATE_MAX_OUTPUT_TOKENS).toBeLessThanOrEqual(3000);
     expect(AI_LIMITS.MAX_PREVIOUS_KITS).toBeLessThanOrEqual(3);
-    expect(AI_LIMITS.MAX_BRIEFING_CHARS).toBeLessThanOrEqual(400);
+    expect(AI_LIMITS.MAX_BRIEFING_CHARS).toBeLessThanOrEqual(1500);
     expect(AI_LIMITS.MAX_PRODUCT_DESC_CHARS).toBeLessThanOrEqual(500);
   });
 
@@ -30,9 +30,28 @@ describe('AI token cost', () => {
     expect(CONTENT_STRATEGY_INSTRUCTIONS.length).toBeLessThan(1600);
   });
 
+  it('mantém a camada de voz humana fora do prompt caro', () => {
+    // A voz humana é enviada só na geração de kit, nunca no classify.
+    expect(CONTENT_STRATEGY_INSTRUCTIONS).not.toMatch(/VOZ HUMANA/);
+    expect(HUMAN_VOICE_INSTRUCTIONS).toMatch(/Proibido/);
+    expect(HUMAN_VOICE_INSTRUCTIONS).toMatch(/não é só X, é Y/);
+    expect(HUMAN_VOICE_INSTRUCTIONS).toMatch(/soar como legenda de anúncio ou texto de IA/);
+    expect(HUMAN_VOICE_INSTRUCTIONS).toMatch(/variando a abertura/);
+  });
+
+  it('mantém o ofício do roteiro fora do prompt de classificação', () => {
+    expect(CONTENT_STRATEGY_INSTRUCTIONS).not.toMatch(/OFÍCIO DO ROTEIRO/);
+    expect(SCRIPT_CRAFT_INSTRUCTIONS).toMatch(/GRAVÁVEL SOZINHO/);
+    expect(SCRIPT_CRAFT_INSTRUCTIONS).toMatch(/TESTE DA TROCA/);
+    expect(SCRIPT_CRAFT_INSTRUCTIONS).toMatch(/0-3s até 8 palavras/);
+    expect(SCRIPT_CRAFT_INSTRUCTIONS).toMatch(/JSON precisa fechar completo/);
+    expect(SCRIPT_CRAFT_INSTRUCTIONS.length).toBeLessThan(1500);
+  });
+
   it('rate-limit de IA protege custo', () => {
     expect(RATE_LIMITS.ASSISTANT_SEARCH.max).toBeLessThanOrEqual(10);
-    expect(RATE_LIMITS.CONTENT_KIT_GENERATE.max).toBeLessThanOrEqual(5);
+    // O planejador semanal gera até 7 kits em sequência; 12/min cobre a rajada.
+  expect(RATE_LIMITS.CONTENT_KIT_GENERATE.max).toBeLessThanOrEqual(12);
   });
 
   it('modelo padrão do OpenRouter é do tier gratuito', () => {
@@ -40,7 +59,7 @@ describe('AI token cost', () => {
   });
 
   it('cota diária e cooldown existem', () => {
-    expect(AI_QUOTA.ASSISTANT_PER_DAY).toBe(100);
+    expect(AI_QUOTA.ASSISTANT_PER_DAY).toBe(1000);
     expect(AI_QUOTA.KIT_PER_DAY).toBe(30);
     expect(checkAssistantQuota('test-user')).toBe(true);
     expect(checkKitQuota('test-user')).toBe(true);

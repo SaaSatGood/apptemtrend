@@ -1,0 +1,155 @@
+/* ============================================================
+   TemTrend — conversa compartilhada (link do Descobrir)
+   Escopo: .shared-view dentro de #app-view. Reusa o visual do chat
+   (.tt-discovery) e do documento de roteiro (.kit-document).
+   ============================================================ */
+
+#app-view .shared-view { max-width: 1080px; margin: 0 auto; }
+
+/* Cabeçalho: titulo da conversa + formato de visualização. */
+#app-view .shared-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 8px 0 22px;
+  border-bottom: 1px solid var(--tt-app-line);
+}
+#app-view .shared-header-copy { display: grid; gap: 8px; min-width: 0; }
+#app-view .shared-header-copy h1 {
+  margin: 0;
+  color: var(--tt-app-ink);
+  font: 700 clamp(26px, 3vw, 38px)/1.1 var(--tt-font-editorial);
+  letter-spacing: -.04em;
+  text-wrap: balance;
+}
+#app-view .shared-meta { margin: 0; color: var(--tt-app-muted); font: 500 13px/1.4 var(--tt-font-ui); }
+#app-view .shared-header-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: flex-end; }
+
+/* Seletor "chatbot | roteiro". */
+#app-view .shared-view-toggle {
+  display: inline-flex;
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid var(--tt-app-line);
+  border-radius: var(--tt-radius-control);
+  background: var(--tt-app-surface);
+}
+#app-view .shared-view-toggle button {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 40px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--tt-app-muted);
+  font: 600 13px/1 var(--tt-font-ui);
+  cursor: pointer;
+}
+#app-view .shared-view-toggle button:hover { background: var(--tt-app-soft); color: var(--tt-app-ink); }
+#app-view .shared-view-toggle button.is-active { background: var(--tt-app-ink); color: var(--tt-app-surface); }
+
+/* Visão chatbot: mesma linha do turno do Descobrir. */
+#app-view .shared-chat { padding-top: 8px; }
+#app-view .shared-chat-hint {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 18px 0 0;
+  color: var(--tt-app-muted);
+  font: 500 13px/1.5 var(--tt-font-ui);
+}
+#app-view .shared-chat-hint .tt-icon { color: var(--tt-app-green); }
+
+/* Visão roteiro: produto + documento de gravação. */
+#app-view .shared-script { display: grid; gap: 34px; padding-top: 8px; }
+#app-view .shared-script-product { display: grid; gap: 18px; }
+#app-view .shared-script-product-head {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 18px;
+  border: 1px solid var(--tt-app-line);
+  border-radius: var(--tt-radius-card);
+  background: var(--tt-app-surface);
+}
+#app-view .shared-script-product-head > .product-image-wrap,
+#app-view .shared-script-product-head > img { width: 220px; max-width: 38%; border-radius: 12px; }
+#app-view .shared-script-product-copy { display: grid; gap: 8px; min-width: 0; }
+#app-view .shared-script-product-copy h2 {
+  margin: 0;
+  color: var(--tt-app-ink);
+  font: 700 clamp(20px, 2vw, 26px)/1.18 var(--tt-font-editorial);
+  letter-spacing: -.03em;
+}
+#app-view .shared-script-product-meta { margin: 0; color: var(--tt-app-muted); font: 500 13px/1.5 var(--tt-font-ui); }
+#app-view .shared-script-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+#app-view .shared-script-kit { display: grid; gap: 10px; }
+#app-view .shared-script-kit > h3 {
+  margin: 0;
+  color: var(--tt-app-ink);
+  font: 700 clamp(19px, 1.8vw, 24px)/1.2 var(--tt-font-editorial);
+  letter-spacing: -.03em;
+}
+#app-view .shared-script-kit .kit-document { max-width: 760px; }
+
+/* Ação de compartilhar dentro da conversa do Descobrir. */
+#app-view .chat-share-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 16px 0 4px;
+}
+#app-view .chat-share-row > span { color: var(--tt-app-muted); font: 500 12.5px/1.4 var(--tt-font-ui); }
+#app-view .discover-share-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  min-height: 42px;
+  padding: 0 14px;
+  border: 1px solid var(--tt-app-line-strong);
+  border-radius: 9px;
+  background: var(--tt-app-surface);
+  color: var(--tt-app-ink);
+  font: 600 13px/1 var(--tt-font-ui);
+  white-space: nowrap;
+  cursor: pointer;
+}
+#app-view .discover-share-link:hover:not(:disabled) { background: var(--tt-app-soft); }
+#app-view .discover-share-link:disabled { opacity: .72; cursor: not-allowed; }
+
+/* Diálogo com o link pronto para copiar. */
+.share-link-dialog { width: min(92vw, 520px); padding: 26px; display: grid; gap: 14px; }
+.share-link-dialog h2 { margin: 0; color: var(--tt-app-ink); font: 700 22px/1.2 var(--tt-font-editorial); letter-spacing: -.03em; }
+.share-link-dialog p { margin: 0; color: var(--tt-app-muted); font: 500 14px/1.5 var(--tt-font-ui); }
+.share-link-dialog input {
+  width: 100%;
+  min-height: 46px;
+  padding: 0 12px;
+  border: 1px solid var(--tt-app-line-strong);
+  border-radius: var(--tt-radius-control);
+  background: var(--tt-app-soft);
+  color: var(--tt-app-ink);
+  font: 500 13px/1 var(--tt-font-ui);
+}
+.share-link-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+
+@media (max-width: 860px) {
+  #app-view .shared-header { flex-direction: column; align-items: stretch; }
+  #app-view .shared-header-actions { justify-content: flex-start; }
+  #app-view .shared-script-product-head { flex-direction: column; align-items: stretch; }
+  #app-view .shared-script-product-head > .product-image-wrap,
+  #app-view .shared-script-product-head > img { width: 100%; max-width: none; height: 200px; object-fit: contain; }
+  #app-view .shared-view-toggle { width: 100%; }
+  #app-view .shared-view-toggle button { flex: 1; justify-content: center; }
+}
+
+/* Modo noturno: aba ativa do compartilhamento vira lima (a tinta clara virava um bloco branco). */
+[data-theme="dark"] #app-view .shared-view-toggle button.is-active {
+  background: var(--tt-app-lime);
+  color: var(--tt-on-lime, #fff);
+}

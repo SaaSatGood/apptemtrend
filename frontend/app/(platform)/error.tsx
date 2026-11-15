@@ -1,0 +1,29 @@
+"use client";
+
+import { useEffect } from "react";
+import Link from "next/link";
+
+export default function PlatformError({
+  error,
+  reset,
+}: {
+  error: Error & { digest?: string };
+  reset: () => void;
+}) {
+  useEffect(() => {
+    console.error(error);
+  }, [error]);
+
+  return (
+    <div className="empty-state" role="alert">
+      <span className="state-icon" aria-hidden="true">!</span>
+      <p className="eyebrow">Algo saiu do esperado</p>
+      <h1>Esta página não abriu <span className="tt-hl">corretamente.</span></h1>
+      <p>Seu trabalho continua salvo. Tente carregar esta área mais uma vez.</p>
+      <div className="state-actions">
+        <button className="primary" type="button" onClick={reset}>Tentar novamente</button>
+        <Link className="ghost" href="/descobrir">Ir para o painel</Link>
+      </div>
+    </div>
+  );
+}

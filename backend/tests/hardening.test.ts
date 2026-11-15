@@ -24,6 +24,10 @@ vi.mock('../src/modules/creator-content/creator-content.repository.js', () => ({
   createCreatorContent: vi.fn(),
   updateCreatorContent: vi.fn(),
 }));
+vi.mock('../src/modules/billing/billing.gating.js', async (importOriginal) => ({
+  ...(await importOriginal<object>()),
+  assertProductionQuota: vi.fn().mockResolvedValue(undefined),
+}));
 
 import * as creatorRepo from '../src/modules/creators/creator.repository.js';
 import * as creatorService from '../src/modules/creators/creator.service.js';
@@ -83,6 +87,12 @@ describe('MVP hardening', () => {
     expect(updateCreatorContentSchema.safeParse({ status: 'publicado', published_url: 'https://vm.tiktok.com/abc' }).success).toBe(true);
     expect(updateCreatorContentSchema.safeParse({ status: 'publicado', published_url: 'https://vt.tiktok.com/abc' }).success).toBe(true);
     expect(updateCreatorContentSchema.safeParse({ status: 'publicado', published_url: 'https://example.com/v' }).success).toBe(false);
+  });
+
+  it('agendamento aceita datas reais e remoção', () => {
+    expect(updateCreatorContentSchema.safeParse({ scheduled_for: '2026-10-26' }).success).toBe(true);
+    expect(updateCreatorContentSchema.safeParse({ scheduled_for: null }).success).toBe(true);
+    expect(updateCreatorContentSchema.safeParse({ scheduled_for: '2026-02-30' }).success).toBe(false);
   });
 
   it('migration 020 restringe catálogo a authenticated', () => {

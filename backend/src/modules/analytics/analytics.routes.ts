@@ -2,8 +2,9 @@ import { FastifyInstance } from 'fastify';
 import fp from 'fastify-plugin';
 import { z } from 'zod';
 import { supabaseAdmin } from '../../lib/supabase.js';
-import { RATE_LIMITS } from '../../config/constants.js';
+import { CACHE_TTL_MS, RATE_LIMITS } from '../../config/constants.js';
 import { logger } from '../../lib/logger.js';
+import { TtlCache } from '../../lib/cache.js';
 
 // Nomes permitidos: o funil inteiro em um lugar. Eventos fora da lista são
 // recusados para manter o painel de métricas consistente.
@@ -12,13 +13,24 @@ export const ANALYTICS_EVENTS = [
   'landing_search',
   'pricing_view',
   'upgrade_click',
+  'checkout_started',
+  'trial_started',
   'signup_confirm_email',
+  'email_verified',
   'signup_complete',
   'login_complete',
+  'password_reset_complete',
   'onboarding_step',
   'onboarding_completed',
   'search_performed',
   'kit_created',
+  'kit_generated',
+  'saved_product_removed',
+  'upgrade_cta_view',
+  'paywall_view',
+  'onboarding_skipped',
+  'results_waitlist_click',
+  'production_removed',
   'scene_recorded',
   'published',
 ] as const;
@@ -41,7 +53,44 @@ const eventSchema = z
   })
   .strict();
 
+const statsCache = new TtlCache<{ products: number; kits: number; searches: number; updatedAt: string }>(1);
+
+async function countRows(table: string, status?: string) {
+  let query = supabaseAdmin.from(table).select('id', { count: 'exact', head: true });
+  if (status) query = query.eq('status', status);
+  const { count, error } = await query;
+  if (error) throw error;
+  return count ?? 0;
+}
+
 async function routes(app: FastifyInstance) {
+  // Números verificáveis da landing. Só contagens agregadas, nenhum dado pessoal.
+  app.get('/stats', { config: { rateLimit: false } }, async (_request, reply) => {
+    const cached = statsCache.get('stats');
+    if (cached) return cached;
+
+    try {
+      const [products, kits, searches] = await Promise.all([
+        countRows('products', 'ativo'),
+        countRows('content_kits'),
+        countRows('discovery_searches'),
+      ]);
+      const payload = {
+        products,
+        kits,
+        searches,
+        updatedAt: new Date().toISOString(),
+      };
+      statsCache.set('stats', payload, CACHE_TTL_MS.PUBLIC_STATS);
+      return payload;
+    } catch (error) {
+      logger.error({ err: error }, 'Failed to load public stats');
+      return reply.status(503).send({
+        error: { code: 'STATS_UNAVAILABLE', message: 'Números indisponíveis agora.' },
+      });
+    }
+  });
+
   app.post('/events', { config: { rateLimit: RATE_LIMITS.EVENTS } }, async (request, reply) => {
     const parsed = eventSchema.safeParse(request.body);
     if (!parsed.success) {

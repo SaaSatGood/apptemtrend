@@ -15,7 +15,7 @@ export async function createContentKit(productId: string, data: CreateContentKit
 export async function updateContentKitById(id: string, data: UpdateContentKitInput) {
   const existing = await findContentKitById(id);
   if (!existing) {
-    throw Errors.NOT_FOUND('Content Kit');
+    throw Errors.NOT_FOUND('Roteiro');
   }
 
   return updateRepo(id, data);

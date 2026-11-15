@@ -22,7 +22,11 @@ export const logger = pino({
     paths: [
       'req.headers.authorization',
       'req.headers.cookie',
+      'req.query.webhookSecret',
       'body.password',
+      'body.current_password',
+      'body.new_password',
+      'body.webhookSecret',
       'body.token',
       'body.service_role',
       'body.access_token',
@@ -42,7 +46,8 @@ export const logger = pino({
     req(req) {
       return {
         method: req.method,
-        url: req.url,
+        // Nunca loga query string: segredos de webhook viajam nela.
+        url: typeof req.url === 'string' ? req.url.split('?')[0] : req.url,
         hostname: req.hostname,
         remoteAddress: req.ip,
       };

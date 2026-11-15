@@ -77,7 +77,7 @@ export default function ProductDetail({ productId, onNeedKit }: { productId: str
         <div className="empty-state">
           <h3>Não conseguimos abrir este produto.</h3>
           <p>Tente novamente em alguns instantes.</p>
-          <Link className="primary" href="/app">Voltar para produtos</Link>
+          <Link className="primary" href="/produtos">Voltar para produtos</Link>
         </div>
       </section>
     );
@@ -109,12 +109,12 @@ export default function ProductDetail({ productId, onNeedKit }: { productId: str
 
   return (
     <section className="detail-view" aria-live="polite">
-      <nav className="detail-breadcrumb" aria-label="Navegação estrutural"><Link href="/app">Descobrir</Link><span>›</span><strong>Produto</strong></nav>
+      <nav className="detail-breadcrumb" aria-label="Navegação estrutural"><Link href="/produtos">Produtos</Link><span>›</span><strong>Produto</strong></nav>
       <div id="product-detail">
         <div className="product-detail-hero">
           <ProductImage product={product} width={800} height={600} />
           <div className="product-detail-copy">
-            {production && <span className="product-saved-badge">✓ Na sua produção: {({ salvo: "salvo", em_producao: "em produção", gravado: "gravado", publicado: "publicado" })[production.status]}, etapa {({ salvo: 1, em_producao: 2, gravado: 3, publicado: 4 })[production.status]} de 4</span>}
+            {production && <span className="product-saved-badge">Nos selecionados: {({ salvo: "salvo", em_producao: "em produção", gravado: "gravado", publicado: "publicado" })[production.status]}, etapa {({ salvo: 1, em_producao: 2, gravado: 3, publicado: 4 })[production.status]} de 4</span>}
             <span className="product-category">{product.categoria || "Produto"}</span>
             <h1 className={productName.length > 64 ? "is-long-title" : ""} title={productName}><EmphasizedTitle text={productName} /></h1>
             <div className="product-detail-metrics" aria-label={factsOf(product)}>
@@ -134,7 +134,7 @@ export default function ProductDetail({ productId, onNeedKit }: { productId: str
               </a>
             )}
             <div className="product-detail-primary">
-              {kits.length ? <Link className="primary" href={`/app/produtos/${product.id}/kits/${kits.find((kit) => kit.id === production?.content_kit_id)?.id || kits[0].id}`}>Ver roteiro</Link> : <button className="primary" type="button" onClick={primaryAction}>Gerar roteiro</button>}
+              {kits.length ? <Link className="primary" href={`/produtos/${product.id}/kits/${kits.find((kit) => kit.id === production?.content_kit_id)?.id || kits[0].id}`}>Ver roteiro</Link> : <button className="primary" type="button" onClick={primaryAction}>Gerar roteiro</button>}
               {!saved && <button className="ghost save-product" type="button" onClick={quickSave}>Salvar produto</button>}
               {kits.length > 0 && (
                 <button className="ghost" type="button" onClick={() => onNeedKit(product.id, "kit", true, product)}>
@@ -153,7 +153,7 @@ export default function ProductDetail({ productId, onNeedKit }: { productId: str
           <div className="kits-grid">
             {kits.length ? (
               kits.map((kit) => (
-                <Link key={kit.id} className="kit-card open-kit" href={`/app/produtos/${product.id}/kits/${kit.id}`}>
+                <Link key={kit.id} className="kit-card open-kit" href={`/produtos/${product.id}/kits/${kit.id}`}>
                   <div className="kit-meta">
                     {[kit.formato, kit.nivel_dificuldade, kit.duracao_seg ? `${kit.duracao_seg}s` : null]
                       .filter(Boolean)
@@ -196,11 +196,12 @@ function sceneParts(scene: Scene | string): { show: string; say: string; time: s
   return { show: values.join(", "), say: "", time: "", edit: "" };
 }
 
-export function KitDocument({ kit }: { kit: ContentKit }) {
+export function KitDocument({ kit, idPrefix = "kit" }: { kit: ContentKit; idPrefix?: string }) {
+  const partId = (part: string) => `${idPrefix}-${part}`;
   const scenes = normalizeScenes(kit.cenas);
 
   return (
-    <article id="kit-document" className="kit-document">
+    <article id={partId("document")} className="kit-document">
       {kit.briefing_usuario && (
         <section className="kit-block">
           <small>SUAS ORIENTAÇÕES</small>
@@ -214,10 +215,10 @@ export function KitDocument({ kit }: { kit: ContentKit }) {
         </section>
       )}
       {kit.hook && (
-        <section id="kit-hook" className="kit-block hook-block">
+        <section id={partId("hook")} className="kit-block hook-block">
           <div className="block-heading">
             <small>HOOK</small>
-            <CopyButton id="copy-hook" text={kit.hook} doneText="Hook copiado ✓">
+            <CopyButton id={partId("copy-hook")} text={kit.hook} doneText="Hook copiado ✓">
               Copiar
             </CopyButton>
           </div>
@@ -225,8 +226,8 @@ export function KitDocument({ kit }: { kit: ContentKit }) {
         </section>
       )}
       {scenes.length > 0 && (
-        <section id="kit-cenas" className="kit-block">
-          <div className="block-heading"><small>ROTEIRO POR CENAS</small><CopyButton id="copy-scenes" text={scenes.map((scene, index) => { const p = sceneParts(scene); return [`Cena ${index + 1}${p.time ? `: ${p.time}` : ""}`, p.show && `Mostre: ${p.show}`, p.say && `Fale: ${p.say}`, p.edit && `Ação / edição: ${p.edit}`].filter(Boolean).join("\n"); }).join("\n\n")} doneText="Copiado ✓">Copiar cenas</CopyButton></div>
+        <section id={partId("cenas")} className="kit-block">
+          <div className="block-heading"><small>ROTEIRO POR CENAS</small><CopyButton id={partId("copy-scenes")} text={scenes.map((scene, index) => { const p = sceneParts(scene); return [`Cena ${index + 1}${p.time ? `: ${p.time}` : ""}`, p.show && `Mostre: ${p.show}`, p.say && `Fale: ${p.say}`, p.edit && `Ação / edição: ${p.edit}`].filter(Boolean).join("\n"); }).join("\n\n")} doneText="Copiado ✓">Copiar cenas</CopyButton></div>
           <div className="scene-list">
             {scenes.map((scene, index) => {
               const parts = sceneParts(scene);
@@ -261,10 +262,10 @@ export function KitDocument({ kit }: { kit: ContentKit }) {
         </section>
       )}
       {kit.roteiro && (
-        <section id="kit-roteiro" className="kit-block">
+        <section id={partId("roteiro")} className="kit-block">
           <div className="block-heading">
             <small>ESTRATÉGIA COMPLETA + VARIAÇÕES</small>
-            <CopyButton id="copy-roteiro" text={kit.roteiro} doneText="Roteiro copiado ✓">
+            <CopyButton id={partId("copy-roteiro")} text={kit.roteiro} doneText="Roteiro copiado ✓">
               Copiar roteiro
             </CopyButton>
           </div>
@@ -272,10 +273,10 @@ export function KitDocument({ kit }: { kit: ContentKit }) {
         </section>
       )}
       {kit.copy && (
-        <section id="kit-legenda" className="kit-block">
+        <section id={partId("legenda")} className="kit-block">
           <div className="block-heading">
             <small>LEGENDA</small>
-            <CopyButton id="copy-copy" text={kit.copy} doneText="Copy copiada ✓">
+            <CopyButton id={partId("copy-copy")} text={kit.copy} doneText="Copy copiada ✓">
               Copiar legenda
             </CopyButton>
           </div>
@@ -284,7 +285,7 @@ export function KitDocument({ kit }: { kit: ContentKit }) {
       )}
       {kit.cta && (
         <section className="kit-block">
-          <div className="block-heading"><small>CTA: CHAMADA PARA AÇÃO</small><CopyButton id="copy-cta" text={kit.cta} doneText="Copiado ✓">Copiar CTA</CopyButton></div>
+          <div className="block-heading"><small>CTA: CHAMADA PARA AÇÃO</small><CopyButton id={partId("copy-cta")} text={kit.cta} doneText="Copiado ✓">Copiar CTA</CopyButton></div>
           <p>{kit.cta}</p>
         </section>
       )}
@@ -292,7 +293,7 @@ export function KitDocument({ kit }: { kit: ContentKit }) {
         <section className="kit-block">
           <div className="block-heading">
             <small>HASHTAGS</small>
-            <CopyButton id="copy-hashtags" text={(kit.hashtags || []).map((tag) => tag.startsWith("#") ? tag : `#${tag}`).join(" ")} doneText="Copiado ✓">
+            <CopyButton id={partId("copy-hashtags")} text={(kit.hashtags || []).map((tag) => tag.startsWith("#") ? tag : `#${tag}`).join(" ")} doneText="Copiado ✓">
               Copiar hashtags
             </CopyButton>
           </div>
@@ -305,7 +306,7 @@ export function KitDocument({ kit }: { kit: ContentKit }) {
       ) : null}
       {kit.audio_sugerido && (
         <section className="kit-block">
-          <div className="block-heading"><small>ÁUDIO SUGERIDO</small><CopyButton id="copy-audio" text={kit.audio_sugerido} doneText="Copiado ✓">Copiar sugestão</CopyButton></div>
+          <div className="block-heading"><small>ÁUDIO SUGERIDO</small><CopyButton id={partId("copy-audio")} text={kit.audio_sugerido} doneText="Copiado ✓">Copiar sugestão</CopyButton></div>
           <p>{kit.audio_sugerido}</p>
         </section>
       )}

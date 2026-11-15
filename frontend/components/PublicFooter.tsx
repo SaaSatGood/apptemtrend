@@ -1,5 +1,6 @@
 import Link from "next/link";
 import Icon from "@/components/ui/Icon";
+import LoginLink from "@/components/LoginLink";
 
 // Rodapé único das páginas públicas. Os links de seção usam "/#..." para
 // funcionar tanto na landing quanto em /planos e nas páginas legais.
@@ -18,8 +19,8 @@ export default function PublicFooter() {
               <br />
               Conteúdo vira oportunidade.
             </p>
-            <Link className="tt-lp-btn tt-lp-btn-lime" href="/app?mode=signup">
-              Criar conta grátis
+            <Link className="tt-lp-btn tt-lp-btn-lime" href="/descobrir?mode=signup">
+              Começar grátis
               <Icon name="arrow-right" size={18} />
             </Link>
           </div>
@@ -27,15 +28,15 @@ export default function PublicFooter() {
             <div>
               <strong>Produto</strong>
               <Link href="/#como-funciona">Como funciona</Link>
-              <Link href="/#plano">Plano de gravação</Link>
+              <Link href="/#plano">Exemplo de roteiro</Link>
               <Link href="/#planos">Planos</Link>
               <Link href="/#faq">Dúvidas</Link>
             </div>
             <div>
               <strong>Conta</strong>
-              <Link href="/app">Entrar</Link>
-              <Link href="/app?mode=signup">Criar conta</Link>
-              <Link href="/app/suporte">Suporte</Link>
+              <LoginLink>Entrar</LoginLink>
+              <Link href="/descobrir?mode=signup">Começar grátis</Link>
+              <Link href="/suporte">Suporte</Link>
             </div>
             <div>
               <strong>Legal</strong>
@@ -48,7 +49,7 @@ export default function PublicFooter() {
         <div className="tt-lp-footer-bottom">
           <span>© 2026 TemTrend</span>
           <span>TemTrend não é afiliada, patrocinada nem endossada pelo TikTok ou TikTok Shop.</span>
-          <Link href="/app/suporte">Contato: suporte na plataforma</Link>
+          <Link href="/suporte">Contato: suporte na plataforma</Link>
         </div>
       </div>
     </footer>

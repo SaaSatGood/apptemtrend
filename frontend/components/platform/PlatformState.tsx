@@ -6,16 +6,6 @@ import Icon from "@/components/ui/Icon";
 import { friendlyError } from "@/lib/api";
 import { usePlatform } from "./store";
 
-export function AppBoot() {
-  return (
-    <main className="app-boot" aria-busy="true" aria-label="Carregando TemTrend">
-      <div className="app-boot-brand"><span aria-hidden="true">T</span><b>TemTrend</b></div>
-      <div className="app-boot-bar"><i /></div>
-      <p>Preparando sua experiência...</p>
-    </main>
-  );
-}
-
 export function AccountLoadError() {
   const { globalError, reloadMe, signOut } = usePlatform();
   const [retrying, setRetrying] = useState(false);
@@ -38,7 +28,7 @@ export function AccountLoadError() {
       <div className="empty-state" role="alert">
         <span className="state-icon"><Icon name="alert-triangle" size={21} /></span>
         <p className="eyebrow">Falha de conexão</p>
-        <h1>Não conseguimos carregar sua conta.</h1>
+        <h1>Não conseguimos carregar sua <span className="tt-hl">conta.</span></h1>
         <p>{retryError || globalError || "A TemTrend pode estar temporariamente indisponível."}</p>
         <div className="state-actions">
           <button className="primary" type="button" disabled={retrying} onClick={() => void retry()}>

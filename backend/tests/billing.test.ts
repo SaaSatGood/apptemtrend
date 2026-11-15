@@ -13,7 +13,7 @@ vi.mock('../src/lib/supabase.js', () => ({
 }));
 
 import { buildApp } from '../src/app.js';
-import { effectivePlan } from '../src/modules/billing/billing.gating.js';
+import { assertCatalogAccess, effectivePlan } from '../src/modules/billing/billing.gating.js';
 import {
   extendPeriodEnd,
   extractCheckout,
@@ -23,7 +23,6 @@ import {
 import {
   FAIR_USE_KITS_PER_MONTH,
   PLAN_LIMITS,
-  TRIAL_KITS_PER_MONTH,
   planPeriodForProductId,
   productIdFor,
 } from '../src/modules/billing/plans.js';
@@ -64,16 +63,26 @@ describe('billing plan catalog', () => {
     expect(PLAN_LIMITS.pro.variationCooldownSeconds).toBe(30);
     expect(PLAN_LIMITS.enterprise.kitsPerMonth).toBeNull();
     expect(FAIR_USE_KITS_PER_MONTH).toBe(1_000);
-    expect(TRIAL_KITS_PER_MONTH).toBe(100);
   });
 
-  it('allows three lifetime searches and scripts on the permanent free plan', () => {
-    expect(PLAN_LIMITS.free.searchesPerDay).toBe(3);
-    expect(PLAN_LIMITS.free.kitsPerMonth).toBe(3);
-    expect(PLAN_LIMITS.free.kitsPerProduct).toBe(3);
-    expect(PLAN_LIMITS.free.productionItems).toBe(3);
+  it('allows 100 weekly searches and 10 weekly scripts on the free plan', () => {
+    expect(PLAN_LIMITS.free.searchesPerDay).toBeNull();
+    expect(PLAN_LIMITS.free.searchesPerWeek).toBe(100);
+    expect(PLAN_LIMITS.free.kitsPerMonth).toBeNull();
+    expect(PLAN_LIMITS.free.kitsPerWeek).toBe(10);
+    expect(PLAN_LIMITS.free.kitsPerProduct).toBe(1);
+    expect(PLAN_LIMITS.free.productionItems).toBe(1);
     expect(PLAN_LIMITS.free.variations).toBe(false);
     expect(PLAN_LIMITS.free.vozPersonalizada).toBe(false);
+  });
+
+  it('keeps the full product catalog behind the paid plan', () => {
+    const creator = (plan: string, status: string, periodEnd: string | null) => ({
+      plan, plan_status: status, trial_ends_at: null, current_period_end: periodEnd,
+    } as Parameters<typeof assertCatalogAccess>[0]);
+    expect(() => assertCatalogAccess(creator('free', 'active', null))).toThrowError(/catálogo completo/i);
+    expect(() => assertCatalogAccess(creator('pro', 'canceled', past(1)))).toThrowError(/catálogo completo/i);
+    expect(() => assertCatalogAccess(creator('pro', 'active', future(10)))).not.toThrow();
   });
 });
 
@@ -172,7 +181,12 @@ describe('billing routes', () => {
     expect(body.plans.find((p: { id: string }) => p.id === 'pro').destaque).toBe(true);
     expect(body.launch).toBeNull();
     expect(body.avulso).toBeUndefined();
-    expect(body.free).toEqual({ searches_total: 3, kits_total: 3 });
+    expect(body.free).toEqual({
+      searches_per_week: 100,
+      kits_per_week: 10,
+      searches_total: 100,
+      kits_total: 10,
+    });
     await app.close();
   });
 
@@ -180,6 +194,18 @@ describe('billing routes', () => {
     const app = buildApp();
     const res = await app.inject({ method: 'GET', url: '/billing/subscription' });
     expect(res.statusCode).toBe(401);
+    await app.close();
+  });
+
+  it('requires an authenticated account to start checkout', async () => {
+    const app = buildApp();
+    const res = await app.inject({
+      method: 'POST',
+      url: '/billing/checkout',
+      payload: { plan: 'pro', period: 'monthly', method: 'pix' },
+    });
+    expect(res.statusCode).toBe(401);
+    expect(res.json().error.code).toBe('UNAUTHORIZED');
     await app.close();
   });
 

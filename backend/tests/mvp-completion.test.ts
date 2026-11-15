@@ -70,10 +70,11 @@ describe('mvp completion', () => {
   });
 
   it('frontend usa nome de exibição nos cards e mantém original no detalhe', () => {
-    const appJs = fs.readFileSync(path.resolve(process.cwd(), '../frontend/legacy-static/app.js'), 'utf8');
-    expect(appJs).toContain('displayProductName');
-    // Detalhe ainda usa nome completo no H1 do produto
-    expect(appJs).toMatch(/product-detail-copy/);
+    const cards = fs.readFileSync(path.resolve(process.cwd(), '../frontend/components/platform/Assistant.tsx'), 'utf8');
+    expect(cards).toContain('displayProductName');
+    // Detalhe do produto continua exibindo o nome completo
+    const productKit = fs.readFileSync(path.resolve(process.cwd(), '../frontend/components/platform/ProductKit.tsx'), 'utf8');
+    expect(productKit).toMatch(/product-detail-copy/);
   });
 
   it('cache de resposta é isolado por snapshot do catálogo', () => {
