@@ -1,558 +1,95 @@
-/* eslint-disable @next/next/no-img-element */
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import Icon, { type IconName } from "@/components/ui/Icon";
-import { supabase } from "@/lib/supabase";
-import { api, friendlyError } from "@/lib/api";
-import { FALLBACK_IMAGE } from "@/lib/format";
-import {
-  SUPPORT_CATEGORY_LABEL,
-  SUPPORT_STATUS_CLASS,
-  SUPPORT_STATUS_LABEL,
-  fmtSupportDateTime,
-} from "@/lib/support";
-import type { AdminSupportTicket, AdminSupportTicketThread, SupportMessage, SupportStatus } from "@/lib/types";
+import { useCallback, useEffect, useState } from "react";
+import Icon from "@/components/ui/Icon";
 import { usePlatform } from "./store";
 import styles from "./Admin.module.css";
+import { adminGet, adminToken } from "./admin/api";
+import { formatCount, metricNumber } from "./admin/format";
+import type { AdminDashboardMetrics, AdminView } from "./admin/types";
+import { ADMIN_VIEWS } from "./admin/types";
+import OverviewTab from "./admin/OverviewTab";
+import ProductsTab from "./admin/ProductsTab";
+import CreatorsTab from "./admin/CreatorsTab";
+import LeadsTab from "./admin/LeadsTab";
+import BillingTab from "./admin/BillingTab";
+import SupportTab from "./admin/SupportTab";
+import AiTab from "./admin/AiTab";
 
-interface AdminProduct {
-  id: string;
-  produto_externo_id?: string | null;
-  nome: string;
-  categoria?: string | null;
-  imagem_url?: string | null;
-  preco_texto?: string | null;
-  preco_min_brl?: number | null;
-  preco_max_brl?: number | null;
-  loja_nome?: string | null;
-  comissao_percentual?: number | null;
-  unidades_vendidas_periodo?: number | null;
-  crescimento_vendas_percentual?: number | null;
-  unidades_vendidas_total?: number | null;
-  receita_periodo_brl?: number | null;
-  receita_total_brl?: number | null;
-  tiktok_shop_url?: string | null;
-  ranking_origem?: number | null;
-  fonte_dados?: string | null;
-  status: "ativo" | "pausado";
-  destaque?: boolean | null;
-  ordem_destaque?: number | null;
-  [key: string]: unknown;
+function viewFromHash(): AdminView {
+  if (typeof window === "undefined") return "overview";
+  const key = window.location.hash.replace(/^#/, "");
+  return ADMIN_VIEWS.some((item) => item.key === key) ? (key as AdminView) : "overview";
 }
 
-interface AdminCreator {
-  id: string;
-  user_id: string;
-  nome?: string | null;
-  email?: string | null;
-  nicho?: string[];
-  status: "ativo" | "bloqueado";
-  criado_em?: string | null;
-}
-
-interface ProductFormState {
-  externalId: string;
-  name: string;
-  category: string;
-  store: string;
-  priceText: string;
-  commission: string;
-  priceMin: string;
-  priceMax: string;
-  region: string;
-  sourceStatus: string;
-  salesPeriod: string;
-  salesGrowth: string;
-  salesTotal: string;
-  revenuePeriod: string;
-  revenueTotal: string;
-  storeSalesTotal: string;
-  uploadDate: string;
-  ranking: string;
-  description: string;
-  image: string;
-  tiktokUrl: string;
-  fastmossUrl: string;
-  storeFastmossUrl: string;
-  source: string;
-  status: "ativo" | "pausado";
-  featured: boolean;
-  featuredOrder: string;
-}
-
-interface AdminBillingSummary {
-  active: number;
-  trialing: number;
-  past_due: number;
-  canceled: number;
-  pending: number;
-  failed: number;
-  mrr_cents: number;
-}
-
-interface AdminSubscription {
-  id: string;
-  plan: string;
-  plan_label: string;
-  period: string;
-  status: string;
-  amount_cents: number | null;
-  current_period_end: string | null;
-  pending_plan_label: string | null;
-  created_at: string;
-  creator_nome: string | null;
-  creator_email: string | null;
-}
-
-type AdminView = "overview" | "products" | "creators" | "billing" | "support";
-type ProductSort = "ranking" | "sales" | "revenue" | "name";
-
-// Aba Produtos do admin: 30 itens por página.
-const PAGE_SIZE = 30;
-const EMPTY_FORM: ProductFormState = {
-  externalId: "", name: "", category: "", store: "", priceText: "", commission: "",
-  priceMin: "", priceMax: "", region: "BR", sourceStatus: "Disponível", salesPeriod: "",
-  salesGrowth: "", salesTotal: "", revenuePeriod: "", revenueTotal: "", storeSalesTotal: "",
-  uploadDate: "", ranking: "", description: "", image: "", tiktokUrl: "", fastmossUrl: "",
-  storeFastmossUrl: "", source: "Cadastro administrativo", status: "ativo", featured: false,
-  featuredOrder: "0",
-};
-
-const METRIC_LABELS: Record<string, { label: string; detail: string }> = {
-  total_creators: { label: "Creators", detail: "Contas cadastradas" },
-  creators_ativos: { label: "Creators ativos", detail: "Com acesso à plataforma" },
-  total_content_kits: { label: "Conteúdos", detail: "Conteúdos disponíveis" },
-  oportunidades_salvas: { label: "Oportunidades salvas", detail: "Produtos em consideração" },
-  conteudos_publicados: { label: "Publicações", detail: "Conteúdos concluídos" },
-  suporte_abertos: { label: "Suporte", detail: "Conversas aguardando resposta" },
-  assinaturas_ativas: { label: "Assinaturas", detail: "Planos pagos ativos" },
-};
-
-const SUB_STATUS_LABEL: Record<string, string> = {
-  active: "Ativa",
-  trialing: "Trial",
-  past_due: "Pendente",
-  canceled: "Cancelada",
-  pending: "Aguardando",
-  failed: "Falhou",
-};
-
-function fmtDay(iso?: string | null): string {
-  if (!iso) return "—";
-  const date = new Date(iso);
-  if (Number.isNaN(date.getTime())) return "—";
-  return date.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" });
-}
-
-const numberFormatter = new Intl.NumberFormat("pt-BR");
-const compactFormatter = new Intl.NumberFormat("pt-BR", { notation: "compact", maximumFractionDigits: 1 });
-const currencyFormatter = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL", notation: "compact", maximumFractionDigits: 1 });
-
-function asNumber(value: string): number | undefined {
-  if (!value.trim()) return undefined;
-  const parsed = Number(value);
-  return Number.isFinite(parsed) ? parsed : undefined;
-}
-
-function optional(value: string): string | undefined {
-  const clean = value.trim();
-  return clean || undefined;
-}
-
-function stringValue(value: unknown): string { return value == null ? "" : String(value); }
-function inputDate(value: unknown): string { return value ? String(value).slice(0, 16) : ""; }
-
-function formatCount(value: unknown, compact = false): string {
-  const parsed = Number(value ?? 0);
-  return (compact ? compactFormatter : numberFormatter).format(Number.isFinite(parsed) ? parsed : 0);
-}
-
-function formatCurrency(value: unknown): string {
-  const parsed = Number(value ?? 0);
-  return currencyFormatter.format(Number.isFinite(parsed) ? parsed : 0);
-}
-
-function formatPercent(value: unknown): string {
-  const parsed = Number(value);
-  if (!Number.isFinite(parsed)) return "—";
-  return `${parsed > 0 ? "+" : ""}${new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 1 }).format(parsed)}%`;
-}
-
-function metricNumber(metrics: Record<string, number | string> | null, key: string, fallback: number): number {
-  const value = Number(metrics?.[key]);
-  return Number.isFinite(value) ? value : fallback;
-}
-
-function initials(creator: AdminCreator): string {
-  return (creator.nome || creator.email || "Creator").split(/\s+/).slice(0, 2).map((part) => part[0]?.toUpperCase()).join("");
-}
-
-const ADMIN_ICONS: Record<"overview" | "box" | "users" | "refresh" | "plus" | "search" | "download" | "edit" | "external" | "card" | "message", IconName> = {
-  overview: "grid",
-  box: "box",
-  users: "users",
-  refresh: "refresh",
-  plus: "plus",
-  search: "search",
-  download: "download",
-  edit: "pencil",
-  external: "external-link",
-  card: "plan",
-  message: "message-square",
-};
-
-function AdminIcon({ name }: { name: keyof typeof ADMIN_ICONS }) {
-  return <Icon name={ADMIN_ICONS[name]} size={16} />;
+function tabBadge(view: AdminView, metrics: AdminDashboardMetrics | null): number | null {
+  if (!metrics) return null;
+  if (view === "creators") return metricNumber(metrics, "total_creators");
+  if (view === "billing") return metricNumber(metrics, "assinaturas_ativas");
+  if (view === "support") return metricNumber(metrics, "suporte_abertos");
+  if (view === "leads") return metricNumber(metrics, "leads_novos");
+  if (view === "products") return metricNumber(metrics, "total_produtos");
+  return null;
 }
 
 export default function Admin() {
   const { toast } = usePlatform();
-  const formRef = useRef<HTMLDivElement>(null);
-  const [view, setView] = useState<AdminView>("overview");
-  const [metrics, setMetrics] = useState<Record<string, number | string> | null>(null);
-  const [metricsError, setMetricsError] = useState(false);
-  const [products, setProducts] = useState<AdminProduct[] | null>(null);
-  const [productsError, setProductsError] = useState(false);
-  const [creators, setCreators] = useState<AdminCreator[] | null>(null);
-  const [creatorsError, setCreatorsError] = useState(false);
+  const [view, setView] = useState<AdminView>(() => viewFromHash());
+  const [token, setToken] = useState<string | undefined>(undefined);
+  const [metrics, setMetrics] = useState<AdminDashboardMetrics | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [refreshSignal, setRefreshSignal] = useState(0);
+  const [createProduct, setCreateProduct] = useState(0);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
-  const [busyId, setBusyId] = useState<string | null>(null);
-  const [formOpen, setFormOpen] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [form, setForm] = useState<ProductFormState>({ ...EMPTY_FORM });
-  const [saving, setSaving] = useState(false);
-  const [uploading, setUploading] = useState(false);
-  const [productQuery, setProductQuery] = useState("");
-  const [productStatus, setProductStatus] = useState("todos");
-  const [productCategory, setProductCategory] = useState("todas");
-  const [productSort, setProductSort] = useState<ProductSort>("ranking");
-  const [productPage, setProductPage] = useState(1);
-  const [creatorQuery, setCreatorQuery] = useState("");
-  const [creatorStatus, setCreatorStatus] = useState("todos");
-  const [billingSummary, setBillingSummary] = useState<AdminBillingSummary | null>(null);
-  const [billingError, setBillingError] = useState(false);
-  const [subscriptions, setSubscriptions] = useState<AdminSubscription[] | null>(null);
-  const [funnel, setFunnel] = useState<Array<{ event_name: string; total: number }> | null>(null);
-  const [supportTickets, setSupportTickets] = useState<AdminSupportTicket[] | null>(null);
-  const [supportError, setSupportError] = useState(false);
-  const [supportStatusFilter, setSupportStatusFilter] = useState("todos");
-  const [supportThread, setSupportThread] = useState<AdminSupportTicketThread | null>(null);
-  const [supportReply, setSupportReply] = useState("");
-  const [supportBusy, setSupportBusy] = useState(false);
 
-  const token = useCallback(async () => {
-    const { data } = await supabase().auth.getSession();
-    return data.session?.access_token;
+  // Hash mantém a aba ao recarregar e permite mandar um link direto (/admin#leads).
+  useEffect(() => {
+    const onHashChange = () => setView(viewFromHash());
+    window.addEventListener("hashchange", onHashChange);
+    return () => window.removeEventListener("hashchange", onHashChange);
   }, []);
 
-  const loadDashboard = useCallback(async (accessToken?: string) => {
-    try {
-      setMetricsError(false);
-      setMetrics(await api<Record<string, number | string>>("/admin/dashboard", accessToken ?? await token()));
-    } catch { setMetricsError(true); }
-  }, [token]);
-
-  const loadProducts = useCallback(async (accessToken?: string) => {
-    try {
-      setProductsError(false);
-      const authToken = accessToken ?? await token();
-      const all: AdminProduct[] = [];
-      for (let page = 1; page <= 100; page += 1) {
-        const batch = await api<AdminProduct[]>(`/admin/products?page=${page}&limit=100`, authToken);
-        all.push(...batch);
-        if (batch.length < 100) break;
+  useEffect(() => {
+    let active = true;
+    void adminToken().then((value) => {
+      if (active) {
+        setToken(value);
+        setLastUpdated(new Date());
       }
-      setProducts(all);
-    } catch { setProductsError(true); }
-  }, [token]);
+    });
+    return () => { active = false; };
+  }, []);
 
-  const loadCreators = useCallback(async (accessToken?: string) => {
+  const loadMetrics = useCallback(async (accessToken?: string) => {
     try {
-      setCreatorsError(false);
-      const authToken = accessToken ?? await token();
-      const all: AdminCreator[] = [];
-      for (let page = 1; page <= 100; page += 1) {
-        const batch = await api<AdminCreator[]>(`/admin/creators?page=${page}&limit=100`, authToken);
-        all.push(...batch);
-        if (batch.length < 100) break;
-      }
-      setCreators(all);
-    } catch { setCreatorsError(true); }
+      const authToken = accessToken ?? token ?? (await adminToken());
+      setMetrics(await adminGet<AdminDashboardMetrics>("/admin/dashboard", authToken));
+      setLastUpdated(new Date());
+    } catch {
+      // Indicadores do cabeçalho são acessórios: as abas mostram o próprio erro.
+    }
   }, [token]);
-
-  const loadBilling = useCallback(async (accessToken?: string) => {
-    try {
-      setBillingError(false);
-      const authToken = accessToken ?? await token();
-      const [summary, subs] = await Promise.all([
-        api<AdminBillingSummary>("/admin/billing/summary", authToken),
-        api<{ items: AdminSubscription[] }>("/admin/billing/subscriptions?page=1&limit=100", authToken),
-      ]);
-      setBillingSummary(summary);
-      setSubscriptions(subs?.items ?? []);
-    } catch { setBillingError(true); }
-  }, [token]);
-
-  const loadSupport = useCallback(async (accessToken?: string) => {
-    try {
-      setSupportError(false);
-      const authToken = accessToken ?? await token();
-      const data = await api<{ items: AdminSupportTicket[] }>("/admin/support/tickets?page=1&limit=100", authToken);
-      setSupportTickets(data?.items ?? []);
-    } catch { setSupportError(true); }
-  }, [token]);
-
-  const loadFunnel = useCallback(async (accessToken?: string) => {
-    try {
-      const authToken = accessToken ?? await token();
-      const data = await api<{ events: Array<{ event_name: string; total: number }> }>("/admin/analytics/funnel?days=30", authToken);
-      setFunnel(data?.events ?? []);
-    } catch { setFunnel([]); }
-  }, [token]);
-
-  const refreshAll = useCallback(async () => {
-    setRefreshing(true);
-    const accessToken = await token();
-    await Promise.all([
-      loadDashboard(accessToken),
-      loadProducts(accessToken),
-      loadCreators(accessToken),
-      loadBilling(accessToken),
-      loadSupport(accessToken),
-      loadFunnel(accessToken),
-    ]);
-    setLastUpdated(new Date());
-    setRefreshing(false);
-  }, [loadBilling, loadCreators, loadDashboard, loadFunnel, loadProducts, loadSupport, token]);
 
   useEffect(() => {
-    const task = window.setTimeout(() => void refreshAll(), 0);
+    const task = window.setTimeout(() => void loadMetrics(), 0);
     return () => window.clearTimeout(task);
-  }, [refreshAll]);
+  }, [loadMetrics]);
 
-  const openSupportThread = useCallback(async (id: string) => {
-    try {
-      const data = await api<AdminSupportTicketThread>(`/admin/support/tickets/${id}`, await token());
-      setSupportThread(data);
-      setSupportReply("");
-    } catch (err) {
-      toast(friendlyError(err, "Não conseguimos abrir esta conversa agora."));
-    }
-  }, [toast, token]);
-
-  async function sendSupportReply(event: React.FormEvent) {
-    event.preventDefault();
-    if (!supportThread || !supportReply.trim() || supportBusy) return;
-    setSupportBusy(true);
-    try {
-      const result = await api<{ status: SupportStatus; message: SupportMessage }>(
-        `/admin/support/tickets/${supportThread.id}/messages`,
-        await token(),
-        { method: "POST", body: JSON.stringify({ body: supportReply.trim() }) },
-      );
-      setSupportThread((current) =>
-        current ? { ...current, status: result.status, messages: [...current.messages, result.message] } : current,
-      );
-      setSupportTickets((current) =>
-        (current ?? []).map((ticket) =>
-          ticket.id === supportThread.id
-            ? { ...ticket, status: result.status, last_message_at: result.message.created_at }
-            : ticket,
-        ),
-      );
-      setSupportReply("");
-    } catch (err) {
-      toast(friendlyError(err, "Não conseguimos enviar a resposta agora."));
-    } finally {
-      setSupportBusy(false);
+  function openView(next: AdminView) {
+    setView(next);
+    if (typeof window !== "undefined") {
+      window.history.replaceState(null, "", next === "overview" ? "/admin" : `/admin#${next}`);
     }
   }
 
-  async function updateTicketStatus(status: SupportStatus) {
-    if (!supportThread || supportBusy) return;
-    setSupportBusy(true);
-    try {
-      await api<{ ok: boolean; status: SupportStatus }>(`/admin/support/tickets/${supportThread.id}`, await token(), {
-        method: "PATCH",
-        body: JSON.stringify({ status }),
-      });
-      setSupportThread((current) => (current ? { ...current, status } : current));
-      setSupportTickets((current) =>
-        (current ?? []).map((ticket) => (ticket.id === supportThread.id ? { ...ticket, status } : ticket)),
-      );
-    } catch (err) {
-      toast(friendlyError(err, "Não conseguimos atualizar o status agora."));
-    } finally {
-      setSupportBusy(false);
-    }
+  async function refreshAll() {
+    if (refreshing) return;
+    setRefreshing(true);
+    await loadMetrics();
+    setRefreshSignal((value) => value + 1);
+    setRefreshing(false);
+    toast("Painel atualizado.");
   }
-
-  const categories = useMemo(() => [...new Set((products ?? []).map((product) => product.categoria).filter((category): category is string => Boolean(category)))].sort((a, b) => a.localeCompare(b, "pt-BR")), [products]);
-
-  const filteredProducts = useMemo(() => {
-    const query = productQuery.trim().toLocaleLowerCase("pt-BR");
-    return [...(products ?? [])]
-      .filter((product) => productStatus === "todos" || product.status === productStatus)
-      .filter((product) => productCategory === "todas" || product.categoria === productCategory)
-      .filter((product) => !query || [product.nome, product.loja_nome, product.categoria, product.produto_externo_id].some((value) => String(value ?? "").toLocaleLowerCase("pt-BR").includes(query)))
-      .sort((a, b) => {
-        if (productSort === "name") return a.nome.localeCompare(b.nome, "pt-BR");
-        if (productSort === "sales") return Number(b.unidades_vendidas_periodo ?? 0) - Number(a.unidades_vendidas_periodo ?? 0);
-        if (productSort === "revenue") return Number(b.receita_periodo_brl ?? 0) - Number(a.receita_periodo_brl ?? 0);
-        return Number(a.ranking_origem ?? Number.MAX_SAFE_INTEGER) - Number(b.ranking_origem ?? Number.MAX_SAFE_INTEGER);
-      });
-  }, [productCategory, productQuery, productSort, productStatus, products]);
-
-  const productPages = Math.max(1, Math.ceil(filteredProducts.length / PAGE_SIZE));
-  const visibleProducts = filteredProducts.slice((productPage - 1) * PAGE_SIZE, productPage * PAGE_SIZE);
-
-  const filteredCreators = useMemo(() => {
-    const query = creatorQuery.trim().toLocaleLowerCase("pt-BR");
-    return (creators ?? []).filter((creator) => {
-      const statusMatch = creatorStatus === "todos" || creator.status === creatorStatus;
-      const queryMatch = !query || [creator.nome, creator.email, creator.user_id, ...(creator.nicho ?? [])].some((value) => String(value ?? "").toLocaleLowerCase("pt-BR").includes(query));
-      return statusMatch && queryMatch;
-    });
-  }, [creatorQuery, creatorStatus, creators]);
-
-  const pausedProducts = (products ?? []).filter((product) => product.status === "pausado").length;
-  const activeCreators = (creators ?? []).filter((creator) => creator.status === "ativo").length;
-  const blockedCreators = (creators ?? []).filter((creator) => creator.status === "bloqueado").length;
-  const incompleteProducts = (products ?? []).filter((product) => !product.imagem_url || !product.produto_externo_id).length;
-
-  function patchForm<K extends keyof ProductFormState>(key: K, value: ProductFormState[K]) {
-    setForm((current) => ({ ...current, [key]: value }));
-  }
-
-  function openNewProduct() {
-    setEditingId(null);
-    setForm({ ...EMPTY_FORM });
-    setFormOpen(true);
-    setView("products");
-    window.requestAnimationFrame(() => formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }));
-  }
-
-  function closeForm() {
-    setFormOpen(false);
-    setEditingId(null);
-    setForm({ ...EMPTY_FORM });
-  }
-
-  async function toggleProductStatus(product: AdminProduct) {
-    setBusyId(product.id);
-    try {
-      await api(`/admin/products/${product.id}`, await token(), { method: "PATCH", body: JSON.stringify({ status: product.status === "ativo" ? "pausado" : "ativo" }) });
-      toast(product.status === "ativo" ? "Produto pausado." : "Produto ativado.");
-      await Promise.all([loadDashboard(), loadProducts()]);
-    } catch (error) { toast(friendlyError(error, "Não conseguimos atualizar o produto.")); }
-    finally { setBusyId(null); }
-  }
-
-  async function toggleCreator(creator: AdminCreator) {
-    setBusyId(creator.id);
-    try {
-      await api(`/admin/creators/${creator.id}/status`, await token(), { method: "PATCH", body: JSON.stringify({ status: creator.status === "ativo" ? "bloqueado" : "ativo" }) });
-      toast(creator.status === "ativo" ? "Creator bloqueado." : "Creator reativado.");
-      await Promise.all([loadDashboard(), loadCreators()]);
-    } catch (error) { toast(friendlyError(error, "Não conseguimos atualizar o creator.")); }
-    finally { setBusyId(null); }
-  }
-
-  async function editProduct(id: string) {
-    setBusyId(id);
-    try {
-      const data = await api<{ product: Record<string, unknown> }>(`/admin/products/${id}`, await token());
-      const product = data.product;
-      setForm({
-        externalId: stringValue(product.produto_externo_id), name: stringValue(product.nome), category: stringValue(product.categoria),
-        store: stringValue(product.loja_nome), priceText: stringValue(product.preco_texto), commission: stringValue(product.comissao_percentual),
-        priceMin: stringValue(product.preco_min_brl), priceMax: stringValue(product.preco_max_brl), region: stringValue(product.pais_regiao) || "BR",
-        sourceStatus: stringValue(product.status_origem) || "Disponível", salesPeriod: stringValue(product.unidades_vendidas_periodo),
-        salesGrowth: stringValue(product.crescimento_vendas_percentual), salesTotal: stringValue(product.unidades_vendidas_total),
-        revenuePeriod: stringValue(product.receita_periodo_brl), revenueTotal: stringValue(product.receita_total_brl),
-        storeSalesTotal: stringValue(product.unidades_vendidas_total_loja), uploadDate: inputDate(product.data_estimada_upload),
-        ranking: stringValue(product.ranking_origem), description: stringValue(product.descricao), image: stringValue(product.imagem_url),
-        tiktokUrl: stringValue(product.tiktok_shop_url), fastmossUrl: stringValue(product.fastmoss_produto_url), storeFastmossUrl: stringValue(product.fastmoss_loja_url),
-        source: stringValue(product.fonte_dados) || "Cadastro administrativo", status: product.status === "pausado" ? "pausado" : "ativo",
-        featured: Boolean(product.destaque), featuredOrder: stringValue(product.ordem_destaque) || "0",
-      });
-      setEditingId(id);
-      setFormOpen(true);
-      window.requestAnimationFrame(() => formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }));
-    } catch (error) { toast(friendlyError(error, "Não conseguimos abrir o produto.")); }
-    finally { setBusyId(null); }
-  }
-
-  async function uploadImage(file: File) {
-    if (file.size > 5 * 1024 * 1024) { toast("A imagem deve ter no máximo 5 MB."); return; }
-    setUploading(true);
-    try {
-      const { requireApiUrl } = await import("@/lib/config");
-      const body = new FormData();
-      body.append("file", file);
-      const accessToken = await token();
-      const response = await fetch(`${requireApiUrl()}/admin/products/image`, { method: "POST", headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {}, body });
-      const result = await response.json().catch(() => null);
-      if (!response.ok) throw new Error(result?.error?.message || `Erro ${response.status}`);
-      patchForm("image", result.imagem_url);
-      toast("Imagem enviada.");
-    } catch (error) { toast(friendlyError(error, "Não conseguimos enviar a imagem.")); }
-    finally { setUploading(false); }
-  }
-
-  async function submitProduct(event: React.FormEvent) {
-    event.preventDefault();
-    const min = asNumber(form.priceMin);
-    const max = asNumber(form.priceMax);
-    if (min != null && max != null && min > max) { toast("O preço mínimo não pode ser maior que o máximo."); return; }
-    const input = {
-      produto_externo_id: optional(form.externalId), nome: form.name.trim(), descricao: optional(form.description), categoria: optional(form.category),
-      imagem_url: form.image.trim(), loja_nome: optional(form.store), preco_texto: optional(form.priceText), preco_min_brl: min, preco_max_brl: max,
-      pais_regiao: optional(form.region), comissao_percentual: asNumber(form.commission), unidades_vendidas_periodo: asNumber(form.salesPeriod),
-      crescimento_vendas_percentual: asNumber(form.salesGrowth), unidades_vendidas_total: asNumber(form.salesTotal), receita_periodo_brl: asNumber(form.revenuePeriod),
-      receita_total_brl: asNumber(form.revenueTotal), data_estimada_upload: optional(form.uploadDate), unidades_vendidas_total_loja: asNumber(form.storeSalesTotal),
-      fastmoss_produto_url: optional(form.fastmossUrl), tiktok_shop_url: optional(form.tiktokUrl), fastmoss_loja_url: optional(form.storeFastmossUrl),
-      status_origem: optional(form.sourceStatus), fonte_dados: optional(form.source), ranking_origem: asNumber(form.ranking), status: form.status,
-      destaque: form.featured, ordem_destaque: asNumber(form.featuredOrder) ?? 0,
-    };
-    setSaving(true);
-    try {
-      if (editingId) {
-        await api(`/admin/products/${editingId}`, await token(), { method: "PATCH", body: JSON.stringify(input) });
-        toast("Produto atualizado.");
-      } else {
-        await api("/admin/products", await token(), { method: "POST", body: JSON.stringify(input) });
-        toast("Produto adicionado ao catálogo.");
-      }
-      closeForm();
-      await Promise.all([loadDashboard(), loadProducts()]);
-    } catch (error) { toast(friendlyError(error, "Não conseguimos salvar o produto. Revise os campos e tente novamente.")); }
-    finally { setSaving(false); }
-  }
-
-  function exportCatalog() {
-    if (!products?.length) return;
-    const headings = ["ID", "Produto", "Categoria", "Loja", "Preço", "Comissão", "Vendas no período", "Crescimento", "Receita no período", "Status"];
-    const rows = products.map((product) => [product.produto_externo_id, product.nome, product.categoria, product.loja_nome, product.preco_texto, product.comissao_percentual, product.unidades_vendidas_periodo, product.crescimento_vendas_percentual, product.receita_periodo_brl, product.status]);
-    const csv = [headings, ...rows].map((row) => row.map((value) => `"${String(value ?? "").replaceAll('"', '""')}"`).join(";")).join("\n");
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(new Blob(["\ufeff", csv], { type: "text/csv;charset=utf-8" }));
-    link.download = `catalogo-temtrend-${new Date().toISOString().slice(0, 10)}.csv`;
-    link.click();
-    URL.revokeObjectURL(link.href);
-  }
-
-  const metricEntries = Object.entries(METRIC_LABELS).map(([key, copy]) => ({
-    key, ...copy,
-    value: metricNumber(metrics, key, key === "total_creators" ? (creators ?? []).length : key === "creators_ativos" ? activeCreators : 0),
-  }));
-
-  const openSupportCount = (supportTickets ?? []).filter((ticket) => ticket.status === "open").length;
-  const filteredSupportTickets = (supportTickets ?? []).filter(
-    (ticket) => supportStatusFilter === "todos" || ticket.status === supportStatusFilter,
-  );
 
   return (
     <section id="admin-view" className={styles.adminShell}>
@@ -560,317 +97,68 @@ export default function Admin() {
         <div>
           <p className="eyebrow">Painel administrativo</p>
           <h1>Controle a <span className="tt-hl">operação.</span></h1>
-          <p className={styles.heroCopy}>Catálogo, creators e saúde da plataforma em uma única visão.</p>
+          <p className={styles.heroCopy}>
+            Catálogo, creators, leads e saúde da plataforma em uma única visão.
+          </p>
         </div>
         <div className={styles.heroActions}>
-          <button className={styles.secondaryButton} type="button" onClick={() => void refreshAll()} disabled={refreshing}><AdminIcon name="refresh" /> {refreshing ? "Atualizando…" : "Atualizar dados"}</button>
-          <button className={styles.primaryButton} type="button" onClick={openNewProduct}><AdminIcon name="plus" /> Novo produto</button>
-          <small>{lastUpdated ? `Atualizado às ${lastUpdated.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}` : "Carregando dados da operação"}</small>
+          <button className={styles.secondaryButton} type="button" onClick={() => void refreshAll()} disabled={refreshing}>
+            <Icon name="refresh" size={16} /> {refreshing ? "Atualizando…" : "Atualizar dados"}
+          </button>
+          <button
+            className={styles.primaryButton}
+            type="button"
+            onClick={() => {
+              openView("products");
+              setCreateProduct((value) => value + 1);
+            }}
+          >
+            <Icon name="plus" size={16} /> Novo produto
+          </button>
+          <small>
+            {lastUpdated
+              ? `Atualizado às ${lastUpdated.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}`
+              : "Carregando dados da operação"}
+          </small>
         </div>
       </header>
 
       <nav className={styles.viewTabs} aria-label="Seções do painel">
-        {([["overview", "overview", "Visão geral"], ["products", "box", "Produtos"], ["creators", "users", "Creators"], ["billing", "card", "Assinaturas"], ["support", "message", "Suporte"]] as const).map(([key, icon, label]) => (
-          <button key={key} type="button" className={view === key ? styles.activeTab : ""} onClick={() => setView(key)} aria-current={view === key ? "page" : undefined}>
-            <AdminIcon name={icon} /> {label}
-            {key === "creators" && creators && <span>{creators.length}</span>}
-            {key === "billing" && billingSummary && <span>{billingSummary.active}</span>}
-            {key === "support" && supportTickets && openSupportCount > 0 && <span>{openSupportCount}</span>}
-          </button>
-        ))}
+        {ADMIN_VIEWS.map((item) => {
+          const badge = tabBadge(item.key, metrics);
+          return (
+            <button
+              key={item.key}
+              type="button"
+              className={view === item.key ? styles.activeTab : ""}
+              onClick={() => openView(item.key)}
+              aria-current={view === item.key ? "page" : undefined}
+            >
+              <Icon name={item.icon} size={16} /> {item.label}
+              {badge != null && badge > 0 ? <span>{formatCount(badge, badge > 999)}</span> : null}
+            </button>
+          );
+        })}
       </nav>
 
       {view === "overview" && (
-        <div className={styles.viewPanel}>
-          <div className={styles.sectionHeading}><div><span>Agora</span><h2>Resumo da plataforma</h2></div><p>Indicadores essenciais para priorizar as próximas ações.</p></div>
-          {metricsError && !metrics ? (
-            <div className={styles.errorState}><strong>Não foi possível carregar as métricas.</strong><button type="button" onClick={() => void loadDashboard()}>Tentar novamente</button></div>
-          ) : (
-            <div className={styles.metricGrid} aria-live="polite">
-              {metrics ? metricEntries.map((metric, index) => (
-                <article key={metric.key} className={styles.metricCard}><span className={styles.metricIndex}>{String(index + 1).padStart(2, "0")}</span><strong>{formatCount(metric.value)}</strong><h3>{metric.label}</h3><p>{metric.detail}</p></article>
-              )) : Array.from({ length: 7 }).map((_, index) => <div className={styles.metricSkeleton} key={index} aria-hidden="true" />)}
-            </div>
-          )}
-          <div className={styles.overviewGrid}>
-            <article className={styles.healthCard}>
-              <div className={styles.cardHeading}><div><span>Catálogo</span><h2>Pronto para descoberta</h2></div><button type="button" onClick={() => setView("products")}>Ver catálogo</button></div>
-              <p className={styles.heroCopy}>
-                {incompleteProducts > 0 ? "Há itens com cadastro incompleto para revisar. " : "Todos os itens têm cadastro completo. "}
-                {pausedProducts > 0 ? "Há itens pausados fora da busca dos creators." : "Nenhum item pausado no momento."}
-              </p>
-            </article>
-            <article className={styles.healthCard}>
-              <div className={styles.cardHeading}><div><span>Comunidade</span><h2>Creators com acesso</h2></div><button type="button" onClick={() => setView("creators")}>Gerenciar</button></div>
-              <div className={styles.progressBlock}><div><strong>{creators?.length ? Math.round((activeCreators / creators.length) * 100) : 0}%</strong><span>das contas estão ativas</span></div><div className={styles.progressTrack}><i style={{ width: `${creators?.length ? (activeCreators / creators.length) * 100 : 0}%` }} /></div></div>
-              <dl className={styles.healthList}><div><dt>Ativos</dt><dd>{activeCreators}</dd></div><div><dt>Bloqueados</dt><dd className={blockedCreators ? styles.attention : ""}>{blockedCreators}</dd></div><div><dt>Publicações</dt><dd>{formatCount(metrics?.conteudos_publicados)}</dd></div></dl>
-            </article>
-            <article className={`${styles.healthCard} ${styles.aiCard}`}>
-              <div className={styles.cardHeading}><div><span>Uso de IA</span><h2>Consumo operacional</h2></div><i>Gemini</i></div>
-              <dl className={styles.aiMetrics}><div><dt>Classificações</dt><dd>{formatCount(metrics?.ai_classify_calls)}</dd></div><div><dt>Gerações</dt><dd>{formatCount(metrics?.ai_generate_calls)}</dd></div><div><dt>Tokens de classificação</dt><dd>{formatCount(metrics?.ai_classify_tokens, true)}</dd></div><div><dt>Tokens de geração</dt><dd>{formatCount(metrics?.ai_generate_tokens, true)}</dd></div></dl>
-            </article>
-            <article className={styles.healthCard}>
-              <div className={styles.cardHeading}><div><span>Funil · 30 dias</span><h2>Eventos de produto</h2></div><button type="button" onClick={() => void loadFunnel()}>Atualizar</button></div>
-              {funnel === null ? (
-                <p className={styles.mutedText}>Carregando eventos…</p>
-              ) : funnel.length === 0 ? (
-                <p className={styles.mutedText}>Sem eventos no período — o funil aparece quando houver navegação registrada.</p>
-              ) : (
-                <dl className={styles.funnelList}>
-                  {funnel.slice(0, 6).map((event) => (
-                    <div key={event.event_name}><dt>{event.event_name}</dt><dd>{formatCount(event.total)}</dd></div>
-                  ))}
-                </dl>
-              )}
-            </article>
-            <article className={styles.healthCard}>
-              <div className={styles.cardHeading}><div><span>Atendimento</span><h2>Suporte</h2></div><button type="button" onClick={() => setView("support")}>Abrir fila</button></div>
-              <div className={styles.progressBlock}><div><strong>{openSupportCount}</strong><span>{openSupportCount === 1 ? "conversa aguardando resposta" : "conversas aguardando resposta"}</span></div></div>
-              <dl className={styles.healthList}><div><dt>Respondidas</dt><dd>{(supportTickets ?? []).filter((ticket) => ticket.status === "answered").length}</dd></div><div><dt>Resolvidas</dt><dd>{(supportTickets ?? []).filter((ticket) => ticket.status === "resolved").length}</dd></div><div><dt>Encerradas</dt><dd>{(supportTickets ?? []).filter((ticket) => ticket.status === "closed").length}</dd></div></dl>
-            </article>
-          </div>
-        </div>
+        <OverviewTab key={`overview-${refreshSignal}`} token={token} onOpen={openView} />
       )}
-
       {view === "products" && (
-        <div className={styles.viewPanel}>
-          <div className={styles.sectionHeading}><div><span>Catálogo</span><h2>Produtos da plataforma</h2></div><p>Encontre, revise e publique oportunidades para creators.</p></div>
-          {formOpen && (
-            <div className={styles.editor} ref={formRef}>
-              <div className={styles.editorHeading}><div><span>{editingId ? "Editando produto" : "Novo produto"}</span><h2>{editingId ? form.name || "Produto" : "Adicionar ao catálogo"}</h2><p>Organize os dados que alimentam a descoberta e os roteiros de conteúdo.</p></div><button type="button" onClick={closeForm} aria-label="Fechar formulário"><Icon name="x" size={18} /></button></div>
-              <form onSubmit={submitProduct} className={styles.productForm}>
-                <fieldset>
-                  <legend><b>1</b><span>Identificação<small>Informações que o creator verá primeiro.</small></span></legend>
-                  <div className={styles.formGrid}>
-                    <label className={styles.wide}>Nome do produto<input value={form.name} onChange={(event) => patchForm("name", event.target.value)} required maxLength={500} /></label>
-                    <label>ID externo<input value={form.externalId} onChange={(event) => patchForm("externalId", event.target.value)} maxLength={80} placeholder="ID do TikTok Shop" /></label>
-                    <label>Categoria<input value={form.category} onChange={(event) => patchForm("category", event.target.value)} list="admin-categories" maxLength={200} /><datalist id="admin-categories">{categories.map((category) => <option key={category} value={category} />)}</datalist></label>
-                    <label>Loja<input value={form.store} onChange={(event) => patchForm("store", event.target.value)} maxLength={200} /></label>
-                    <label>País/Região<input value={form.region} onChange={(event) => patchForm("region", event.target.value)} maxLength={20} /></label>
-                    <label className={styles.wide}>Descrição confirmada<textarea value={form.description} onChange={(event) => patchForm("description", event.target.value)} maxLength={4000} rows={4} placeholder="Use apenas informações verificadas sobre o produto." /></label>
-                  </div>
-                </fieldset>
-                <fieldset>
-                  <legend><b>2</b><span>Preço e performance<small>Dados usados para ordenar e contextualizar oportunidades.</small></span></legend>
-                  <div className={styles.formGrid}>
-                    <label>Preço exibido<input value={form.priceText} onChange={(event) => patchForm("priceText", event.target.value)} placeholder="R$ 39,90 – 49,90" /></label>
-                    <label>Comissão (%)<input value={form.commission} onChange={(event) => patchForm("commission", event.target.value)} type="number" min={0} max={100} step="0.01" /></label>
-                    <label>Preço mínimo (R$)<input value={form.priceMin} onChange={(event) => patchForm("priceMin", event.target.value)} type="number" min={0} step="0.01" /></label>
-                    <label>Preço máximo (R$)<input value={form.priceMax} onChange={(event) => patchForm("priceMax", event.target.value)} type="number" min={0} step="0.01" /></label>
-                    <label>Vendas no período<input value={form.salesPeriod} onChange={(event) => patchForm("salesPeriod", event.target.value)} type="number" min={0} step={1} /></label>
-                    <label>Crescimento (%)<input value={form.salesGrowth} onChange={(event) => patchForm("salesGrowth", event.target.value)} type="number" step="0.01" /></label>
-                    <label>Total vendido<input value={form.salesTotal} onChange={(event) => patchForm("salesTotal", event.target.value)} type="number" min={0} step={1} /></label>
-                    <label>Vendas da loja<input value={form.storeSalesTotal} onChange={(event) => patchForm("storeSalesTotal", event.target.value)} type="number" min={0} step={1} /></label>
-                    <label>Receita no período (R$)<input value={form.revenuePeriod} onChange={(event) => patchForm("revenuePeriod", event.target.value)} type="number" min={0} step="0.01" /></label>
-                    <label>Receita total (R$)<input value={form.revenueTotal} onChange={(event) => patchForm("revenueTotal", event.target.value)} type="number" min={0} step="0.01" /></label>
-                    <label>Ranking<input value={form.ranking} onChange={(event) => patchForm("ranking", event.target.value)} type="number" min={1} step={1} /></label>
-                    <label>Data estimada de upload<input value={form.uploadDate} onChange={(event) => patchForm("uploadDate", event.target.value)} type="datetime-local" /></label>
-                  </div>
-                </fieldset>
-                <fieldset>
-                  <legend><b>3</b><span>Mídia e links<small>Revise a imagem antes de publicar.</small></span></legend>
-                  <div className={styles.mediaEditor}>
-                    <div className={styles.imagePreview}><img src={form.image || FALLBACK_IMAGE} alt="Prévia do produto" width={320} height={320} onError={(event) => { event.currentTarget.src = FALLBACK_IMAGE; }} /><span>{form.image ? "Prévia atual" : "Sem imagem"}</span></div>
-                    <div className={styles.mediaFields}>
-                      <label>URL da imagem<input value={form.image} onChange={(event) => patchForm("image", event.target.value)} type="url" required placeholder="https://..." /></label>
-                      <label className={styles.fileField}>Enviar nova imagem<input type="file" accept="image/jpeg,image/png,image/webp,image/gif" disabled={uploading} onChange={(event) => { const file = event.target.files?.[0]; if (file) void uploadImage(file); }} /><span>{uploading ? "Enviando…" : "JPG, PNG, WebP ou GIF · até 5 MB"}</span></label>
-                      <label>Link no TikTok Shop<input value={form.tiktokUrl} onChange={(event) => patchForm("tiktokUrl", event.target.value)} type="url" placeholder="https://shop.tiktok.com/..." /></label>
-                      <label>Link do produto no FastMoss<input value={form.fastmossUrl} onChange={(event) => patchForm("fastmossUrl", event.target.value)} type="url" placeholder="https://www.fastmoss.com/..." /></label>
-                      <label>Link da loja no FastMoss<input value={form.storeFastmossUrl} onChange={(event) => patchForm("storeFastmossUrl", event.target.value)} type="url" placeholder="https://www.fastmoss.com/..." /></label>
-                    </div>
-                  </div>
-                </fieldset>
-                <fieldset>
-                  <legend><b>4</b><span>Publicação<small>Controle onde e como o produto aparece.</small></span></legend>
-                  <div className={styles.formGrid}>
-                    <label>Fonte dos dados<input value={form.source} onChange={(event) => patchForm("source", event.target.value)} maxLength={255} /></label>
-                    <label>Status na fonte<input value={form.sourceStatus} onChange={(event) => patchForm("sourceStatus", event.target.value)} maxLength={50} /></label>
-                    <label>Status no catálogo<select value={form.status} onChange={(event) => patchForm("status", event.target.value as ProductFormState["status"])}><option value="ativo">Ativo</option><option value="pausado">Pausado</option></select></label>
-                    <label>Ordem de destaque<input value={form.featuredOrder} onChange={(event) => patchForm("featuredOrder", event.target.value)} type="number" min={0} step={1} disabled={!form.featured} /></label>
-                    <label className={`${styles.wide} ${styles.checkField}`}><input checked={form.featured} onChange={(event) => patchForm("featured", event.target.checked)} type="checkbox" /><span><strong>Destacar produto</strong><small>Prioriza esta oportunidade nas áreas de descoberta.</small></span></label>
-                  </div>
-                </fieldset>
-                <div className={styles.formActions}><button className={styles.secondaryButton} type="button" onClick={closeForm}>Cancelar</button><button className={styles.primaryButton} type="submit" disabled={saving || uploading}>{saving ? "Salvando…" : editingId ? "Salvar alterações" : "Adicionar produto"}</button></div>
-              </form>
-            </div>
-          )}
-
-          <div className={styles.toolbar}>
-            <label className={styles.searchField}><AdminIcon name="search" /><input aria-label="Buscar produtos" value={productQuery} onChange={(event) => { setProductQuery(event.target.value); setProductPage(1); }} placeholder="Buscar produto, loja, categoria ou ID" /></label>
-            <select aria-label="Filtrar por status" value={productStatus} onChange={(event) => { setProductStatus(event.target.value); setProductPage(1); }}><option value="todos">Todos os status</option><option value="ativo">Ativos</option><option value="pausado">Pausados</option></select>
-            <select aria-label="Filtrar por categoria" value={productCategory} onChange={(event) => { setProductCategory(event.target.value); setProductPage(1); }}><option value="todas">Todas as categorias</option>{categories.map((category) => <option key={category} value={category}>{category}</option>)}</select>
-            <select aria-label="Ordenar produtos" value={productSort} onChange={(event) => { setProductSort(event.target.value as ProductSort); setProductPage(1); }}><option value="ranking">Melhor ranking</option><option value="sales">Mais vendidos</option><option value="revenue">Maior receita</option><option value="name">Nome A–Z</option></select>
-            <button className={styles.iconButton} type="button" onClick={exportCatalog} disabled={!products?.length} title="Exportar catálogo"><AdminIcon name="download" /><span>Exportar</span></button>
-          </div>
-          <div className={styles.listMeta}><p>Produtos da plataforma</p><button type="button" onClick={openNewProduct}><AdminIcon name="plus" /> Adicionar produto</button></div>
-          {productsError && products === null ? (
-            <div className={styles.errorState}><strong>Não foi possível carregar os produtos.</strong><button type="button" onClick={() => void loadProducts()}>Tentar novamente</button></div>
-          ) : products === null ? (
-            <div className={styles.listSkeleton}>{Array.from({ length: 6 }).map((_, index) => <i key={index} />)}</div>
-          ) : visibleProducts.length ? (
-            <div className={styles.productList}>
-              {visibleProducts.map((product) => (
-                <article key={product.id} className={styles.productRow}>
-                  <img src={product.imagem_url || FALLBACK_IMAGE} alt="" width={76} height={76} loading="lazy" onError={(event) => { event.currentTarget.src = FALLBACK_IMAGE; }} />
-                  <div className={styles.productIdentity}><div className={styles.badges}><span className={product.status === "ativo" ? styles.statusActive : styles.statusPaused}>{product.status === "ativo" ? "Ativo" : "Pausado"}</span>{product.destaque && <span className={styles.featuredBadge}>Destaque</span>}{product.ranking_origem && <span>#{product.ranking_origem}</span>}</div><h3>{product.nome}</h3><p>{[product.loja_nome, product.categoria, product.produto_externo_id ? `ID ${product.produto_externo_id}` : null].filter(Boolean).join(" · ")}</p></div>
-                  <dl className={styles.productStats}><div><dt>Preço</dt><dd>{product.preco_texto || "—"}</dd></div><div><dt>Vendas</dt><dd>{formatCount(product.unidades_vendidas_periodo, true)}</dd></div><div><dt>Crescimento</dt><dd className={Number(product.crescimento_vendas_percentual) < 0 ? styles.negative : styles.positive}>{formatPercent(product.crescimento_vendas_percentual)}</dd></div><div><dt>Receita</dt><dd>{formatCurrency(product.receita_periodo_brl)}</dd></div></dl>
-                  <div className={styles.rowActions}>{product.tiktok_shop_url && <a href={String(product.tiktok_shop_url)} target="_blank" rel="noreferrer" aria-label="Abrir produto no TikTok Shop"><AdminIcon name="external" /></a>}<button type="button" onClick={() => void editProduct(product.id)} disabled={busyId === product.id}><AdminIcon name="edit" /> Editar</button><button type="button" className={product.status === "ativo" ? styles.pauseAction : styles.activateAction} onClick={() => void toggleProductStatus(product)} disabled={busyId === product.id}>{busyId === product.id ? "Aguarde…" : product.status === "ativo" ? "Pausar" : "Ativar"}</button></div>
-                </article>
-              ))}
-            </div>
-          ) : (
-            <div className={styles.emptyState}><strong>Nenhum produto corresponde aos filtros.</strong><p>Ajuste a busca ou limpe os filtros para ver todo o catálogo.</p><button type="button" onClick={() => { setProductQuery(""); setProductStatus("todos"); setProductCategory("todas"); setProductPage(1); }}>Limpar filtros</button></div>
-          )}
-          {productPages > 1 && <div className={styles.pagination}><button type="button" disabled={productPage === 1} onClick={() => setProductPage((page) => Math.max(1, page - 1))}>Anterior</button><span>Página <strong>{productPage}</strong> de {productPages}</span><button type="button" disabled={productPage === productPages} onClick={() => setProductPage((page) => Math.min(productPages, page + 1))}>Próxima</button></div>}
-        </div>
+        <ProductsTab
+          key={`products-${refreshSignal}`}
+          token={token}
+          createSignal={createProduct}
+          onChanged={() => void loadMetrics()}
+        />
       )}
-
-      {view === "creators" && (
-        <div className={styles.viewPanel}>
-          <div className={styles.sectionHeading}><div><span>Comunidade</span><h2>Creators cadastrados</h2></div><p>Encontre contas, entenda interesses e gerencie o acesso.</p></div>
-          <div className={styles.creatorSummary}><div><span>Total</span><strong>{creators?.length ?? 0}</strong></div><div><span>Ativos</span><strong>{activeCreators}</strong></div><div><span>Bloqueados</span><strong>{blockedCreators}</strong></div><div><span>Taxa ativa</span><strong>{creators?.length ? `${Math.round((activeCreators / creators.length) * 100)}%` : "0%"}</strong></div></div>
-          <div className={`${styles.toolbar} ${styles.creatorToolbar}`}><label className={styles.searchField}><AdminIcon name="search" /><input aria-label="Buscar creators" value={creatorQuery} onChange={(event) => setCreatorQuery(event.target.value)} placeholder="Buscar por nome, email, nicho ou ID" /></label><select aria-label="Filtrar creators por status" value={creatorStatus} onChange={(event) => setCreatorStatus(event.target.value)}><option value="todos">Todos os status</option><option value="ativo">Ativos</option><option value="bloqueado">Bloqueados</option></select></div>
-          <div className={styles.listMeta}><p><strong>{filteredCreators.length}</strong> {filteredCreators.length === 1 ? "creator encontrado" : "creators encontrados"}</p></div>
-          {creatorsError && creators === null ? (
-            <div className={styles.errorState}><strong>Não foi possível carregar os creators.</strong><button type="button" onClick={() => void loadCreators()}>Tentar novamente</button></div>
-          ) : creators === null ? (
-            <div className={styles.listSkeleton}>{Array.from({ length: 5 }).map((_, index) => <i key={index} />)}</div>
-          ) : filteredCreators.length ? (
-            <div className={styles.creatorList}>{filteredCreators.map((creator) => (
-              <article key={creator.id} className={styles.creatorRow}><div className={styles.avatar}>{initials(creator)}</div><div className={styles.creatorIdentity}><div><h3>{creator.nome || "Creator sem nome"}</h3><span className={creator.status === "ativo" ? styles.statusActive : styles.statusBlocked}>{creator.status === "ativo" ? "Ativo" : "Bloqueado"}</span></div><p>{creator.email || creator.user_id}</p></div><div className={styles.niches}>{creator.nicho?.length ? creator.nicho.map((niche) => <span key={niche}>{niche}</span>) : <span>Sem nicho informado</span>}</div><button type="button" className={creator.status === "ativo" ? styles.blockAction : styles.activateAction} onClick={() => void toggleCreator(creator)} disabled={busyId === creator.id}>{busyId === creator.id ? "Aguarde…" : creator.status === "ativo" ? "Bloquear acesso" : "Reativar acesso"}</button></article>
-            ))}</div>
-          ) : (
-            <div className={styles.emptyState}><strong>Nenhum creator corresponde aos filtros.</strong><p>Tente outro nome, email ou status.</p><button type="button" onClick={() => { setCreatorQuery(""); setCreatorStatus("todos"); }}>Limpar filtros</button></div>
-          )}
-        </div>
+      {view === "creators" && <CreatorsTab key={`creators-${refreshSignal}`} token={token} />}
+      {view === "leads" && (
+        <LeadsTab key={`leads-${refreshSignal}`} token={token} onChanged={() => void loadMetrics()} />
       )}
-
-      {view === "billing" && (
-        <div className={styles.viewPanel}>
-          <div className={styles.sectionHeading}><div><span>Receita</span><h2>Assinaturas</h2></div><p>Planos ativos, pagamentos pendentes e mudanças agendadas — espelho do provedor de pagamento.</p></div>
-          {billingError && !billingSummary ? (
-            <div className={styles.errorState}><strong>Não foi possível carregar as assinaturas.</strong><button type="button" onClick={() => void loadBilling()}>Tentar novamente</button></div>
-          ) : (
-            <>
-              <div className={styles.creatorSummary}>
-                <div><span>Assinaturas ativas</span><strong>{billingSummary?.active ?? 0}</strong></div>
-                <div><span>Pagamento pendente</span><strong>{billingSummary?.past_due ?? 0}</strong></div>
-                <div><span>Assinaturas registradas</span><strong>{subscriptions?.length ?? 0}</strong></div>
-                <div><span>MRR estimado</span><strong>{billingSummary ? formatCurrency((billingSummary.mrr_cents ?? 0) / 100) : "—"}</strong></div>
-              </div>
-              <div className={styles.listMeta}><p><strong>{subscriptions?.length ?? 0}</strong> {subscriptions?.length === 1 ? "assinatura registrada" : "assinaturas registradas"}</p></div>
-              {subscriptions === null ? (
-                <div className={styles.listSkeleton}>{Array.from({ length: 4 }).map((_, index) => <i key={index} />)}</div>
-              ) : subscriptions.length === 0 ? (
-                <div className={styles.emptyState}><strong>Nenhuma assinatura ainda.</strong><p>Quando um creator assinar, o plano aparece aqui com status, valor e próxima cobrança.</p></div>
-              ) : (
-                <div className={styles.tableWrap}>
-                  <table className={styles.subsTable}>
-                    <thead>
-                      <tr><th scope="col">Creator</th><th scope="col">Plano</th><th scope="col">Período</th><th scope="col">Status</th><th scope="col">Valor</th><th scope="col">Próxima cobrança</th><th scope="col">Agendado</th></tr>
-                    </thead>
-                    <tbody>
-                      {subscriptions.map((sub) => (
-                        <tr key={sub.id}>
-                          <td><strong>{sub.creator_nome || "Creator sem nome"}</strong><span className={styles.subMeta}>{sub.creator_email || ""}</span></td>
-                          <td>{sub.plan_label}</td>
-                          <td>{sub.period === "annual" ? "Anual" : "Mensal"}</td>
-                          <td><span className={sub.status === "active" ? styles.statusActive : sub.status === "past_due" ? styles.statusBlocked : styles.subNeutral}>{SUB_STATUS_LABEL[sub.status] ?? sub.status}</span></td>
-                          <td>{sub.amount_cents != null ? formatCurrency(sub.amount_cents / 100) : "—"}</td>
-                          <td>{fmtDay(sub.current_period_end)}</td>
-                          <td>{sub.pending_plan_label ?? "—"}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </>
-          )}
-        </div>
-      )}
-
-      {view === "support" && (
-        <div className={styles.viewPanel}>
-          <div className={styles.sectionHeading}><div><span>Atendimento</span><h2>Conversas do suporte</h2></div><p>Responda por aqui — o creator vê a resposta na área Suporte, dentro da plataforma.</p></div>
-          <div className={`${styles.toolbar} ${styles.supportToolbar}`}>
-            <select aria-label="Filtrar conversas por status" value={supportStatusFilter} onChange={(event) => setSupportStatusFilter(event.target.value)}>
-              <option value="todos">Todos os status</option>
-              <option value="open">Aguardando suporte</option>
-              <option value="answered">Respondidas</option>
-              <option value="resolved">Resolvidas</option>
-              <option value="closed">Encerradas</option>
-            </select>
-            <button type="button" className={styles.secondaryButton} onClick={() => void loadSupport()}><AdminIcon name="refresh" /> Atualizar fila</button>
-          </div>
-          {supportError && supportTickets === null ? (
-            <div className={styles.errorState}><strong>Não foi possível carregar a fila de suporte.</strong><button type="button" onClick={() => void loadSupport()}>Tentar novamente</button></div>
-          ) : (
-            <div className="support-layout">
-              <section className="card support-list">
-                <h2>{openSupportCount > 0 ? `${openSupportCount} aguardando resposta` : "Fila em ordem"}</h2>
-                {supportTickets === null ? (
-                  <p className="muted">Carregando conversas…</p>
-                ) : filteredSupportTickets.length === 0 ? (
-                  <p className="muted">Nenhuma conversa{supportStatusFilter !== "todos" ? " com este status" : ""} no momento.</p>
-                ) : (
-                  <ul className="support-ticket-list">
-                    {filteredSupportTickets.map((ticket) => (
-                      <li key={ticket.id}>
-                        <button type="button" className={`support-ticket${supportThread?.id === ticket.id ? " is-active" : ""}`} onClick={() => void openSupportThread(ticket.id)}>
-                          <span className="support-ticket-top"><strong>{ticket.subject}</strong><span className={`support-status ${SUPPORT_STATUS_CLASS[ticket.status]}`}>{SUPPORT_STATUS_LABEL[ticket.status]}</span></span>
-                          <span className="support-ticket-meta">{ticket.creator_nome || ticket.creator_email || "Creator"} · {SUPPORT_CATEGORY_LABEL[ticket.category] ?? ticket.category} · {fmtSupportDateTime(ticket.last_message_at)}</span>
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </section>
-              <section className="card support-thread">
-                {!supportThread ? (
-                  <p className="muted support-thread-empty">Escolha uma conversa ao lado para ver as mensagens e responder.</p>
-                ) : (
-                  <>
-                    <header className="support-thread-head">
-                      <div>
-                        <h2>{supportThread.subject}</h2>
-                        <span className="support-ticket-meta">{supportThread.creator_nome || supportThread.creator_email || "Creator"} · {SUPPORT_CATEGORY_LABEL[supportThread.category] ?? supportThread.category} · aberta em {fmtSupportDateTime(supportThread.created_at)}</span>
-                      </div>
-                      <span className={`support-status ${SUPPORT_STATUS_CLASS[supportThread.status]}`}>{SUPPORT_STATUS_LABEL[supportThread.status]}</span>
-                    </header>
-                    <ol className="support-messages">
-                      {supportThread.messages.map((msg) => (
-                        <li key={msg.id} className={msg.author === "support" ? "is-creator" : "is-support"}>
-                          <div className="support-bubble">
-                            <p>{msg.body}</p>
-                            <small>{msg.author === "support" ? "Suporte TemTrend" : supportThread.creator_nome || "Creator"} · {fmtSupportDateTime(msg.created_at)}</small>
-                          </div>
-                        </li>
-                      ))}
-                    </ol>
-                    {supportThread.status === "closed" ? (
-                      <div className="support-reply-actions">
-                        <p className="muted">Conversa encerrada pelo creator. Precisa de algo? É só reabrir.</p>
-                        <button className="ghost" type="button" disabled={supportBusy} onClick={() => void updateTicketStatus("open")}>Reabrir</button>
-                      </div>
-                    ) : (
-                      <form className="support-reply" onSubmit={sendSupportReply}>
-                        <label className="sr-only" htmlFor="admin-support-reply">Resposta</label>
-                        <textarea id="admin-support-reply" value={supportReply} onChange={(event) => setSupportReply(event.target.value)} rows={3} maxLength={2000} placeholder="Escreva a resposta para o creator…" />
-                        <div className="support-reply-actions">
-                          <button className="primary" type="submit" disabled={supportBusy || !supportReply.trim()}>{supportBusy ? "Enviando…" : "Responder"}</button>
-                          <button className="ghost" type="button" disabled={supportBusy} onClick={() => void updateTicketStatus("resolved")}>Marcar resolvida</button>
-                          <button className="ghost" type="button" disabled={supportBusy} onClick={() => void updateTicketStatus("closed")}>Encerrar</button>
-                        </div>
-                      </form>
-                    )}
-                  </>
-                )}
-              </section>
-            </div>
-          )}
-        </div>
-      )}
+      {view === "billing" && <BillingTab key={`billing-${refreshSignal}`} token={token} />}
+      {view === "support" && <SupportTab key={`support-${refreshSignal}`} token={token} />}
+      {view === "ai" && <AiTab key={`ai-${refreshSignal}`} token={token} />}
     </section>
   );
 }

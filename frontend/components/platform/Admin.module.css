@@ -354,7 +354,7 @@
 .rowActions a { width: 44px; padding: 0; }
 .rowActions button, .rowActions a, .pagination button, .viewTabs button, .creatorRow > button { min-height: 44px; }
 .rowActions button:disabled, .creatorRow > button:disabled { opacity: .45; cursor: not-allowed; }
-.rowActions .pauseAction, .blockAction { color: #923f3f; }
+.rowActions .pauseAction, .blockAction { border-color: #e3c6c6; color: #8f3b3b; }
 .rowActions .activateAction, .activateAction { border-color: #bddb98; color: #3e6e1c; }
 
 .pagination { display: flex; align-items: center; justify-content: center; gap: 18px; margin-top: 25px; }
@@ -547,3 +547,133 @@
   .adminShell { padding-top: 30px; }
   .hero h1 { font-size: clamp(2.6rem, 12vw, 4.2rem); }
 }
+
+/* Texto sobre o bloco destacado (lime/purple): mantém contraste legível. */
+.metricCard:first-child p,
+.metricCard:first-child .metricIndex,
+.creatorSummary > div:last-child span,
+.leadSummary > div:last-child span { color: rgba(18, 12, 34, .72); }
+
+/* --- Funil em barras (visão geral) --- */
+.funnelBars { display: grid; gap: 12px; margin: 22px 0 0; padding: 0; list-style: none; }
+.funnelBars li { display: grid; grid-template-columns: minmax(0, 1fr) minmax(70px, 1fr) auto; gap: 12px; align-items: center; }
+.funnelBars li > span { overflow: hidden; color: var(--admin-muted); font-size: .72rem; text-overflow: ellipsis; white-space: nowrap; }
+.funnelBars li > div { height: 7px; overflow: hidden; border-radius: 99px; background: #e9ece4; }
+.funnelBars li > div > i { display: block; height: 100%; border-radius: inherit; background: var(--admin-lime); }
+.funnelBars li > strong { font-size: .74rem; font-variant-numeric: tabular-nums; }
+
+.aiFootnote { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 20px 0 0; color: #bfc3b9; font-size: .68rem; }
+.aiFootnote button { border: 0; border-bottom: 1px solid currentColor; padding: 0 0 1px; background: transparent; color: var(--admin-lime); font-size: inherit; font-weight: 800; cursor: pointer; }
+
+/* --- Aba Produtos --- */
+.productsToolbar { grid-template-columns: minmax(240px, 1.6fr) repeat(3, minmax(140px, .6fr)) auto; }
+.paginationHint { margin: 12px 0 0; color: var(--admin-muted); font-size: .68rem; text-align: center; }
+
+/* --- Aba Creators --- */
+.planBadge { display: inline-flex; width: max-content; padding: 4px 7px; border-radius: 999px; background: var(--admin-soft); color: #4d5048; font-size: .55rem; font-weight: 900; letter-spacing: .04em; text-transform: uppercase; }
+.creatorMeta { margin-top: 4px !important; font-size: .62rem !important; }
+.creatorActions { display: flex; align-items: center; gap: 6px; justify-content: flex-end; }
+.creatorActions button { min-height: 38px; padding: 8px 12px; border: 1px solid #d8ddd1; border-radius: 999px; background: #fff; color: var(--admin-ink); font-size: .63rem; font-weight: 850; white-space: nowrap; cursor: pointer; }
+.creatorActions button:disabled { opacity: .45; cursor: not-allowed; }
+.creatorActions .detailAction { border-color: var(--admin-ink); }
+.creatorActions .blockAction { color: #923f3f; }
+.creatorActions .activateAction { border-color: #bddb98; color: #3e6e1c; }
+
+.detailStack { display: grid; gap: 14px; }
+.detailStack h2 { margin: 0; font-size: 1.6rem; }
+.detailGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1px; margin: 6px 0 0; overflow: hidden; border: 1px solid var(--admin-line); border-radius: 14px; background: var(--admin-line); }
+.detailGrid > div { padding: 14px; background: #fff; }
+.detailGrid dt, .detailInline dt { color: var(--admin-muted); font-size: .6rem; font-weight: 800; text-transform: uppercase; }
+.detailGrid dd, .detailInline dd { margin: 5px 0 0; font-size: .84rem; font-weight: 800; }
+.detailSection { padding-top: 14px; border-top: 1px solid var(--admin-line); }
+.detailSection h3 { margin: 0 0 10px; font-size: .72rem; letter-spacing: .06em; text-transform: uppercase; }
+.detailInline { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin: 0; }
+.detailInline > div { padding: 12px; border: 1px solid var(--admin-line); border-radius: 12px; background: var(--admin-soft); }
+.detailList { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.detailList li { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px; padding: 10px 0; border-bottom: 1px solid var(--admin-soft); }
+.detailList li:last-child { border-bottom: 0; }
+.detailList strong { font-size: .78rem; }
+.detailList span { color: var(--admin-muted); font-size: .68rem; }
+
+/* --- Aba Leads --- */
+.leadsToolbar { grid-template-columns: minmax(240px, 1.6fr) minmax(180px, .6fr); }
+.leadSummary { display: grid; grid-template-columns: repeat(4, 1fr); margin-bottom: 18px; overflow: hidden; border: 1px solid var(--admin-line); border-radius: 18px; }
+.leadSummary > div { padding: 18px 22px; border-right: 1px solid var(--admin-line); background: var(--tt-surface); }
+.leadSummary > div:last-child { border-right: 0; }
+.leadSummary span { display: block; color: var(--admin-muted); font-size: .6rem; font-weight: 800; text-transform: uppercase; }
+.leadSummary strong { display: block; margin-top: 5px; font-size: 1.55rem; letter-spacing: -.05em; }
+.leadList { display: grid; gap: 10px; }
+.leadCard { display: grid; gap: 14px; padding: 20px; border: 1px solid var(--admin-line); border-radius: var(--tt-radius-control); background: var(--tt-paper); }
+.leadCard header { display: flex; align-items: start; justify-content: space-between; gap: 14px; }
+.leadCard header > div { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.leadCard h3 { margin: 0; font-size: .95rem; }
+.leadCard time { color: var(--admin-muted); font-size: .66rem; white-space: nowrap; }
+.leadStatus { display: inline-flex; padding: 4px 8px; border-radius: 999px; background: #eceee8; color: #5b5e56; font-size: .55rem; font-weight: 900; letter-spacing: .04em; text-transform: uppercase; }
+.leadNew { background: #e8f7d8; color: #386514; }
+.leadContacted { background: #eef3fb; color: #2f4f7a; }
+.leadQualified { background: var(--admin-lime); color: var(--admin-ink); }
+.leadDiscarded { background: #f3eee3; color: #765b23; }
+.leadMessage { margin: 0; color: var(--admin-ink); font-size: .8rem; line-height: 1.55; white-space: pre-wrap; }
+.leadContacts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin: 0; }
+.leadContacts dt { color: var(--admin-muted); font-size: .58rem; font-weight: 800; text-transform: uppercase; }
+.leadContacts dd { margin: 4px 0 0; overflow: hidden; font-size: .76rem; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
+.leadContacts a { color: var(--tt-deep); text-decoration: none; }
+.leadContacts a:hover { text-decoration: underline; }
+.leadCard footer { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 12px; padding-top: 12px; border-top: 1px solid var(--admin-soft); }
+.leadCard footer label { display: grid; gap: 6px; color: var(--admin-muted); font-size: .6rem; font-weight: 800; text-transform: uppercase; }
+.leadCard footer select { min-height: 40px; padding: 0 12px; border: 1px solid var(--admin-line); border-radius: 10px; background: var(--tt-surface); font-size: .72rem; font-weight: 700; }
+.leadCard footer button { min-height: 40px; display: inline-flex; align-items: center; gap: 6px; padding: 8px 12px; border: 1px solid var(--admin-line); border-radius: 999px; background: var(--tt-surface); color: var(--admin-ink); font-size: .66rem; font-weight: 800; cursor: pointer; }
+
+/* --- Aba IA --- */
+.aiLayout { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: 20px; }
+.aiChartCard { display: flex; flex-direction: column; background: var(--tt-ink); border-color: var(--tt-ink); color: var(--tt-surface); }
+.aiChartCard .cardHeading div > span { color: var(--admin-lime); }
+.aiChartCard .cardHeading h2 { color: var(--tt-surface); }
+.aiChartCard .cardHeading > i { background: var(--admin-lime); color: var(--admin-ink); }
+.aiHeader { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); margin-bottom: 18px; overflow: hidden; border: 1px solid var(--admin-line); border-radius: 18px; }
+.aiHeader > div { padding: 20px 22px; border-right: 1px solid var(--admin-line); background: var(--tt-surface); }
+.aiHeader > div:last-child { border-right: 0; }
+.aiHeader span { display: block; color: var(--admin-muted); font-size: .6rem; font-weight: 800; text-transform: uppercase; }
+.aiHeader strong { display: block; margin-top: 6px; font-size: 1.05rem; }
+.aiHeader small { display: block; margin-top: 3px; color: var(--admin-muted); font-size: .66rem; }
+.aiChart { display: flex; flex: 1; gap: 6px; align-items: stretch; min-height: 160px; margin: 24px 0 0; padding: 0; list-style: none; overflow-x: auto; }
+.aiChart li { flex: 1 1 0; min-width: 18px; max-width: 42px; display: grid; grid-template-rows: 1fr auto auto; gap: 5px; align-items: end; height: 100%; text-align: center; }
+.aiBarTrack { display: flex; align-items: flex-end; height: 100%; border-radius: 6px; background: #ffffff12; }
+.aiBarTrack i { width: 100%; border-radius: 6px; background: var(--admin-lime); }
+.aiChart span { color: #bfc3b9; font-size: .52rem; }
+.aiChart strong { color: var(--tt-surface); font-size: .56rem; font-variant-numeric: tabular-nums; }
+.aiTable { margin-top: 20px; }
+
+/* --- Aba Assinaturas --- */
+.billingToolbar { grid-template-columns: minmax(240px, 1.6fr) minmax(180px, .6fr); }
+.planMix { margin: 0 0 16px; color: var(--admin-muted); font-size: .7rem; }
+.planMix strong { color: var(--admin-ink); }
+.listMetaCount { margin: 0 0 14px; color: var(--admin-muted); font-size: .72rem; }
+.listMetaCount strong { color: var(--admin-ink); }
+
+@media (max-width: 820px) {
+  .productsToolbar { grid-template-columns: 1fr 1fr; }
+  .productsToolbar .searchField { grid-column: 1 / -1; }
+  .aiLayout { grid-template-columns: 1fr; }
+  .leadContacts { grid-template-columns: 1fr; }
+  .aiHeader { grid-template-columns: 1fr; }
+  .aiHeader > div { border-right: 0; border-bottom: 1px solid var(--admin-line); }
+  .aiHeader > div:last-child { border-bottom: 0; }
+  .leadSummary { grid-template-columns: 1fr 1fr; }
+  .leadSummary > div:nth-child(2) { border-right: 0; }
+  .leadSummary > div { border-bottom: 1px solid var(--admin-line); }
+  .leadSummary > div:nth-last-child(-n + 2) { border-bottom: 0; }
+  .creatorActions { grid-column: 2 / 4; justify-content: flex-start; }
+}
+
+@media (max-width: 620px) {
+  .creatorActions { grid-column: 1 / -1; flex-direction: column; align-items: stretch; }
+  .creatorActions button { width: 100%; }
+  .detailGrid, .detailInline { grid-template-columns: 1fr 1fr; }
+  .leadCard { padding: 16px; }
+  .leadCard header { flex-direction: column; }
+  .leadCard footer { flex-direction: column; align-items: stretch; }
+  .leadCard footer button { justify-content: center; }
+  .aiChart { height: 160px; }
+}
+

@@ -364,7 +364,8 @@ export function getAiMetrics() {
 }
 
 export async function getAiMetricsSnapshot() {
-  if (!usesDatabaseStore()) return { ...getAiMetrics(), store: 'memory' as const };
+  const memory = getAiMetrics();
+  if (!usesDatabaseStore()) return { ...memory, store: 'memory' as const };
   const { data, error } = await supabaseAdmin
     .from('ai_metrics_daily')
     .select('*')
@@ -372,9 +373,16 @@ export async function getAiMetricsSnapshot() {
     .maybeSingle();
   if (error) {
     logger.error({ err: error }, 'Persistent AI metrics read failed');
-    return { ...getAiMetrics(), store: 'memory-fallback' as const };
+    return { ...memory, store: 'memory-fallback' as const };
   }
-  return { ...(data ?? {}), quota: AI_QUOTA, store: 'database' as const };
+  // O processo atual sempre sabe o que chamou desde o boot: os contadores em
+  // memória preenchem o dia mesmo quando o banco ainda não tem a linha.
+  return {
+    ...memory,
+    ...(data ?? {}),
+    quota: AI_QUOTA,
+    store: 'database' as const,
+  };
 }
 import { env } from '../config/env.js';
 import { supabaseAdmin } from './supabase.js';

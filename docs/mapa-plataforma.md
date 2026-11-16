@@ -96,7 +96,13 @@ O assistente de suporte responde só sobre a TemTrend, não inventa preço/prazo
 
 | Rota | Acesso | O que faz |
 |---|---|---|
-| `/admin` | Admin | Visão geral, catálogo (CRUD/upload/CSV), creators, assinaturas, suporte, uso de IA e funil de 30 dias |
+| `/admin` | Admin | Visão geral, catálogo (CRUD/upload/CSV), creators (ficha com plano e uso), leads de marca, assinaturas, suporte e uso de IA |
+
+O painel usa abas com link direto (`/admin#produtos`, `#creators`, `#leads`,
+`#billing`, `#support`, `#ai`). O catálogo é paginado e filtrado no servidor
+(`GET /admin/products?q=&status=&categoria=&sort=&page=&limit=`) e o CSV respeita
+os mesmos filtros (`GET /admin/products/export`). Leads da landing de marcas são
+lidos em `GET /admin/leads` e qualificados em `PATCH /admin/leads/:id/status`.
 
 O admin é redirecionado para o painel e não usa as áreas de creator. Para testar a jornada do creator, use uma conta comum.
 
