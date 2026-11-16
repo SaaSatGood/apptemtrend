@@ -226,6 +226,7 @@ async function enrichTickets(rows: SupportTicketRow[]): Promise<AdminTicketView[
 
 export async function listAdminTickets(query: {
   status?: SupportStatus;
+  q?: string;
   page: number;
   limit: number;
 }): Promise<{ items: AdminTicketView[]; total: number; page: number; limit: number }> {
@@ -236,10 +237,27 @@ export async function listAdminTickets(query: {
     .order('last_message_at', { ascending: false })
     .range(from, from + query.limit - 1);
   if (query.status) request = request.eq('status', query.status);
+  const term = query.q?.replace(/[,()%\\]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 80);
+  if (term) request = request.ilike('subject', `%${term}%`);
   const { data, error, count } = await request;
   if (error) throw error;
   const items = await enrichTickets((data ?? []) as SupportTicketRow[]);
   return { items, total: count ?? items.length, page: query.page, limit: query.limit };
+}
+
+/** Contagem por status para as abas do painel (independe do filtro atual). */
+export async function adminTicketCounts(): Promise<Record<SupportStatus, number>> {
+  const entries = await Promise.all(
+    SUPPORT_STATUSES.map(async (status) => {
+      const { count, error } = await supabaseAdmin
+        .from('support_tickets')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', status);
+      if (error) throw error;
+      return [status, count ?? 0] as const;
+    }),
+  );
+  return Object.fromEntries(entries) as Record<SupportStatus, number>;
 }
 
 export async function getAdminTicket(ticketId: string) {

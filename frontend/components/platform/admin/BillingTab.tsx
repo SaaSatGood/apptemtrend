@@ -5,7 +5,7 @@ import Icon from "@/components/ui/Icon";
 import styles from "../Admin.module.css";
 import { adminGet } from "./api";
 import { fmtDay, formatCount, formatMoney } from "./format";
-import type { AdminBillingSummary, AdminSubscription } from "./types";
+import type { AdminBillingSummary, AdminCreator, AdminSubscription } from "./types";
 import { EmptyState, ErrorState, LoadingRows, SectionHeading } from "./ui";
 
 const STATUS_LABEL: Record<string, string> = {
@@ -27,13 +27,24 @@ const STATUS_FILTERS = [
 
 const MAX_ROWS = 100;
 
+function providerLabel(provider?: string | null): string {
+  if (!provider) return "—";
+  if (provider === "manual") return "Manual (admin)";
+  if (provider === "asaas") return "Asaas";
+  if (provider === "abacatepay") return "AbacatePay";
+  return provider;
+}
+
 export default function BillingTab({ token }: { token?: string }) {
   const [summary, setSummary] = useState<AdminBillingSummary | null>(null);
   const [items, setItems] = useState<AdminSubscription[] | null>(null);
+  const [plans, setPlans] = useState<AdminCreator[] | null>(null);
   const [total, setTotal] = useState(0);
   const [error, setError] = useState(false);
   const [status, setStatus] = useState("");
   const [query, setQuery] = useState("");
+  // Relógio fixo do render: evita Date.now() no JSX e mantém a tabela estável.
+  const [nowTs] = useState(() => Date.now());
   const requestRef = useRef(0);
 
   const load = useCallback(async () => {
@@ -41,17 +52,19 @@ export default function BillingTab({ token }: { token?: string }) {
     const id = ++requestRef.current;
     setError(false);
     try {
-      const [summaryResult, subs] = await Promise.all([
+      const [summaryResult, subs, creators] = await Promise.all([
         adminGet<AdminBillingSummary>("/admin/billing/summary", token),
         adminGet<{ items: AdminSubscription[]; total: number }>(
           `/admin/billing/subscriptions?page=1&limit=${MAX_ROWS}`,
           token,
         ),
+        adminGet<AdminCreator[]>("/admin/creators?page=1&limit=100", token),
       ]);
       if (id !== requestRef.current) return;
       setSummary(summaryResult);
       setItems(subs.items ?? []);
       setTotal(subs.total ?? subs.items?.length ?? 0);
+      setPlans(Array.isArray(creators) ? creators : []);
     } catch {
       if (id === requestRef.current) setError(true);
     }
@@ -68,18 +81,27 @@ export default function BillingTab({ token }: { token?: string }) {
       const statusMatch = !status || sub.status === status;
       const queryMatch =
         !term ||
-        [sub.creator_nome, sub.creator_email, sub.plan_label].some((value) =>
+        [sub.creator_nome, sub.creator_email, sub.plan_label, sub.provider].some((value) =>
           String(value ?? "").toLocaleLowerCase("pt-BR").includes(term),
         );
       return statusMatch && queryMatch;
     });
   }, [items, query, status]);
 
-  const planMix = useMemo(() => {
-    const mix = new Map<string, number>();
-    for (const sub of items ?? []) mix.set(sub.plan_label, (mix.get(sub.plan_label) ?? 0) + 1);
-    return [...mix.entries()].sort((a, b) => b[1] - a[1]);
-  }, [items]);
+  // Quem realmente tem acesso pago agora (fonte: creators, não o espelho do provedor).
+  const activePlans = useMemo(() => {
+    const term = query.trim().toLocaleLowerCase("pt-BR");
+    return (plans ?? [])
+      .filter((creator) => creator.plan_active === true)
+      .filter(
+        (creator) =>
+          !term ||
+          [creator.nome, creator.email].some((value) =>
+            String(value ?? "").toLocaleLowerCase("pt-BR").includes(term),
+          ),
+      )
+      .sort((a, b) => String(a.plan_until ?? "").localeCompare(String(b.plan_until ?? "")));
+  }, [plans, query]);
 
   return (
     <div className={styles.viewPanel}>
@@ -99,23 +121,19 @@ export default function BillingTab({ token }: { token?: string }) {
       ) : (
         <>
           <div className={styles.creatorSummary}>
-            <div><span>Assinaturas ativas</span><strong>{formatCount(summary?.active)}</strong></div>
-            <div><span>Pagamento pendente</span><strong>{formatCount(summary?.past_due)}</strong></div>
+            <div><span>Planos ativos</span><strong>{formatCount(summary?.active)}</strong></div>
+            <div><span>Vencem em 7 dias</span><strong>{formatCount(summary?.expiring_7d)}</strong></div>
             <div><span>Em trial</span><strong>{formatCount(summary?.trialing)}</strong></div>
             <div><span>MRR estimado</span><strong>{summary ? formatMoney((summary.mrr_cents ?? 0) / 100) : "—"}</strong></div>
           </div>
 
-          {planMix.length > 0 && (
-            <p className={styles.planMix}>
-              Composição da carteira:{" "}
-              {planMix.map(([label, count], index) => (
-                <span key={label}>
-                  {index > 0 ? " · " : ""}
-                  <strong>{label}</strong> {formatCount(count)}
-                </span>
-              ))}
-            </p>
-          )}
+          <p className={styles.planMix}>
+            Carteira: <strong>{formatCount(summary?.creators_total)}</strong> creators ·{" "}
+            <strong>{formatCount(summary?.past_due)}</strong> com pagamento pendente ·{" "}
+            <strong>{formatCount(summary?.canceled)}</strong> cancelados com acesso ativo ·{" "}
+            <strong>{formatCount(summary?.pending)}</strong> cobranças aguardando ·{" "}
+            <strong>{formatCount(summary?.failed)}</strong> falhas no provedor
+          </p>
 
           <div className={`${styles.toolbar} ${styles.billingToolbar}`}>
             <label className={styles.searchField}>
@@ -133,6 +151,59 @@ export default function BillingTab({ token }: { token?: string }) {
               ))}
             </select>
           </div>
+
+          <div className={styles.listMeta}>
+            <p>
+              <strong>{formatCount(activePlans.length)}</strong>{" "}
+              {activePlans.length === 1 ? "plano com acesso ativo" : "planos com acesso ativo"}
+            </p>
+          </div>
+
+          {plans === null ? (
+            <LoadingRows count={2} />
+          ) : activePlans.length === 0 ? (
+            <EmptyState
+              title="Nenhum plano pago ativo agora."
+              description="Conceda um plano na aba Creators ou aguarde um checkout aprovado."
+            />
+          ) : (
+            <div className={`${styles.tableWrap} ${styles.plansTable}`}>
+              <table className={styles.subsTable}>
+                <thead>
+                  <tr>
+                    <th scope="col">Creator</th>
+                    <th scope="col">Plano</th>
+                    <th scope="col">Período</th>
+                    <th scope="col">Válido até</th>
+                    <th scope="col">Situação</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {activePlans.map((creator) => {
+                    const days = creator.plan_until
+                      ? Math.ceil((Date.parse(creator.plan_until) - nowTs) / 86400000)
+                      : null;
+                    return (
+                      <tr key={creator.id}>
+                        <td>
+                          <strong>{creator.nome || "Creator sem nome"}</strong>
+                          <span className={styles.subMeta}>{creator.email || creator.user_id}</span>
+                        </td>
+                        <td>{creator.plan === "pro" ? "Pro" : creator.plan ?? "—"}</td>
+                        <td>{creator.plan_period === "annual" ? "Anual" : "Mensal"}</td>
+                        <td>{fmtDay(creator.plan_until)}</td>
+                        <td>
+                          <span className={days != null && days <= 7 ? styles.planBadgeWarn : styles.statusActive}>
+                            {days == null ? "sem data" : days <= 0 ? "vence hoje" : `${days} ${days === 1 ? "dia" : "dias"}`}
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
 
           <div className={styles.listMeta}>
             <p>
@@ -163,9 +234,10 @@ export default function BillingTab({ token }: { token?: string }) {
                     <th scope="col">Creator</th>
                     <th scope="col">Plano</th>
                     <th scope="col">Período</th>
+                    <th scope="col">Origem</th>
                     <th scope="col">Status</th>
                     <th scope="col">Valor</th>
-                    <th scope="col">Próxima cobrança</th>
+                    <th scope="col">Válido até</th>
                     <th scope="col">Agendado</th>
                   </tr>
                 </thead>
@@ -178,6 +250,7 @@ export default function BillingTab({ token }: { token?: string }) {
                       </td>
                       <td>{sub.plan_label}</td>
                       <td>{sub.period === "annual" ? "Anual" : "Mensal"}</td>
+                      <td>{providerLabel(sub.provider)}</td>
                       <td>
                         <span
                           className={

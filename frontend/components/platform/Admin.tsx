@@ -152,7 +152,9 @@ export default function Admin() {
           onChanged={() => void loadMetrics()}
         />
       )}
-      {view === "creators" && <CreatorsTab key={`creators-${refreshSignal}`} token={token} />}
+      {view === "creators" && (
+        <CreatorsTab key={`creators-${refreshSignal}`} token={token} onChanged={() => void loadMetrics()} />
+      )}
       {view === "leads" && (
         <LeadsTab key={`leads-${refreshSignal}`} token={token} onChanged={() => void loadMetrics()} />
       )}

@@ -63,6 +63,10 @@ export interface AdminCreator {
   plan_period?: string | null;
   trial_ends_at?: string | null;
   current_period_end?: string | null;
+  /** Calculado no servidor pelo gating: o plano vale agora? */
+  plan_active?: boolean;
+  /** Fim do acesso (assinatura) ou do trial. */
+  plan_until?: string | null;
   criado_em?: string | null;
 }
 
@@ -105,6 +109,8 @@ export interface AdminBillingSummary {
   canceled: number;
   pending: number;
   failed: number;
+  expiring_7d: number;
+  creators_total: number;
   mrr_cents: number;
 }
 
@@ -114,6 +120,7 @@ export interface AdminSubscription {
   plan_label: string;
   period: string;
   status: string;
+  provider?: string | null;
   amount_cents: number | null;
   current_period_end: string | null;
   pending_plan_label: string | null;

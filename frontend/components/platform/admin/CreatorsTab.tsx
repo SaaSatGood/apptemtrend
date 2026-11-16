@@ -6,7 +6,7 @@ import { friendlyError } from "@/lib/api";
 import { usePlatform } from "../store";
 import Modal from "../Modal";
 import styles from "../Admin.module.css";
-import { adminGet, adminPatch } from "./api";
+import { adminGet, adminPatch, adminToken } from "./api";
 import { fmtDay, fmtDateTime, formatCount, initials } from "./format";
 import type { AdminCreator, AdminCreatorDetail } from "./types";
 import { EmptyState, ErrorState, LoadingRows, SectionHeading } from "./ui";
@@ -19,24 +19,68 @@ const PLAN_LABEL: Record<string, string> = {
   enterprise: "Enterprise",
 };
 
-function planLabel(creator: AdminCreator): string {
-  const plan = PLAN_LABEL[creator.plan ?? "free"] ?? creator.plan ?? "Grátis";
-  if (creator.plan_status === "trialing") return `${plan} · trial`;
-  if (creator.plan_status === "past_due") return `${plan} · pendente`;
-  if (creator.plan_status === "canceled") return `${plan} · cancelado`;
-  return plan;
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+type PlanFilter = "todos" | "pagos" | "vencendo" | "trial" | "gratis";
+
+const PLAN_FILTERS: Array<{ value: PlanFilter; label: string }> = [
+  { value: "todos", label: "Todos os planos" },
+  { value: "pagos", label: "Com plano ativo" },
+  { value: "vencendo", label: "Vence em 7 dias" },
+  { value: "trial", label: "Em trial" },
+  { value: "gratis", label: "Grátis" },
+];
+
+function isTrialing(creator: AdminCreator): boolean {
+  return creator.plan_status === "trialing" && Boolean(creator.trial_ends_at) && Date.parse(String(creator.trial_ends_at)) > Date.now();
 }
 
-export default function CreatorsTab({ token }: { token?: string }) {
+function planUntilDate(creator: AdminCreator): string | null {
+  return creator.plan_until ?? (isTrialing(creator) ? creator.trial_ends_at ?? null : creator.current_period_end ?? null);
+}
+
+function planSummary(creator: AdminCreator): string {
+  const plan = PLAN_LABEL[creator.plan ?? "free"] ?? creator.plan ?? "Grátis";
+  const until = planUntilDate(creator);
+  if (creator.plan_active) {
+    if (creator.plan_status === "past_due") return `${plan} · pagamento pendente até ${fmtDay(until)}`;
+    if (creator.plan_status === "canceled") return `${plan} · acesso até ${fmtDay(until)}`;
+    return `${plan} · até ${fmtDay(until)}`;
+  }
+  if (isTrialing(creator)) return `Trial até ${fmtDay(until)}`;
+  if (creator.plan_status === "past_due") return `${plan} · vencido em ${fmtDay(until)}`;
+  return "Grátis";
+}
+
+function daysUntil(iso?: string | null): number | null {
+  if (!iso) return null;
+  const diff = Date.parse(iso) - Date.now();
+  if (!Number.isFinite(diff)) return null;
+  return Math.ceil(diff / DAY_MS);
+}
+
+export default function CreatorsTab({ token, onChanged }: { token?: string; onChanged?: () => void }) {
   const { toast } = usePlatform();
   const [creators, setCreators] = useState<AdminCreator[] | null>(null);
   const [error, setError] = useState(false);
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState("");
+  const [planFilter, setPlanFilter] = useState<PlanFilter>("todos");
   const [busyId, setBusyId] = useState<string | null>(null);
+
   const [detailOpen, setDetailOpen] = useState(false);
   const [detail, setDetail] = useState<AdminCreatorDetail | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
+  const [selected, setSelected] = useState<AdminCreator | null>(null);
+
+  const [planOpen, setPlanOpen] = useState(false);
+  const [planBusy, setPlanBusy] = useState(false);
+  const [planMode, setPlanMode] = useState<"monthly" | "annual" | "custom">("monthly");
+  const [customDays, setCustomDays] = useState("90");
+
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState("");
+  const [deleteBusy, setDeleteBusy] = useState(false);
 
   const load = useCallback(async () => {
     if (!token) return;
@@ -58,22 +102,32 @@ export default function CreatorsTab({ token }: { token?: string }) {
     const term = query.trim().toLocaleLowerCase("pt-BR");
     return (creators ?? []).filter((creator) => {
       const statusMatch = !status || creator.status === status;
-      const queryMatch =
+      const termMatch =
         !term ||
         [creator.nome, creator.email, creator.user_id, ...(creator.nicho ?? [])].some((value) =>
           String(value ?? "").toLocaleLowerCase("pt-BR").includes(term),
         );
-      return statusMatch && queryMatch;
+      if (!statusMatch || !termMatch) return false;
+      const days = daysUntil(planUntilDate(creator));
+      if (planFilter === "pagos") return creator.plan_active === true;
+      if (planFilter === "vencendo") return creator.plan_active === true && days != null && days <= 7;
+      if (planFilter === "trial") return isTrialing(creator);
+      if (planFilter === "gratis") return creator.plan_active !== true && !isTrialing(creator);
+      return true;
     });
-  }, [creators, query, status]);
+  }, [creators, planFilter, query, status]);
 
   const summary = useMemo(() => {
     const list = creators ?? [];
     return {
       total: list.length,
-      ativos: list.filter((creator) => creator.status === "ativo").length,
-      bloqueados: list.filter((creator) => creator.status === "bloqueado").length,
-      trial: list.filter((creator) => creator.plan_status === "trialing").length,
+      pagos: list.filter((creator) => creator.plan_active).length,
+      vencendo: list.filter((creator) => {
+        if (!creator.plan_active) return false;
+        const days = daysUntil(planUntilDate(creator));
+        return days != null && days <= 7;
+      }).length,
+      trial: list.filter(isTrialing).length,
     };
   }, [creators]);
 
@@ -94,6 +148,7 @@ export default function CreatorsTab({ token }: { token?: string }) {
   }
 
   async function openDetail(creator: AdminCreator) {
+    setSelected(creator);
     setDetailOpen(true);
     setDetail(null);
     setDetailLoading(true);
@@ -104,6 +159,85 @@ export default function CreatorsTab({ token }: { token?: string }) {
       setDetailOpen(false);
     } finally {
       setDetailLoading(false);
+    }
+  }
+
+  function openPlan(creator: AdminCreator) {
+    setSelected(creator);
+    setPlanMode(creator.plan_period === "annual" ? "annual" : "monthly");
+    setCustomDays("90");
+    setPlanOpen(true);
+  }
+
+  async function grantPlan() {
+    if (!selected || planBusy) return;
+    const days = planMode === "custom" ? Number(customDays) : planMode === "annual" ? 365 : 30;
+    if (!Number.isFinite(days) || days < 1 || days > 730) {
+      toast("Informe uma duração entre 1 e 730 dias.");
+      return;
+    }
+    setPlanBusy(true);
+    try {
+      await adminPatch(`/admin/creators/${selected.id}/plan`, {
+        plan: "pro",
+        period: planMode === "annual" ? "annual" : "monthly",
+        days,
+      }, token);
+      toast(`Pro concedido por ${days} dias.`);
+      setPlanOpen(false);
+      await load();
+      onChanged?.();
+    } catch (err) {
+      toast(friendlyError(err, "Não conseguimos conceder o plano."));
+    } finally {
+      setPlanBusy(false);
+    }
+  }
+
+  async function revokePlan() {
+    if (!selected || planBusy) return;
+    setPlanBusy(true);
+    try {
+      await adminPatch(`/admin/creators/${selected.id}/plan`, { plan: "free" }, token);
+      toast("Plano removido. A conta voltou para o Grátis.");
+      setPlanOpen(false);
+      await load();
+      onChanged?.();
+    } catch (err) {
+      toast(friendlyError(err, "Não conseguimos remover o plano."));
+    } finally {
+      setPlanBusy(false);
+    }
+  }
+
+  async function deleteAccount() {
+    if (!selected || deleteBusy) return;
+    setDeleteBusy(true);
+    try {
+      const { requireApiUrl } = await import("@/lib/config");
+      const accessToken = token ?? (await adminToken());
+      const response = await fetch(`${requireApiUrl()}/admin/creators/${selected.id}`, {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+        },
+        body: JSON.stringify({ confirm_email: deleteConfirm.trim() }),
+      });
+      if (!response.ok) {
+        const payload = await response.json().catch(() => null);
+        throw new Error(payload?.error?.message ?? "Não foi possível excluir a conta.");
+      }
+      toast("Conta excluída.");
+      setDeleteOpen(false);
+      setDetailOpen(false);
+      setDeleteConfirm("");
+      await load();
+      onChanged?.();
+    } catch (err) {
+      toast(friendlyError(err, "Não foi possível excluir a conta."));
+    } finally {
+      setDeleteBusy(false);
     }
   }
 
@@ -120,22 +254,26 @@ export default function CreatorsTab({ token }: { token?: string }) {
     );
   }, [detail]);
 
+  const emailMatches = Boolean(
+    selected?.email && deleteConfirm.trim().toLowerCase() === selected.email.trim().toLowerCase(),
+  );
+
   return (
     <div className={styles.viewPanel}>
       <SectionHeading
         eyebrow="Comunidade"
         title="Creators cadastrados"
-        description="Encontre contas, entenda o uso e gerencie o acesso."
+        description="Veja quem tem plano ativo, até quando vale e gerencie o acesso."
       />
 
       <div className={styles.creatorSummary}>
         <div><span>Total</span><strong>{formatCount(summary.total)}</strong></div>
-        <div><span>Ativos</span><strong>{formatCount(summary.ativos)}</strong></div>
-        <div><span>Bloqueados</span><strong>{formatCount(summary.bloqueados)}</strong></div>
+        <div><span>Com plano ativo</span><strong>{formatCount(summary.pagos)}</strong></div>
+        <div><span>Vence em 7 dias</span><strong>{formatCount(summary.vencendo)}</strong></div>
         <div><span>Em trial</span><strong>{formatCount(summary.trial)}</strong></div>
       </div>
 
-      <div className={`${styles.toolbar} ${styles.creatorToolbar}`}>
+      <div className={`${styles.toolbar} ${styles.creatorsToolbar}`}>
         <label className={styles.searchField}>
           <Icon name="search" size={18} />
           <input
@@ -149,6 +287,11 @@ export default function CreatorsTab({ token }: { token?: string }) {
           <option value="">Todos os status</option>
           <option value="ativo">Ativos</option>
           <option value="bloqueado">Bloqueados</option>
+        </select>
+        <select aria-label="Filtrar creators por plano" value={planFilter} onChange={(event) => setPlanFilter(event.target.value as PlanFilter)}>
+          {PLAN_FILTERS.map((option) => (
+            <option key={option.value} value={option.value}>{option.label}</option>
+          ))}
         </select>
       </div>
 
@@ -166,50 +309,132 @@ export default function CreatorsTab({ token }: { token?: string }) {
       ) : filtered.length === 0 ? (
         <EmptyState
           title="Nenhum creator corresponde aos filtros."
-          description="Tente outro nome, e-mail ou status."
+          description="Tente outro nome, e-mail, status ou plano."
           action="Limpar filtros"
-          onAction={() => { setQuery(""); setStatus(""); }}
+          onAction={() => { setQuery(""); setStatus(""); setPlanFilter("todos"); }}
         />
       ) : (
         <div className={styles.creatorList}>
-          {filtered.map((creator) => (
-            <article key={creator.id} className={styles.creatorRow}>
-              <div className={styles.avatar}>{initials(creator.nome, creator.email)}</div>
-              <div className={styles.creatorIdentity}>
-                <div>
-                  <h3>{creator.nome || "Creator sem nome"}</h3>
-                  <span className={creator.status === "ativo" ? styles.statusActive : styles.statusBlocked}>
-                    {creator.status === "ativo" ? "Ativo" : "Bloqueado"}
-                  </span>
-                  <span className={styles.planBadge}>{planLabel(creator)}</span>
+          {filtered.map((creator) => {
+            const days = daysUntil(planUntilDate(creator));
+            const expiring = creator.plan_active && days != null && days <= 7;
+            return (
+              <article key={creator.id} className={styles.creatorRow}>
+                <div className={styles.avatar}>{initials(creator.nome, creator.email)}</div>
+                <div className={styles.creatorIdentity}>
+                  <div>
+                    <h3>{creator.nome || "Creator sem nome"}</h3>
+                    <span className={creator.status === "ativo" ? styles.statusActive : styles.statusBlocked}>
+                      {creator.status === "ativo" ? "Ativo" : "Bloqueado"}
+                    </span>
+                    <span className={`${styles.planBadge}${creator.plan_active ? ` ${styles.planBadgeActive}` : ""}`}>
+                      {planSummary(creator)}
+                    </span>
+                    {expiring && <span className={styles.planBadgeWarn}>vence em {days === 0 ? "hoje" : `${days}d`}</span>}
+                  </div>
+                  <p>{creator.email || creator.user_id}</p>
+                  <p className={styles.creatorMeta}>
+                    Entrou em {fmtDay(creator.criado_em)}
+                    {creator.plan_period ? ` · plano ${creator.plan_period === "annual" ? "anual" : "mensal"}` : ""}
+                  </p>
                 </div>
-                <p>{creator.email || creator.user_id}</p>
-                <p className={styles.creatorMeta}>
-                  Entrou em {fmtDay(creator.criado_em)}
-                  {creator.current_period_end ? ` · renova em ${fmtDay(creator.current_period_end)}` : ""}
-                </p>
-              </div>
-              <div className={styles.niches}>
-                {creator.nicho?.length
-                  ? creator.nicho.map((niche) => <span key={niche}>{niche}</span>)
-                  : <span>Sem nicho informado</span>}
-              </div>
-              <div className={styles.creatorActions}>
-                <button type="button" className={styles.detailAction} onClick={() => void openDetail(creator)}>
-                  Detalhes
-                </button>
-                <button
-                  type="button"
-                  className={creator.status === "ativo" ? styles.blockAction : styles.activateAction}
-                  onClick={() => void toggleCreator(creator)}
-                  disabled={busyId === creator.id}
-                >
-                  {busyId === creator.id ? "Aguarde…" : creator.status === "ativo" ? "Bloquear acesso" : "Reativar acesso"}
-                </button>
-              </div>
-            </article>
-          ))}
+                <div className={styles.niches}>
+                  {creator.nicho?.length
+                    ? creator.nicho.map((niche) => <span key={niche}>{niche}</span>)
+                    : <span>Sem nicho informado</span>}
+                </div>
+                <div className={styles.creatorActions}>
+                  <button type="button" className={styles.detailAction} onClick={() => void openDetail(creator)}>
+                    Detalhes
+                  </button>
+                  <button type="button" className={styles.planAction} onClick={() => openPlan(creator)}>
+                    Plano
+                  </button>
+                  <button
+                    type="button"
+                    className={creator.status === "ativo" ? styles.blockAction : styles.activateAction}
+                    onClick={() => void toggleCreator(creator)}
+                    disabled={busyId === creator.id}
+                  >
+                    {busyId === creator.id ? "Aguarde…" : creator.status === "ativo" ? "Bloquear" : "Reativar"}
+                  </button>
+                </div>
+              </article>
+            );
+          })}
         </div>
+      )}
+
+      {planOpen && selected && (
+        <Modal titleId="admin-plan-title" busy={planBusy} onClose={() => { if (!planBusy) setPlanOpen(false); }}>
+          <div className={styles.detailStack}>
+            <p className="eyebrow">Plano do creator</p>
+            <h2 id="admin-plan-title">{selected.nome || selected.email || "Creator"}</h2>
+            <p className={styles.mutedText}>
+              Situação atual: <strong>{planSummary(selected)}</strong>
+            </p>
+
+            <div className={styles.detailSection}>
+              <h3>Conceder Pro</h3>
+              <div className={styles.planOptions}>
+                {([
+                  ["monthly", "Mensal", "30 dias"],
+                  ["annual", "Anual", "365 dias"],
+                  ["custom", "Personalizado", "escolha os dias"],
+                ] as const).map(([value, label, hint]) => (
+                  <label key={value} className={`${styles.planOption}${planMode === value ? ` ${styles.planOptionActive}` : ""}`}>
+                    <input
+                      type="radio"
+                      name="admin-plan-mode"
+                      value={value}
+                      checked={planMode === value}
+                      onChange={() => setPlanMode(value)}
+                    />
+                    <span>
+                      <strong>{label}</strong>
+                      <small>{hint}</small>
+                    </span>
+                  </label>
+                ))}
+              </div>
+              {planMode === "custom" && (
+                <label className={styles.planDays}>
+                  Dias de acesso
+                  <input
+                    type="number"
+                    min={1}
+                    max={730}
+                    value={customDays}
+                    onChange={(event) => setCustomDays(event.target.value)}
+                  />
+                </label>
+              )}
+              <p className={styles.mutedText}>
+                A concessão vale na hora (o gating lê o plano do creator) e aparece em Assinaturas com origem
+                “manual”. Nenhuma cobrança é criada no provedor.
+              </p>
+            </div>
+
+            <div className={styles.formActions}>
+              {selected.plan_active && (
+                <button
+                  className={styles.dangerGhost}
+                  type="button"
+                  onClick={() => void revokePlan()}
+                  disabled={planBusy}
+                >
+                  Remover plano
+                </button>
+              )}
+              <button className={styles.secondaryButton} type="button" onClick={() => setPlanOpen(false)} disabled={planBusy}>
+                Cancelar
+              </button>
+              <button className={styles.primaryButton} type="button" onClick={() => void grantPlan()} disabled={planBusy}>
+                {planBusy ? "Aplicando…" : "Conceder Pro"}
+              </button>
+            </div>
+          </div>
+        </Modal>
       )}
 
       {detailOpen && (
@@ -230,7 +455,7 @@ export default function CreatorsTab({ token }: { token?: string }) {
                   <div><dt>Plano</dt><dd>{PLAN_LABEL[String(detail.creator.plan ?? "free")] ?? "Grátis"}</dd></div>
                   <div><dt>Status do plano</dt><dd>{String(detail.creator.plan_status ?? "—")}</dd></div>
                   <div><dt>Período</dt><dd>{detail.creator.plan_period === "annual" ? "Anual" : "Mensal"}</dd></div>
-                  <div><dt>Renovação</dt><dd>{fmtDay(detail.creator.current_period_end as string | null)}</dd></div>
+                  <div><dt>Válido até</dt><dd>{fmtDay(detail.creator.current_period_end as string | null)}</dd></div>
                   <div><dt>Roteiros</dt><dd>{formatCount(detail.counts.content_kits)}</dd></div>
                   <div><dt>Conversas</dt><dd>{formatCount(detail.counts.discovery_sessions)}</dd></div>
                   <div><dt>Produções</dt><dd>{formatCount(detail.counts.creator_content)}</dd></div>
@@ -292,6 +517,50 @@ export default function CreatorsTab({ token }: { token?: string }) {
                         </li>
                       ))}
                     </ul>
+                  )}
+                </div>
+
+                <div className={`${styles.detailSection} ${styles.dangerZone}`}>
+                  <h3>Excluir conta</h3>
+                  <p className={styles.mutedText}>
+                    Remove o acesso, o perfil e todo o conteúdo deste creator (roteiros, conversas, produções e
+                    atendimentos). Não pode ser desfeito.
+                  </p>
+                  {!deleteOpen ? (
+                    <button className={styles.dangerGhost} type="button" onClick={() => setDeleteOpen(true)}>
+                      <Icon name="trash" size={15} /> Excluir conta
+                    </button>
+                  ) : (
+                    <div className={styles.deleteConfirm}>
+                      <label>
+                        Digite <strong>{selected?.email || detail.email}</strong> para confirmar
+                        <input
+                          type="email"
+                          value={deleteConfirm}
+                          onChange={(event) => setDeleteConfirm(event.target.value)}
+                          placeholder="email da conta"
+                          autoComplete="off"
+                        />
+                      </label>
+                      <div className={styles.formActions}>
+                        <button
+                          className={styles.secondaryButton}
+                          type="button"
+                          onClick={() => { setDeleteOpen(false); setDeleteConfirm(""); }}
+                          disabled={deleteBusy}
+                        >
+                          Cancelar
+                        </button>
+                        <button
+                          className={styles.dangerButton}
+                          type="button"
+                          onClick={() => void deleteAccount()}
+                          disabled={deleteBusy || !emailMatches}
+                        >
+                          {deleteBusy ? "Excluindo…" : "Excluir definitivamente"}
+                        </button>
+                      </div>
+                    </div>
                   )}
                 </div>
               </>

@@ -1096,6 +1096,10 @@ export interface AdminBillingSummary {
   canceled: number;
   pending: number;
   failed: number;
+  /** Planos pagos que vencem nos próximos 7 dias. */
+  expiring_7d: number;
+  /** Carteira: quantos creators estão em cada estado de acesso. */
+  creators_total: number;
   /** Receita recorrente mensal estimada (anual normalizado por 12). */
   mrr_cents: number;
 }
@@ -1105,35 +1109,62 @@ function monthlyCents(amountCents: number | null, period: string): number {
   return period === 'annual' ? Math.round(amountCents / 12) : amountCents;
 }
 
+/**
+ * O plano que vale é o do creator (`creators.plan` + `current_period_end`),
+ * porque é isso que o gating usa. A tabela `subscriptions` é o espelho do
+ * provedor — nem toda concessão manual tem linha lá.
+ */
 export async function adminBillingSummary(): Promise<AdminBillingSummary> {
-  const [subsRes, trialRes] = await Promise.all([
-    supabaseAdmin.from('subscriptions').select('status, period, amount_cents'),
+  const [creatorsRes, subsRes] = await Promise.all([
     supabaseAdmin
       .from('creators')
-      .select('id', { count: 'exact', head: true })
-      .eq('plan_status', 'trialing')
-      .gt('trial_ends_at', new Date().toISOString()),
+      .select('id, plan, plan_status, current_period_end, trial_ends_at'),
+    supabaseAdmin.from('subscriptions').select('status, period, amount_cents'),
   ]);
+  if (creatorsRes.error) throw creatorsRes.error;
   if (subsRes.error) throw subsRes.error;
-  const rows = (subsRes.data ?? []) as Array<{ status: string; period: string; amount_cents: number | null }>;
+
+  const now = Date.now();
+  const soon = now + RENEWAL_WINDOW_MS;
+  const creators = (creatorsRes.data ?? []) as Array<{
+    plan: string | null;
+    plan_status: string | null;
+    current_period_end: string | null;
+    trial_ends_at: string | null;
+  }>;
+
   const summary: AdminBillingSummary = {
     active: 0,
-    trialing: trialRes.count ?? 0,
+    trialing: 0,
     past_due: 0,
     canceled: 0,
     pending: 0,
     failed: 0,
+    expiring_7d: 0,
+    creators_total: creators.length,
     mrr_cents: 0,
   };
-  for (const row of rows) {
-    if (row.status === 'active') {
-      summary.active += 1;
-      summary.mrr_cents += monthlyCents(row.amount_cents, row.period);
-    } else if (row.status === 'past_due') summary.past_due += 1;
-    else if (row.status === 'canceled') summary.canceled += 1;
+
+  for (const creator of creators) {
+    const periodEnd = creator.current_period_end ? Date.parse(creator.current_period_end) : 0;
+    const hasPaidAccess = (creator.plan ?? 'free') !== 'free' && Number.isFinite(periodEnd) && periodEnd > now;
+    if (creator.plan_status === 'trialing' && isFuture(creator.trial_ends_at, now)) {
+      summary.trialing += 1;
+      continue;
+    }
+    if (!hasPaidAccess) continue;
+    if (creator.plan_status === 'past_due') summary.past_due += 1;
+    else if (creator.plan_status === 'canceled') summary.canceled += 1;
+    else summary.active += 1;
+    if (periodEnd <= soon) summary.expiring_7d += 1;
+  }
+
+  for (const row of (subsRes.data ?? []) as Array<{ status: string; period: string; amount_cents: number | null }>) {
+    if (row.status === 'active') summary.mrr_cents += monthlyCents(row.amount_cents, row.period);
     else if (row.status === 'pending') summary.pending += 1;
     else if (row.status === 'failed') summary.failed += 1;
   }
+
   return summary;
 }
 
@@ -1143,7 +1174,8 @@ export interface AdminSubscriptionView {
   plan_label: string;
   period: string;
   status: string;
-  billing_mode: 'recurring' | 'one_time' | null;
+  provider: string | null;
+  billing_mode: 'recurring' | 'one_time' | 'manual' | null;
   launch_price: boolean;
   amount_cents: number | null;
   current_period_end: string | null;
@@ -1155,18 +1187,20 @@ export interface AdminSubscriptionView {
   creator_email: string | null;
 }
 
-export async function adminListSubscriptions(query: { page: number; limit: number }): Promise<{
+export async function adminListSubscriptions(query: { page: number; limit: number; status?: string }): Promise<{
   items: AdminSubscriptionView[];
   total: number;
   page: number;
   limit: number;
 }> {
   const from = (query.page - 1) * query.limit;
-  const { data, error, count } = await supabaseAdmin
+  let request = supabaseAdmin
     .from('subscriptions')
-    .select('id, creator_id, plan, period, status, billing_mode, launch_price, amount_cents, current_period_end, pending_plan, created_at', { count: 'exact' })
+    .select('id, creator_id, plan, period, status, provider, billing_mode, launch_price, amount_cents, current_period_end, pending_plan, created_at', { count: 'exact' })
     .order('created_at', { ascending: false })
     .range(from, from + query.limit - 1);
+  if (query.status) request = request.eq('status', query.status);
+  const { data, error, count } = await request;
   if (error) throw error;
   const rows = (data ?? []) as Array<{
     id: string;
@@ -1174,6 +1208,7 @@ export async function adminListSubscriptions(query: { page: number; limit: numbe
     plan: string;
     period: string;
     status: string;
+    provider: string | null;
     billing_mode: string | null;
     launch_price: boolean | null;
     amount_cents: number | null;
@@ -1203,7 +1238,15 @@ export async function adminListSubscriptions(query: { page: number; limit: numbe
       plan_label: planLabel(row.plan),
       period: row.period,
       status: row.status,
-      billing_mode: row.billing_mode === 'one_time' ? 'one_time' : row.billing_mode === 'recurring' ? 'recurring' : null,
+      provider: row.provider,
+      billing_mode:
+        row.billing_mode === 'one_time'
+          ? 'one_time'
+          : row.billing_mode === 'recurring'
+            ? 'recurring'
+            : row.billing_mode === 'manual'
+              ? 'manual'
+              : null,
       launch_price: row.launch_price === true,
       amount_cents: row.amount_cents,
       current_period_end: row.current_period_end,

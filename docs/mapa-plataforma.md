@@ -104,6 +104,16 @@ O painel usa abas com link direto (`/admin#produtos`, `#creators`, `#leads`,
 os mesmos filtros (`GET /admin/products/export`). Leads da landing de marcas são
 lidos em `GET /admin/leads` e qualificados em `PATCH /admin/leads/:id/status`.
 
+Planos (`#creators` / `#billing`): a lista mostra quem tem plano pago ativo e a
+data de validade; `PATCH /admin/creators/:id/plan` concede Pro por 30/365 dias
+(ou período livre) e espelha uma assinatura `provider=manual`, sem cobrança.
+Excluir conta (`DELETE /admin/creators/:id`) exige o e-mail exato, cancela a
+assinatura ativa nos provedores e apaga o usuário do Supabase (cascata em
+perfil, roteiros, conversas, produções e tickets).
+
+Suporte (`#support`): fila com contagem por status, busca por assunto,
+paginação, resposta e transições (respondida, resolvida, encerrada, reabrir).
+
 O admin é redirecionado para o painel e não usa as áreas de creator. Para testar a jornada do creator, use uma conta comum.
 
 ## 10. Monetização

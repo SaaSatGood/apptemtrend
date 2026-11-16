@@ -1,13 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import { buildApp } from '../src/app.js';
-import { toCsv, csvCell, productsQuerySchema, leadsQuerySchema } from '../src/modules/admin/admin.routes.js';
+import { toCsv, csvCell, productsQuerySchema, leadsQuerySchema, grantPlanSchema, deleteCreatorSchema } from '../src/modules/admin/admin.routes.js';
 import { LEAD_STATUSES } from '../src/modules/admin/admin.repository.js';
 
-const PRIVATE_ADMIN_ROUTES: Array<{ method: 'GET' | 'POST' | 'PATCH'; url: string; payload?: unknown }> = [
+const PRIVATE_ADMIN_ROUTES: Array<{ method: 'GET' | 'POST' | 'PATCH' | 'DELETE'; url: string; payload?: unknown }> = [
   { method: 'GET', url: '/admin/dashboard' },
   { method: 'GET', url: '/admin/ai-usage' },
   { method: 'GET', url: '/admin/creators' },
   { method: 'GET', url: '/admin/creators/11111111-1111-4111-8111-111111111111' },
+  { method: 'PATCH', url: '/admin/creators/11111111-1111-4111-8111-111111111111/plan', payload: { plan: 'pro', days: 30 } },
+  { method: 'DELETE', url: '/admin/creators/11111111-1111-4111-8111-111111111111', payload: { confirm_email: 'creator@example.com' } },
   { method: 'GET', url: '/admin/products' },
   { method: 'GET', url: '/admin/products/categories' },
   { method: 'GET', url: '/admin/products/export' },
@@ -74,5 +76,22 @@ describe('admin dashboard completion', () => {
     expect(csvCell('Reparador "Gloss"')).toBe('"Reparador ""Gloss"""');
     const csv = toCsv(['Produto', 'Loja'], [['Kit; Depilador', 'HAOBI\nBR']]);
     expect(csv).toBe('"Produto";"Loja"\n"Kit; Depilador";"HAOBI\nBR"');
+  });
+
+  it('valida concessão de plano e confirmação de exclusão', () => {
+    expect(grantPlanSchema.parse({ plan: 'pro', period: 'annual', days: '365' })).toEqual({
+      plan: 'pro',
+      period: 'annual',
+      days: 365,
+    });
+    expect(grantPlanSchema.parse({ plan: 'free' })).toEqual({ plan: 'free' });
+    expect(grantPlanSchema.safeParse({ plan: 'enterprise' }).success).toBe(false);
+    expect(grantPlanSchema.safeParse({ plan: 'pro', days: 0 }).success).toBe(false);
+    expect(grantPlanSchema.safeParse({ plan: 'pro', days: 731 }).success).toBe(false);
+    expect(grantPlanSchema.safeParse({ plan: 'pro', extra: true }).success).toBe(false);
+
+    expect(deleteCreatorSchema.safeParse({ confirm_email: 'creator@temtrend.com' }).success).toBe(true);
+    expect(deleteCreatorSchema.safeParse({ confirm_email: 'nao-e-email' }).success).toBe(false);
+    expect(deleteCreatorSchema.safeParse({}).success).toBe(false);
   });
 });

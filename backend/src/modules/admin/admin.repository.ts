@@ -3,6 +3,7 @@ import { TtlCache } from '../../lib/cache.js';
 import { getAiMetrics } from '../../lib/ai-metrics.js';
 import { CACHE_TTL_MS } from '../../config/constants.js';
 import { logger } from '../../lib/logger.js';
+import { invalidateMeCache } from '../creators/creator.service.js';
 
 const dashboardCache = new TtlCache<Record<string, number | string>>(1);
 const directoryCache = new TtlCache<Map<string, AuthUserSummary>>(1);
@@ -48,6 +49,9 @@ export async function dashboard() {
     countRows('creators', [['plan_status', 'trialing']]),
     countRows('brand_leads', []),
     countRows('brand_leads', [['status', 'qualificado']]),
+    countRows('support_tickets', []),
+    countPaidPlans(),
+    countPaidPlans(7),
   ]);
   Object.assign(values, {
     leads_novos: extras[0],
@@ -56,6 +60,9 @@ export async function dashboard() {
     creators_trial: extras[3],
     total_leads: extras[4],
     leads_qualificados: extras[5],
+    suporte_total: extras[6],
+    planos_ativos: extras[7],
+    planos_vencendo: extras[8],
   });
   dashboardCache.set(DASHBOARD_KEY, values, CACHE_TTL_MS.DASHBOARD);
   return values;
@@ -70,6 +77,25 @@ async function countRows(
   const { count, error } = await query;
   if (error) {
     logger.error({ err: error, table }, 'Error loading dashboard counter');
+    return 0;
+  }
+  return count ?? 0;
+}
+
+/** Planos pagos com acesso válido agora (e, opcionalmente, vencendo em N dias). */
+async function countPaidPlans(withinDays?: number): Promise<number> {
+  const nowIso = new Date().toISOString();
+  let query = supabaseAdmin
+    .from('creators')
+    .select('*', { count: 'exact', head: true })
+    .neq('plan', 'free')
+    .gt('current_period_end', nowIso);
+  if (withinDays) {
+    query = query.lte('current_period_end', new Date(Date.now() + withinDays * 24 * 60 * 60 * 1000).toISOString());
+  }
+  const { count, error } = await query;
+  if (error) {
+    logger.error({ err: error }, 'Error counting active plans');
     return 0;
   }
   return count ?? 0;
@@ -378,7 +404,141 @@ export async function aiUsageDailySeries(days: number): Promise<AiDailyUsage[]> 
   return [...byDay.values()].sort((a, b) => a.usage_date.localeCompare(b.usage_date));
 }
 
+// ---- Plano do creator (concessão manual pelo suporte) ----
+export const GRANTABLE_PLANS = ['free', 'pro'] as const;
+export type GrantablePlan = (typeof GRANTABLE_PLANS)[number];
+
+export interface GrantPlanInput {
+  plan: GrantablePlan;
+  period?: 'monthly' | 'annual';
+  days?: number;
+}
+
+/**
+ * Concessão manual: escreve o estado que o gating lê (`creators.plan` +
+ * `current_period_end`) e espelha uma assinatura para o painel de receita.
+ * Cancelamos as assinaturas ativas antes para não deixar duas fontes
+ * discordando sobre o mesmo plano.
+ */
+export async function grantCreatorPlan(creatorId: string, input: GrantPlanInput) {
+  const { data: creator, error } = await supabaseAdmin
+    .from('creators')
+    .select('id, user_id, plan, plan_status, plan_period, current_period_end')
+    .eq('id', creatorId)
+    .maybeSingle();
+  if (error) {
+    logger.error({ err: error }, 'Error loading creator for plan grant');
+    throw error;
+  }
+  if (!creator) return null;
+
+  const now = new Date();
+  const nowIso = now.toISOString();
+
+  // Fecha assinaturas ativas: a concessão manual passa a ser a fonte da verdade.
+  const { error: cancelError } = await supabaseAdmin
+    .from('subscriptions')
+    .update({ status: 'canceled', canceled_at: nowIso })
+    .eq('creator_id', creatorId)
+    .eq('status', 'active');
+  if (cancelError) logger.warn({ err: cancelError, creatorId }, 'Failed to close subscriptions on manual grant');
+
+  if (input.plan === 'free') {
+    const { data: updated, error: updateError } = await supabaseAdmin
+      .from('creators')
+      .update({
+        plan: 'free',
+        plan_status: 'inactive',
+        plan_period: null,
+        current_period_end: null,
+        trial_ends_at: null,
+        cancel_at_period_end: false,
+      })
+      .eq('id', creatorId)
+      .select('id, user_id, plan, plan_status, plan_period, current_period_end')
+      .maybeSingle();
+    if (updateError) throw updateError;
+    invalidateMeCache(String(creator.user_id));
+    invalidateDashboardCache();
+    return { creator: updated, subscription: null };
+  }
+
+  const period = input.period ?? 'monthly';
+  const days = input.days ?? (period === 'annual' ? 365 : 30);
+  const end = new Date(now.getTime() + days * 24 * 60 * 60 * 1000);
+
+  const { data: updated, error: updateError } = await supabaseAdmin
+    .from('creators')
+    .update({
+      plan: 'pro',
+      plan_status: 'active',
+      plan_period: period,
+      current_period_end: end.toISOString(),
+      trial_ends_at: null,
+      cancel_at_period_end: false,
+    })
+    .eq('id', creatorId)
+    .select('id, user_id, plan, plan_status, plan_period, current_period_end')
+    .maybeSingle();
+  if (updateError) {
+    logger.error({ err: updateError }, 'Error granting plan');
+    throw updateError;
+  }
+
+  const { data: subscription, error: insertError } = await supabaseAdmin
+    .from('subscriptions')
+    .insert({
+      creator_id: creatorId,
+      plan: 'pro',
+      period,
+      status: 'active',
+      provider: 'manual',
+      billing_mode: 'manual',
+      amount_cents: 0,
+      current_period_end: end.toISOString(),
+      started_at: nowIso,
+    })
+    .select('id, plan, period, status, provider, current_period_end')
+    .maybeSingle();
+  if (insertError) logger.warn({ err: insertError, creatorId }, 'Failed to mirror manual subscription');
+
+  invalidateMeCache(String(creator.user_id));
+  invalidateDashboardCache();
+  return { creator: updated, subscription: subscription ?? null };
+}
+
 // ---- Detalhe do creator (plano, uso de IA e histórico) ----
+export async function findCreatorAccount(creatorId: string) {  const { data, error } = await supabaseAdmin
+    .from('creators')
+    .select('id, user_id, plan, plan_status')
+    .eq('id', creatorId)
+    .maybeSingle();
+  if (error) {
+    logger.error({ err: error }, 'Error loading creator account');
+    throw error;
+  }
+  return data;
+}
+
+/** Assinaturas ativas no provedor: precisam ser canceladas antes de excluir a conta. */
+export async function listActiveSubscriptionsForCreator(creatorId: string) {
+  const { data, error } = await supabaseAdmin
+    .from('subscriptions')
+    .select('id, provider, provider_subscription_id, status')
+    .eq('creator_id', creatorId)
+    .eq('status', 'active');
+  if (error) {
+    logger.error({ err: error }, 'Error loading active subscriptions for deletion');
+    throw error;
+  }
+  return (data ?? []) as Array<{
+    id: string;
+    provider: string | null;
+    provider_subscription_id: string | null;
+    status: string;
+  }>;
+}
+
 export async function creatorDetail(creatorId: string) {
   const { data: creator, error } = await supabaseAdmin
     .from('creators')

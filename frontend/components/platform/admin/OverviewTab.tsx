@@ -16,6 +16,7 @@ import type {
   AdminFunnelEvent,
   AdminView,
 } from "./types";
+import type { AdminSupportTicket } from "@/lib/types";
 import { ErrorState, LoadingRows, SectionHeading } from "./ui";
 
 const PROVIDER_LABEL: Record<string, string> = {
@@ -49,6 +50,7 @@ export default function OverviewTab({
   const [funnelError, setFunnelError] = useState(false);
   const [ai, setAi] = useState<AdminAiUsage | null>(null);
   const [aiError, setAiError] = useState(false);
+  const [tickets, setTickets] = useState<AdminSupportTicket[] | null>(null);
 
   const load = useCallback(async () => {
     if (!token) return;
@@ -62,6 +64,9 @@ export default function OverviewTab({
       adminGet<AdminAiUsage>("/admin/ai-usage?days=14", token)
         .then((data) => { setAi(data); setAiError(false); })
         .catch(() => setAiError(true)),
+      adminGet<{ items: AdminSupportTicket[] }>("/admin/support/tickets?page=1&limit=3", token)
+        .then((data) => setTickets(data.items ?? []))
+        .catch(() => setTickets([])),
     ];
     await Promise.all(tasks);
   }, [token]);
@@ -189,6 +194,8 @@ export default function OverviewTab({
           <dl className={styles.healthList}>
             <div><dt>Ativos</dt><dd>{formatCount(creators.ativos)}</dd></div>
             <div><dt>Bloqueados</dt><dd className={creators.bloqueados ? styles.attention : ""}>{formatCount(creators.bloqueados)}</dd></div>
+            <div><dt>Com plano ativo</dt><dd>{formatCount(metrics?.planos_ativos)}</dd></div>
+            <div><dt>Planos vencendo (7d)</dt><dd className={metricNumber(metrics, "planos_vencendo") > 0 ? styles.attention : ""}>{formatCount(metrics?.planos_vencendo)}</dd></div>
             <div><dt>Em trial</dt><dd>{formatCount(creators.trial)}</dd></div>
           </dl>
         </article>
@@ -257,8 +264,20 @@ export default function OverviewTab({
           <dl className={styles.healthList}>
             <div><dt>Respondidas</dt><dd>{formatCount(support.respondidos)}</dd></div>
             <div><dt>Em aberto</dt><dd>{formatCount(support.abertos)}</dd></div>
-            <div><dt>Situação da fila</dt><dd>{support.abertos === 0 ? "Em dia" : "Precisa de atenção"}</dd></div>
+            <div><dt>Total de tickets</dt><dd>{formatCount(metrics?.suporte_total)}</dd></div>
           </dl>
+          {tickets && tickets.length > 0 && (
+            <ul className={styles.overviewTickets}>
+              {tickets.map((ticket) => (
+                <li key={ticket.id}>
+                  <button type="button" onClick={() => onOpen("support")}>
+                    <strong>{ticket.subject}</strong>
+                    <span>{ticket.creator_nome || ticket.creator_email || "Creator"}</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
         </article>
 
         <article className={styles.healthCard}>

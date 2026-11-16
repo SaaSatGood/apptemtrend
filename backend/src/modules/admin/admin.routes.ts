@@ -1,7 +1,7 @@
 import { FastifyInstance } from 'fastify';
 import fp from 'fastify-plugin';
 import { z } from 'zod';
-import { requireAdmin } from '../../plugins/auth.js';
+import { requireAdmin, clearAuthCachesForUser } from '../../plugins/auth.js';
 import { RATE_LIMITS, CREATOR_STATUS, PRODUCT_STATUS } from '../../config/constants.js';
 import { env } from '../../config/env.js';
 import { supabaseAdmin } from '../../lib/supabase.js';
@@ -12,6 +12,9 @@ import * as productService from '../products/product.service.js';
 import { createProductWithContentKit } from '../products/product.repository.js';
 import * as kitService from '../content-kits/content-kit.service.js';
 import * as billingService from '../billing/billing.service.js';
+import { effectivePlan } from '../billing/billing.gating.js';
+import { cancelSubscriptionAtProvider } from '../billing/billing.provider.js';
+import { cancelAsaasSubscription } from '../billing/asaas.provider.js';
 import * as supportService from '../support/support.service.js';
 import { SUPPORT_STATUSES } from '../support/support.service.js';
 import { AI_QUOTA, getAiMetricsSnapshot } from '../../lib/ai-metrics.js';
@@ -55,6 +58,20 @@ const aiUsageQuerySchema = z.object({
   days: z.coerce.number().int().min(1).max(90).default(14),
 });
 
+export const grantPlanSchema = z
+  .object({
+    plan: z.enum(adminRepo.GRANTABLE_PLANS),
+    period: z.enum(['monthly', 'annual']).optional(),
+    days: z.coerce.number().int().min(1).max(730).optional(),
+  })
+  .strict();
+
+export const deleteCreatorSchema = z
+  .object({
+    confirm_email: z.string().trim().email('Informe o e-mail da conta.'),
+  })
+  .strict();
+
 export function csvCell(value: unknown): string {
   return `"${String(value ?? '').replaceAll('"', '""')}"`;
 }
@@ -65,6 +82,7 @@ export function toCsv(headings: string[], rows: unknown[][]): string {
 
 const supportQuerySchema = z.object({
   status: z.enum(SUPPORT_STATUSES).optional(),
+  q: z.string().trim().max(120).optional(),
   page: z.coerce.number().int().min(1).default(1),
   limit: z.coerce.number().int().min(1).max(100).default(50),
 });
@@ -130,12 +148,17 @@ async function routes(app: FastifyInstance) {
     });
     const directory = await adminRepo.listUserDirectory();
 
+    // O plano que vale é o calculado pelo gating (respeita vencimento).
     return creators.map((creator) => {
       const user = directory.get(creator.user_id);
+      const planActive = effectivePlan(creator) !== 'free';
+      const planUntil = creator.plan_status === 'trialing' ? creator.trial_ends_at : creator.current_period_end;
       return {
         ...creator,
         email: user?.email ?? null,
         nome: user?.nome ?? null,
+        plan_active: planActive,
+        plan_until: planUntil ?? null,
       };
     });
   });
@@ -219,6 +242,70 @@ async function routes(app: FastifyInstance) {
     return updated;
   });
 
+  // ---- Plano: concessão manual (suporte/comercial) ----
+  app.patch('/admin/creators/:id/plan', admin, async (request) => {
+    const { id } = idParam.parse(request.params);
+    const input = grantPlanSchema.parse(request.body);
+    const result = await adminRepo.grantCreatorPlan(id, input);
+    if (!result) throw Errors.NOT_FOUND('Creator');
+    return result;
+  });
+
+  // ---- Exclusão de conta (irreversível, confirma pelo e-mail) ----
+  app.delete('/admin/creators/:id', admin, async (request, reply) => {
+    const { id } = idParam.parse(request.params);
+    const body = deleteCreatorSchema.parse(request.body ?? {});
+    const creator = await adminRepo.findCreatorAccount(id);
+    if (!creator) throw Errors.NOT_FOUND('Creator');
+    if (creator.user_id === request.authUser.id) {
+      throw Errors.BAD_REQUEST('Use a área Minha conta para excluir a sua própria conta.');
+    }
+
+    const { data: userData, error: userError } = await supabaseAdmin.auth.admin.getUserById(creator.user_id);
+    if (userError) {
+      request.log.error({ err: userError, creator_id: id }, 'Failed to load account before deletion');
+      throw Errors.BAD_REQUEST('Não conseguimos localizar a conta deste creator.');
+    }
+    const email = (userData?.user?.email ?? '').trim().toLowerCase();
+    if (!email || body.confirm_email.trim().toLowerCase() !== email) {
+      throw Errors.BAD_REQUEST('O e-mail informado não confere com o da conta.');
+    }
+
+    // Excluir sem cancelar deixaria o creator sendo cobrado por um serviço que
+    // ele não acessa mais. Se o provedor recusar, abortamos a exclusão.
+    const activeSubscriptions = await adminRepo.listActiveSubscriptionsForCreator(creator.id);
+    for (const subscription of activeSubscriptions) {
+      const providerId = subscription.provider_subscription_id;
+      if (!providerId) continue;
+      let cancelled = true;
+      if (subscription.provider === 'asaas') {
+        cancelled = await cancelAsaasSubscription(providerId);
+      } else if (subscription.provider === 'abacatepay') {
+        cancelled = await cancelSubscriptionAtProvider(providerId);
+      }
+      if (!cancelled) {
+        request.log.error(
+          { creator_id: id, subscription_id: subscription.id, provider: subscription.provider },
+          'Failed to cancel provider subscription before account deletion',
+        );
+        throw Errors.CONFLICT(
+          'Não foi possível cancelar a assinatura ativa no provedor. Cancele a cobrança no painel do provedor e tente novamente.',
+        );
+      }
+    }
+
+    const { error } = await supabaseAdmin.auth.admin.deleteUser(creator.user_id);
+    if (error) {
+      request.log.error({ err: error, creator_id: id }, 'Failed to delete creator account');
+      throw error;
+    }
+    clearAuthCachesForUser(creator.user_id);
+    invalidateMeCache(creator.user_id);
+    adminRepo.invalidateDashboardCache();
+    request.log.info({ creator_id: id, user_id: creator.user_id }, 'Creator account deleted by admin');
+    return reply.status(204).send();
+  });
+
   app.post('/admin/products', admin, async (request, reply) => {
     const input = createProductSchema.parse(request.body);
     const created = await productService.createProduct(input, request.authUser.id);
@@ -257,7 +344,11 @@ async function routes(app: FastifyInstance) {
   app.get('/admin/billing/summary', admin, async () => billingService.adminBillingSummary());
 
   app.get('/admin/billing/subscriptions', admin, async (request) => {
-    const q = listQuerySchema.parse(request.query);
+    const q = listQuerySchema
+      .extend({
+        status: z.enum(['active', 'trialing', 'past_due', 'canceled', 'pending', 'failed', 'expired']).optional(),
+      })
+      .parse(request.query);
     return billingService.adminListSubscriptions(q);
   });
 
@@ -275,7 +366,11 @@ async function routes(app: FastifyInstance) {
   // ---- Canal de suporte ----
   app.get('/admin/support/tickets', admin, async (request) => {
     const q = supportQuerySchema.parse(request.query);
-    return supportService.listAdminTickets(q);
+    const [tickets, counts] = await Promise.all([
+      supportService.listAdminTickets(q),
+      supportService.adminTicketCounts(),
+    ]);
+    return { ...tickets, counts };
   });
 
   app.get('/admin/support/tickets/:id', admin, async (request) => {

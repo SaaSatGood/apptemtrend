@@ -88,6 +88,8 @@ test("admin organiza operação, catálogo, creators, leads, IA e suporte", asyn
   let supportStatusBody: unknown = null;
   let leadStatusBody: unknown = null;
   let productPatchBody: unknown = null;
+  let planGrantBody: unknown = null;
+  let deleteAccountBody: unknown = null;
 
   await page.route("http://localhost:3333/**", async (route) => {
     const url = new URL(route.request().url());
@@ -103,6 +105,7 @@ test("admin organiza operação, catálogo, creators, leads, IA e suporte", asyn
           total_content_kits: 4, oportunidades_salvas: 7, conteudos_publicados: 3,
           suporte_abertos: 1, suporte_respondidos: 0, assinaturas_ativas: 1,
           leads_novos: 1, total_leads: 4, leads_qualificados: 1,
+          suporte_total: 1, planos_ativos: 1, planos_vencendo: 1,
           ai_classify_calls: 12, ai_generate_calls: 8, ai_classify_tokens: 2200, ai_generate_tokens: 5100,
         },
       });
@@ -155,18 +158,32 @@ test("admin organiza operação, catálogo, creators, leads, IA e suporte", asyn
       return route.fulfill({
         json: [{
           id: creatorId, user_id: userId, nome: "Creator Teste", email: "creator@temtrend.test",
-          nicho: ["Beleza", "Lifestyle"], status: "ativo", plan: "pro", plan_status: "trialing",
+          nicho: ["Beleza", "Lifestyle"], status: "ativo", plan: "pro", plan_status: "active",
           plan_period: "monthly", current_period_end: futureIso, criado_em: "2026-10-01T10:00:00.000Z",
+          plan_active: true, plan_until: futureIso,
         }],
       });
     }
-    if (url.pathname === `/admin/creators/${creatorId}`) {
+    if (url.pathname === `/admin/creators/${creatorId}/plan` && method === "PATCH") {
+      planGrantBody = route.request().postDataJSON();
       return route.fulfill({
         json: {
-          creator: { id: creatorId, user_id: userId, plan: "pro", plan_status: "trialing", plan_period: "monthly", current_period_end: futureIso },
+          creator: { id: creatorId, user_id: userId, plan: "pro", plan_status: "active", plan_period: "monthly", current_period_end: futureIso },
+          subscription: { id: "sub-manual", plan: "pro", period: "monthly", status: "active", provider: "manual", current_period_end: futureIso },
+        },
+      });
+    }
+    if (url.pathname === `/admin/creators/${creatorId}` && method === "DELETE") {
+      deleteAccountBody = route.request().postDataJSON();
+      return route.fulfill({ status: 204, body: "" });
+    }
+    if (url.pathname === `/admin/creators/${creatorId}` && method === "GET") {
+      return route.fulfill({
+        json: {
+          creator: { id: creatorId, user_id: userId, plan: "pro", plan_status: "active", plan_period: "monthly", current_period_end: futureIso },
           nome: "Creator Teste",
           email: "creator@temtrend.test",
-          subscriptions: [{ id: "sub-1", plan: "pro", period: "monthly", status: "trialing", amount_cents: 4990, current_period_end: futureIso, pending_plan: null, created_at: "2026-10-01T10:00:00.000Z" }],
+          subscriptions: [{ id: "sub-1", plan: "pro", period: "monthly", status: "active", amount_cents: 4990, current_period_end: futureIso, pending_plan: null, created_at: "2026-10-01T10:00:00.000Z" }],
           usage: [{ usage_date: "2026-11-15", assistant_calls: 4, kit_calls: 2, support_calls: 1, total_tokens: 900 }],
           sessions: [{ id: "sess-1", title: "Skincare para o verão", created_at: "2026-11-14T10:00:00.000Z", updated_at: "2026-11-15T10:00:00.000Z" }],
           tickets: [{ id: ticketId, subject: "Não consigo gerar roteiro", status: "open", category: "problema", last_message_at: "2026-10-17T14:30:00.000Z" }],
@@ -182,16 +199,24 @@ test("admin organiza operação, catálogo, creators, leads, IA e suporte", asyn
       return route.fulfill({ json: { id: leadId, status: "qualificado", updated_at: futureIso } });
     }
     if (url.pathname === "/admin/billing/summary") {
-      return route.fulfill({ json: { active: 1, trialing: 1, past_due: 0, canceled: 0, pending: 0, failed: 0, mrr_cents: 4970 } });
+      return route.fulfill({ json: { active: 1, trialing: 0, past_due: 0, canceled: 0, pending: 1, failed: 0, expiring_7d: 1, creators_total: 1, mrr_cents: 4970 } });
     }
     if (url.pathname === "/admin/billing/subscriptions") {
-      return route.fulfill({ json: { items: [{ id: "cccc3333-3333-4333-8333-333333333333", plan: "pro", plan_label: "Pro", period: "monthly", status: "active", amount_cents: 4970, current_period_end: futureIso, pending_plan_label: null, created_at: "2026-10-01T10:00:00.000Z", creator_nome: "Creator Teste", creator_email: "creator@temtrend.test" }], total: 1, page: 1, limit: 100 } });
+      return route.fulfill({ json: { items: [{ id: "cccc3333-3333-4333-8333-333333333333", plan: "pro", plan_label: "Pro", period: "monthly", status: "active", provider: "asaas", amount_cents: 4970, current_period_end: futureIso, pending_plan_label: null, created_at: "2026-10-01T10:00:00.000Z", creator_nome: "Creator Teste", creator_email: "creator@temtrend.test" }], total: 1, page: 1, limit: 100 } });
     }
     if (url.pathname === "/admin/analytics/funnel") {
       return route.fulfill({ json: { days: 30, events: [{ event_name: "landing_view", total: 120 }, { event_name: "signup_complete", total: 18 }] } });
     }
     if (url.pathname === "/admin/support/tickets" && method === "GET") {
-      return route.fulfill({ json: { items: [supportTicket], total: 1, page: 1, limit: 50 } });
+      return route.fulfill({
+        json: {
+          items: [supportTicket],
+          total: 1,
+          page: 1,
+          limit: 50,
+          counts: { open: 1, answered: 0, resolved: 0, closed: 0 },
+        },
+      });
     }
     if (url.pathname === `/admin/support/tickets/${ticketId}` && method === "GET") {
       return route.fulfill({ json: { ...supportTicket, messages: [{ id: "m1", author: "creator", body: "Meu roteiro não gera com esse produto", created_at: "2026-10-17T14:30:00.000Z" }] } });
@@ -231,15 +256,40 @@ test("admin organiza operação, catálogo, creators, leads, IA e suporte", asyn
   await page.getByRole("button", { name: /^ativar$/i }).first().click();
   await expect.poll(() => productPatchBody).toEqual({ status: "ativo" });
 
-  // Creators: ficha completa.
+  // Creators: plano visível, concessão manual e ficha completa.
   await page.getByRole("button", { name: /^creators/i }).click();
   await expect(page.getByText("Creator Teste", { exact: true })).toBeVisible();
   await expect(page.getByText("creator@temtrend.test", { exact: true })).toBeVisible();
+  await expect(page.getByText(/Pro · até/)).toBeVisible();
+  await expect(page.locator(`text=Com plano ativo`).first()).toBeVisible();
+  await expect(page.locator(`text=Vence em 7 dias`).first()).toBeVisible();
+
+  // Filtro por plano.
+  await page.getByLabel("Filtrar creators por plano").selectOption("gratis");
+  await expect(page.getByText("Nenhum creator corresponde aos filtros.")).toBeVisible();
+  await page.getByLabel("Filtrar creators por plano").selectOption("pagos");
+  await expect(page.getByText("Creator Teste", { exact: true })).toBeVisible();
+
+  // Conceder plano manual.
+  await page.getByRole("button", { name: "Plano", exact: true }).click();
+  await expect(page.locator("#admin-plan-title")).toBeVisible();
+  await page.screenshot({ path: testInfo.outputPath("admin-plan-modal.png") });
+  await page.getByRole("radio", { name: /Personalizado/i }).check();
+  await page.getByLabel("Dias de acesso").fill("120");
+  await page.getByRole("button", { name: "Conceder Pro" }).click();
+  await expect.poll(() => planGrantBody).toEqual({ plan: "pro", period: "monthly", days: 120 });
+
   await page.getByRole("button", { name: "Detalhes" }).click();
   await expect(page.locator("#admin-creator-detail")).toBeVisible();
   await expect(page.getByText("Uso de IA · 30 dias")).toBeVisible();
   await expect(page.getByText("Skincare para o verão")).toBeVisible();
-  await page.getByRole("button", { name: "Fechar", exact: true }).click();
+
+  // Exclusão de conta: exige o e-mail exato.
+  await page.getByRole("button", { name: /Excluir conta/i }).click();
+  await page.getByPlaceholder("email da conta").fill("creator@temtrend.test");
+  await page.screenshot({ path: testInfo.outputPath("admin-delete-account.png") });
+  await page.getByRole("button", { name: "Excluir definitivamente" }).click();
+  await expect.poll(() => deleteAccountBody).toEqual({ confirm_email: "creator@temtrend.test" });
 
   // Leads: mudança de status persiste.
   await page.getByRole("button", { name: /^leads/i }).click();
@@ -248,11 +298,14 @@ test("admin organiza operação, catálogo, creators, leads, IA e suporte", asyn
   await page.getByLabel("Status do lead Marca Aurora").selectOption("qualificado");
   await expect.poll(() => leadStatusBody).toEqual({ status: "qualificado" });
 
-  // Assinaturas.
+  // Assinaturas: carteira, quem tem plano e até quando.
   await page.getByRole("button", { name: /^assinaturas/i }).click();
   await expect(page.getByRole("heading", { name: "Assinaturas" })).toBeVisible();
   await expect(page.getByText("MRR estimado")).toBeVisible();
-  await expect(page.getByRole("cell", { name: "Pro", exact: true })).toBeVisible();
+  await expect(page.getByText("Vencem em 7 dias")).toBeVisible();
+  await expect(page.getByRole("cell", { name: "Pro", exact: true }).first()).toBeVisible();
+  await expect(page.getByRole("cell", { name: "Asaas" })).toBeVisible();
+  await expect(page.getByRole("columnheader", { name: "Válido até" }).first()).toBeVisible();
   await expect(page.getByText("Ativa", { exact: true })).toBeVisible();
 
   // IA: provedor real e série histórica.
@@ -262,9 +315,11 @@ test("admin organiza operação, catálogo, creators, leads, IA e suporte", asyn
   await expect(page.getByText("deepseek-v4.1-flash")).toBeVisible();
   await expect(page.getByText("Chamadas por dia")).toBeVisible();
 
-  // Suporte: responder e resolver.
+  // Suporte: chips de status, busca, responder e resolver.
   await page.getByRole("button", { name: /^suporte/i }).click();
   await expect(page.getByRole("heading", { name: "Conversas do suporte" })).toBeVisible();
+  await expect(page.getByRole("button", { name: /^Aguardando \d+$/ })).toBeVisible();
+  await expect(page.getByLabel("Buscar tickets por assunto")).toBeVisible();
   await page.getByRole("button", { name: /Não consigo gerar roteiro/ }).click();
   await expect(page.getByText("Meu roteiro não gera com esse produto")).toBeVisible();
   await page.getByPlaceholder(/Escreva a resposta/).fill("Ajustamos o gerador, tente novamente agora.");

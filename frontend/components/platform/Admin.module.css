@@ -543,16 +543,21 @@
 .creatorSummary strong,
 .subsTable td { font-variant-numeric: tabular-nums; }
 
+/* Contraste dos textos sobre o bloco de destaque (--tt-lime do tema). */
+.primaryButton { color: var(--tt-on-lime, #fff); }
+.metricCard:first-child,
+.creatorSummary > div:last-child,
+.leadSummary > div:last-child { color: var(--tt-on-lime, #fff); }
+.metricCard:first-child p,
+.metricCard:first-child .metricIndex,
+.creatorSummary > div:last-child span,
+.leadSummary > div:last-child span { color: rgba(255, 255, 255, .8); }
+.planBadgeActive { color: var(--tt-on-lime, #fff); }
+
 @media (max-width: 620px) {
   .adminShell { padding-top: 30px; }
   .hero h1 { font-size: clamp(2.6rem, 12vw, 4.2rem); }
 }
-
-/* Texto sobre o bloco destacado (lime/purple): mantém contraste legível. */
-.metricCard:first-child p,
-.metricCard:first-child .metricIndex,
-.creatorSummary > div:last-child span,
-.leadSummary > div:last-child span { color: rgba(18, 12, 34, .72); }
 
 /* --- Funil em barras (visão geral) --- */
 .funnelBars { display: grid; gap: 12px; margin: 22px 0 0; padding: 0; list-style: none; }
@@ -594,6 +599,48 @@
 .detailList li:last-child { border-bottom: 0; }
 .detailList strong { font-size: .78rem; }
 .detailList span { color: var(--admin-muted); font-size: .68rem; }
+
+/* --- Plano e exclusão de conta (Creators) --- */
+.creatorsToolbar { grid-template-columns: minmax(240px, 1.4fr) minmax(150px, .6fr) minmax(170px, .7fr); }
+.planBadgeActive { background: var(--tt-lime); color: #1d1030; }
+.planBadgeWarn { display: inline-flex; padding: 4px 7px; border-radius: 999px; background: #fbeecd; color: #7a5312; font-size: .55rem; font-weight: 900; letter-spacing: .04em; text-transform: uppercase; }
+.creatorActions .planAction { border-color: #cdbff0; color: #4b2c8f; }
+
+.planOptions { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 10px 0 14px; }
+.planOption { display: flex; gap: 9px; align-items: flex-start; padding: 12px; border: 1px solid var(--admin-line); border-radius: 12px; background: var(--tt-surface); cursor: pointer; }
+.planOption input { margin: 2px 0 0; accent-color: var(--tt-deep); }
+.planOption strong { display: block; font-size: .76rem; }
+.planOption small { display: block; margin-top: 2px; color: var(--admin-muted); font-size: .62rem; }
+.planOptionActive { border-color: var(--tt-deep); box-shadow: 0 0 0 1px var(--tt-deep) inset; }
+.planDays { display: grid; gap: 6px; max-width: 180px; margin-bottom: 12px; color: #3c3f38; font-size: .7rem; font-weight: 800; }
+.planDays input { min-height: 44px; padding: 10px 12px; border: 1px solid var(--admin-line); border-radius: var(--tt-radius-control); background: var(--tt-surface); }
+
+.dangerZone { border-top-color: #efc9c9; }
+.dangerZone h3 { color: #9a3737; }
+.dangerGhost { min-height: 44px; display: inline-flex; align-items: center; justify-content: center; gap: 7px; margin-top: 10px; padding: 10px 16px; border: 1px solid #e3c6c6; border-radius: 999px; background: #fff; color: #8f3b3b; font-size: .7rem; font-weight: 850; cursor: pointer; }
+.dangerGhost:hover:not(:disabled) { background: #fdf3f3; }
+.dangerGhost:disabled { opacity: .45; cursor: not-allowed; }
+.dangerButton { min-height: 44px; padding: 10px 16px; border: 1px solid #b54141; border-radius: 999px; background: #b54141; color: #fff; font-size: .72rem; font-weight: 850; cursor: pointer; }
+.dangerButton:disabled { opacity: .45; cursor: not-allowed; }
+.deleteConfirm { display: grid; gap: 12px; margin-top: 12px; padding: 14px; border: 1px solid #efc9c9; border-radius: 12px; background: #fdf7f7; }
+.deleteConfirm label { display: grid; gap: 6px; color: #5a3b3b; font-size: .68rem; font-weight: 700; }
+.deleteConfirm input { min-height: 44px; padding: 10px 12px; border: 1px solid #e3c6c6; border-radius: var(--tt-radius-control); background: #fff; }
+.deleteConfirm .formActions { padding-top: 0; }
+
+/* --- Suporte: chips de status --- */
+.supportChips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+.supportChips button { min-height: 40px; display: inline-flex; align-items: center; gap: 7px; padding: 8px 13px; border: 1px solid var(--admin-line); border-radius: 999px; background: var(--tt-surface); color: var(--admin-muted); font-size: .7rem; font-weight: 800; cursor: pointer; }
+.supportChips button > span { min-width: 20px; padding: 2px 6px; border-radius: 999px; background: var(--admin-soft); color: var(--admin-ink); font-size: .6rem; font-weight: 900; }
+.supportChips .supportChipActive { border-color: var(--admin-ink); background: var(--admin-ink); color: var(--tt-surface); }
+.supportChips .supportChipActive > span { background: var(--admin-lime); color: var(--admin-ink); }
+.supportToolbar { grid-template-columns: minmax(240px, 1.4fr) auto; justify-content: start; }
+
+/* --- Visão geral: últimos tickets --- */
+.overviewTickets { display: grid; gap: 6px; margin: 14px 0 0; padding: 0; list-style: none; }
+.overviewTickets button { width: 100%; display: grid; gap: 2px; padding: 10px 12px; border: 1px solid var(--admin-line); border-radius: 10px; background: var(--admin-soft); text-align: left; cursor: pointer; }
+.overviewTickets strong { font-size: .72rem; }
+.overviewTickets span { color: var(--admin-muted); font-size: .62rem; }
+.overviewTickets button:hover { border-color: #a7c681; }
 
 /* --- Aba Leads --- */
 .leadsToolbar { grid-template-columns: minmax(240px, 1.6fr) minmax(180px, .6fr); }
@@ -648,10 +695,14 @@
 .billingToolbar { grid-template-columns: minmax(240px, 1.6fr) minmax(180px, .6fr); }
 .planMix { margin: 0 0 16px; color: var(--admin-muted); font-size: .7rem; }
 .planMix strong { color: var(--admin-ink); }
+.plansTable { margin-bottom: 18px; }
 .listMetaCount { margin: 0 0 14px; color: var(--admin-muted); font-size: .72rem; }
 .listMetaCount strong { color: var(--admin-ink); }
 
 @media (max-width: 820px) {
+  .creatorsToolbar { grid-template-columns: 1fr 1fr; }
+  .creatorsToolbar .searchField { grid-column: 1 / -1; }
+  .planOptions { grid-template-columns: 1fr; }
   .productsToolbar { grid-template-columns: 1fr 1fr; }
   .productsToolbar .searchField { grid-column: 1 / -1; }
   .aiLayout { grid-template-columns: 1fr; }
